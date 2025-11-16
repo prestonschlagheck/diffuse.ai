@@ -147,7 +147,7 @@ export default function Features() {
                     <h4 className="text-body-md font-bold text-black">API-First Architecture</h4>
                   </div>
                   <div className="p-5">
-                    <p className="text-body-sm text-medium-gray text-center">RESTful endpoints with real-time webhooks</p>
+                    <p className="text-body-sm text-medium-gray text-center">Custom endpoints with real-time webhooks</p>
                   </div>
                 </div>
                 <div className="glass-container-sm overflow-hidden">
