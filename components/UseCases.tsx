@@ -22,7 +22,7 @@ export default function UseCases() {
               In Action
             </span>
             <h2 className="text-heading-xl font-bold mb-6">
-              Powering <span className="gradient-text">Real Newsrooms</span>
+              <span className="gradient-text">RiverPress</span>
             </h2>
             <p className="text-body-md text-medium-gray">
               Transforming local journalism one community at a time
