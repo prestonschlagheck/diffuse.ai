@@ -119,7 +119,7 @@ export default function About() {
               { number: '100%', label: 'Automated' },
               { number: '<5min', label: 'Processing' },
               { number: '24/7', label: 'Coverage' },
-              { number: 'API', label: 'First' },
+              { number: 'OpenAI API', label: 'Top-tier model' },
             ].map((stat, index) => (
               <motion.div
                 key={index}
