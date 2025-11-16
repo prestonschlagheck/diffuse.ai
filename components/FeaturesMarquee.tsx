@@ -123,10 +123,7 @@ export default function FeaturesMarquee() {
             key={`feature-${index}`}
             className="glass-container flex-shrink-0 w-80 overflow-hidden group hover:bg-white/10 transition-colors duration-300"
           >
-            <div className="bg-cosmic-orange/90 px-4 py-2 flex items-center justify-center gap-2">
-              <div className="text-black">
-                {feature.icon}
-              </div>
+            <div className="bg-cosmic-orange/90 px-4 py-3 flex items-center justify-center">
               <h3 className="text-body-md font-bold text-black">
                 {feature.title}
               </h3>

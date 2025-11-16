@@ -62,8 +62,8 @@ export default function UseCases() {
                       'Sustainable ad-supported revenue model',
                     ].map((feature, index) => (
                       <div key={index} className="flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-full bg-cosmic-orange/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-cosmic-orange">
+                        <div className="w-6 h-6 rounded-full bg-[#3391af]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-[#3391af]">
                             <polyline points="20 6 9 17 4 12" />
                           </svg>
                         </div>
@@ -79,16 +79,17 @@ export default function UseCases() {
 
                 {/* Right Visual */}
                 <div className="relative">
-                  {/* Badge - Above Image (Full Width) */}
-                  <div className="flex items-center justify-center gap-2 bg-[#3391af]/20 backdrop-blur-sm px-4 py-2 mb-0 border-b border-[#3391af]/30">
-                    <div className="w-2 h-2 bg-[#3391af] rounded-full animate-pulse" />
-                    <span className="text-body-sm text-[#3391af] font-semibold uppercase tracking-wider">
-                      Pilot Project
-                    </span>
+                  {/* Badge - Above Image */}
+                  <div className="overflow-hidden rounded-t-glass">
+                    <div className="bg-cosmic-orange/90 px-4 py-3 flex items-center justify-center">
+                      <span className="text-body-sm font-bold text-black uppercase tracking-wider">
+                        Pilot Partner
+                      </span>
+                    </div>
                   </div>
 
                   {/* Placeholder for Screenshot */}
-                  <div className="glass-container aspect-[4/3] flex items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-500 rounded-t-none">
+                  <div className="glass-container aspect-[4/3] flex items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-500 rounded-none border-t-0 border-b-0">
                     <div className="absolute inset-0 bg-gradient-to-br from-[#3391af]/10 to-[#57959f]/10" />
                     <div className="relative z-10 text-center p-8">
                       <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-4 text-[#3391af]">
@@ -102,10 +103,11 @@ export default function UseCases() {
                     </div>
                   </div>
 
-                  {/* Stats Badge - Below Image (Full Width) */}
-                  <div className="flex items-center justify-center gap-3 bg-[#3391af]/20 backdrop-blur-sm px-4 py-3 border-t border-[#3391af]/30">
-                    <div className="text-heading-lg font-bold text-[#3391af]">12K+</div>
-                    <div className="text-body-sm text-medium-gray">Monthly Readers</div>
+                  {/* Stats Badge - Below Image */}
+                  <div className="overflow-hidden rounded-b-glass">
+                    <div className="bg-cosmic-orange/90 px-4 py-3 flex items-center justify-center gap-3">
+                      <span className="text-body-md font-bold text-black">12K+ Monthly Readers</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -121,11 +123,7 @@ export default function UseCases() {
           >
             {/* Media Outlets */}
             <div className="glass-container overflow-hidden group cursor-pointer hover:bg-white/10 transition-colors duration-300">
-              <div className="bg-cosmic-orange/90 px-4 py-2 flex items-center justify-center gap-2">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-black">
-                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                  <path d="M2 17l10 5 10-5" />
-                </svg>
+              <div className="bg-cosmic-orange/90 px-4 py-3 flex items-center justify-center">
                 <h3 className="text-body-md font-bold text-black">Media Outlets</h3>
               </div>
               <div className="p-5">
@@ -137,13 +135,7 @@ export default function UseCases() {
 
             {/* Municipalities */}
             <div className="glass-container overflow-hidden group cursor-pointer hover:bg-white/10 transition-colors duration-300">
-              <div className="bg-cosmic-orange/90 px-4 py-2 flex items-center justify-center gap-2">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-black">
-                  <rect x="3" y="3" width="7" height="7" rx="1" />
-                  <rect x="14" y="3" width="7" height="7" rx="1" />
-                  <rect x="3" y="14" width="7" height="7" rx="1" />
-                  <rect x="14" y="14" width="7" height="7" rx="1" />
-                </svg>
+              <div className="bg-cosmic-orange/90 px-4 py-3 flex items-center justify-center">
                 <h3 className="text-body-md font-bold text-black">Municipalities</h3>
               </div>
               <div className="p-5">
@@ -155,11 +147,7 @@ export default function UseCases() {
 
             {/* Nonprofits */}
             <div className="glass-container overflow-hidden group cursor-pointer hover:bg-white/10 transition-colors duration-300">
-              <div className="bg-cosmic-orange/90 px-4 py-2 flex items-center justify-center gap-2">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-black">
-                  <circle cx="12" cy="8" r="4" />
-                  <path d="M4 20v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2" />
-                </svg>
+              <div className="bg-cosmic-orange/90 px-4 py-3 flex items-center justify-center">
                 <h3 className="text-body-md font-bold text-black">Nonprofits</h3>
               </div>
               <div className="p-5">
