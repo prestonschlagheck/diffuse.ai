@@ -117,61 +117,6 @@ export default function Features() {
 
           {/* Features Marquee */}
           <FeaturesMarquee />
-
-          {/* Enterprise Integration */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.8, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-12"
-          >
-            <div className="glass-container p-8 md:p-10">
-              <h3 className="text-heading-xl font-bold mb-4 text-center">
-                Integrate with Your Workflow
-              </h3>
-              <p className="text-body-md text-medium-gray mb-8 text-center">
-                Seamless API integration with WordPress, CMS, and publishing platforms
-              </p>
-
-              <div className="grid md:grid-cols-3 gap-4 mb-8">
-                <div className="glass-container-sm overflow-hidden">
-                  <div className="bg-cosmic-orange/90 px-4 py-3 flex items-center justify-center">
-                    <h4 className="text-body-md font-bold text-black">OpenAI API Usage</h4>
-                  </div>
-                  <div className="p-5">
-                    <p className="text-body-sm text-medium-gray text-center">Top-tier language models with custom integration</p>
-                  </div>
-                </div>
-                <div className="glass-container-sm overflow-hidden">
-                  <div className="bg-cosmic-orange/90 px-4 py-3 flex items-center justify-center">
-                    <h4 className="text-body-md font-bold text-black">API-First Architecture</h4>
-                  </div>
-                  <div className="p-5">
-                    <p className="text-body-sm text-medium-gray text-center">Custom endpoints with real-time webhooks</p>
-                  </div>
-                </div>
-                <div className="glass-container-sm overflow-hidden">
-                  <div className="bg-cosmic-orange/90 px-4 py-3 flex items-center justify-center">
-                    <h4 className="text-body-md font-bold text-black">Custom Solutions</h4>
-                  </div>
-                  <div className="p-5">
-                    <p className="text-body-sm text-medium-gray text-center">Tailored integrations for your workflow</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="text-center">
-                <p className="text-body-md text-secondary-white mb-5">
-                  Ready to automate your newsroom? Let&apos;s discuss how Diffuse.AI fits your workflow.
-                </p>
-                <div className="flex justify-center">
-                  <button className="btn-primary px-6 py-3 text-body-sm">
-                    Schedule Integration Call
-                  </button>
-                </div>
-              </div>
-            </div>
-          </motion.div>
         </div>
       </div>
 

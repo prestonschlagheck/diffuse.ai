@@ -22,7 +22,7 @@ export default function UseCases() {
               In Action
             </span>
             <h2 className="text-heading-xl font-bold mb-6">
-              <span className="gradient-text">RiverPress</span>
+              Powering <span className="gradient-text">Real Newsrooms</span>
             </h2>
             <p className="text-body-md text-medium-gray">
               Transforming local journalism one community at a time
@@ -44,7 +44,7 @@ export default function UseCases() {
                 <div>
                   {/* River Press Text Logo */}
                   <h3 className="text-heading-xl font-bold mb-6">
-                    The Schuylkill <span className="text-[#dbdbdb]">River</span><span className="text-[#3391af]">Press</span>
+                    <span className="text-[#dbdbdb]">River</span><span className="text-[#3391af]">Press</span>
                   </h3>
                   <p className="text-body-md text-secondary-white mb-6 leading-relaxed">
                     Digital-first local news outlet serving the Spring-Ford area 
