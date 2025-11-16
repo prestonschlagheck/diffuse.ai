@@ -142,8 +142,8 @@ export default function Features() {
                       <polyline points="8 6 2 12 8 18" />
                     </svg>
                   </div>
-                  <h4 className="text-body-md font-bold mb-1">RESTful API</h4>
-                  <p className="text-body-sm text-medium-gray">Full API access for custom integrations</p>
+                  <h4 className="text-body-md font-bold mb-1">OpenAI API</h4>
+                  <p className="text-body-sm text-medium-gray">Fully customizable API access</p>
                 </div>
                 <div className="glass-container-sm p-5 text-center">
                   <div className="text-cosmic-orange mb-2">
