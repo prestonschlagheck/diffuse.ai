@@ -162,7 +162,7 @@ export default function Features() {
 
               <div className="text-center">
                 <p className="text-body-md text-secondary-white mb-5">
-                  Ready to automate your newsroom? Let&apos;s discuss how Diffuse fits your workflow.
+                  Ready to automate your newsroom? Let&apos;s discuss how Diffuse.AI fits your workflow.
                 </p>
                 <div className="flex justify-center">
                   <button className="btn-primary px-6 py-3 text-body-sm">

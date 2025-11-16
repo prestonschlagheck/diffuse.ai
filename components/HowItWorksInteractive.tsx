@@ -12,7 +12,7 @@ const steps = [
   {
     number: 'Step 2',
     title: 'Process',
-    description: 'Diffuse AI uses advanced transcription and natural language processing to understand context, decisions, and key quotes.',
+    description: 'Diffuse.AI uses advanced transcription and natural language processing to understand context, decisions, and key quotes.',
   },
   {
     number: 'Step 3',

@@ -20,7 +20,7 @@ export default function Hero() {
           <div className="relative w-full aspect-[16/9]">
             <Image
               src="/hero.png"
-              alt="Diffuse AI Hero"
+              alt="Diffuse.AI Hero"
               fill
               className="object-contain"
               priority

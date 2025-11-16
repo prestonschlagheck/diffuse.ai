@@ -1,7 +1,7 @@
 'use client'
 
-import { motion, useScroll, useMotionValueEvent } from 'framer-motion'
-import { useState, useRef, useEffect } from 'react'
+import { motion } from 'framer-motion'
+import { useState } from 'react'
 
 const navLinks = [
   { name: 'Overview', href: '#overview' },
@@ -11,69 +11,7 @@ const navLinks = [
 ]
 
 export default function Navbar() {
-  const [hidden, setHidden] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const { scrollY } = useScroll()
-  
-  // Auto-hide timer ref
-  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const currentScrollRef = useRef(0)
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (hideTimeoutRef.current) {
-        clearTimeout(hideTimeoutRef.current)
-      }
-    }
-  }, [])
-
-  useMotionValueEvent(scrollY, 'change', (latest) => {
-    const previous = scrollY.getPrevious() ?? currentScrollRef.current
-    currentScrollRef.current = latest
-    
-    const isScrollingDown = latest > previous
-    const isScrollingUp = latest < previous
-    
-    // Always show at the very top
-    if (latest < 50) {
-      setHidden(false)
-      if (hideTimeoutRef.current) {
-        clearTimeout(hideTimeoutRef.current)
-        hideTimeoutRef.current = null
-      }
-      return
-    }
-    
-    // Hide when scrolling down
-    if (isScrollingDown && latest > 150) {
-      setHidden(true)
-      setMobileMenuOpen(false)
-      if (hideTimeoutRef.current) {
-        clearTimeout(hideTimeoutRef.current)
-        hideTimeoutRef.current = null
-      }
-    }
-    
-    // Show when scrolling up (anywhere on page)
-    if (isScrollingUp) {
-      setHidden(false)
-      
-      // Clear existing timeout
-      if (hideTimeoutRef.current) {
-        clearTimeout(hideTimeoutRef.current)
-      }
-      
-      // Set new timeout to hide after 3 seconds of inactivity
-      hideTimeoutRef.current = setTimeout(() => {
-        // Check current scroll position and menu state
-        const currentScroll = window.pageYOffset || document.documentElement.scrollTop
-        if (currentScroll > 150 && !mobileMenuOpen) {
-          setHidden(true)
-        }
-      }, 3000)
-    }
-  })
 
   const scrollToSection = (href: string) => {
     const element = document.querySelector(href)
@@ -92,15 +30,7 @@ export default function Navbar() {
 
   return (
     <>
-      <motion.nav
-        variants={{
-          visible: { y: 0 },
-          hidden: { y: '-100%' },
-        }}
-        animate={hidden ? 'hidden' : 'visible'}
-        transition={{ duration: 0.35, ease: 'easeInOut' }}
-        className="fixed top-0 left-0 right-0 z-50 backdrop-blur-glass"
-      >
+      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-glass">
         <div className="border-b border-white/10 bg-black/50">
           <div className="container-padding">
             <div className="max-w-7xl mx-auto flex items-center justify-between py-4">
@@ -161,7 +91,7 @@ export default function Navbar() {
             </div>
           </div>
         </div>
-      </motion.nav>
+      </nav>
 
       {/* Mobile Menu */}
       <motion.div

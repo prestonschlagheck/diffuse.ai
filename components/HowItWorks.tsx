@@ -19,7 +19,7 @@ const steps = [
   {
     number: '02',
     title: 'Process',
-    description: 'Diffuse AI uses advanced transcription and natural language processing to understand context, decisions, and key quotes.',
+    description: 'Diffuse.AI uses advanced transcription and natural language processing to understand context, decisions, and key quotes.',
     icon: (
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M12 2L2 7l10 5 10-5-10-5z" />
@@ -70,7 +70,7 @@ export default function HowItWorks() {
               The Process
             </span>
             <h2 className="text-heading-xl font-bold mb-4">
-              How <span className="gradient-text">Diffuse</span> Works
+              How <span className="gradient-text">Diffuse.AI</span> Works
             </h2>
             <p className="text-body-md text-medium-gray mb-8">
               API-first automated workflow from capture to publication

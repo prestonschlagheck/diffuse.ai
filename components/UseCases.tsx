@@ -128,7 +128,7 @@ export default function UseCases() {
               </div>
               <div className="p-5">
                 <p className="text-body-sm text-medium-gray leading-relaxed text-center">
-                  License Diffuse to augment your newsroom capabilities
+                  License Diffuse.AI to augment your newsroom capabilities
                 </p>
               </div>
             </div>
@@ -152,7 +152,7 @@ export default function UseCases() {
               </div>
               <div className="p-5">
                 <p className="text-body-sm text-medium-gray leading-relaxed text-center">
-                  Deploy Diffuse to serve underrepresented communities
+                  Deploy Diffuse.AI to serve underrepresented communities
                 </p>
               </div>
             </div>
@@ -170,7 +170,7 @@ export default function UseCases() {
                 Ready to Transform Your Newsroom?
               </h3>
               <p className="text-body-md text-medium-gray mb-6 max-w-2xl mx-auto">
-                See how Diffuse integrates with your workflow—schedule a demo today.
+                See how Diffuse.AI integrates with your workflow—schedule a demo today.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button className="btn-primary px-6 py-3 text-body-sm">
