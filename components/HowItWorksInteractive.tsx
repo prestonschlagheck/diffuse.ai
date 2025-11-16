@@ -81,25 +81,27 @@ export default function HowItWorksInteractive() {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="glass-container overflow-hidden">
+        {/* Orange Header - Static */}
+        <div className="bg-cosmic-orange/90 px-6 py-3">
+          <h3 className="text-body-lg font-bold text-center text-black">{steps[currentStep].number}</h3>
+        </div>
+
+        {/* Animated Content Area */}
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.2, ease: 'easeInOut' }}
+            className="p-8 text-center"
           >
-            <div className="bg-cosmic-orange/90 px-6 py-3">
-              <h3 className="text-body-lg font-bold text-center text-black">{steps[currentStep].number}</h3>
-            </div>
-            <div className="p-8 text-center">
-              <h4 className="text-heading-xl font-bold mb-4 gradient-text">
-                {steps[currentStep].title}
-              </h4>
-              <p className="text-body-md text-medium-gray leading-relaxed">
-                {steps[currentStep].description}
-              </p>
-            </div>
+            <h4 className="text-heading-xl font-bold mb-4 gradient-text">
+              {steps[currentStep].title}
+            </h4>
+            <p className="text-body-md text-medium-gray leading-relaxed">
+              {steps[currentStep].description}
+            </p>
           </motion.div>
         </AnimatePresence>
 
