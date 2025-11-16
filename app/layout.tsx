@@ -48,17 +48,10 @@ export const metadata: Metadata = {
     description: siteDescription,
     images: [
       {
-        url: '/og-image.png',
+        url: '/socialcover.png',
         width: 1200,
         height: 630,
         alt: 'Diffuse.AI - Reviving Local News Through Smart Automation',
-        type: 'image/png',
-      },
-      {
-        url: '/og-image-square.png',
-        width: 1200,
-        height: 1200,
-        alt: 'Diffuse.AI Logo',
         type: 'image/png',
       },
     ],
@@ -69,7 +62,7 @@ export const metadata: Metadata = {
     creator: '@DiffuseAI',
     title: 'Diffuse.AI - Reviving Local News Through Smart Automation',
     description: siteDescription,
-    images: ['/og-image.png'],
+    images: ['/socialcover.png'],
   },
   robots: {
     index: true,
