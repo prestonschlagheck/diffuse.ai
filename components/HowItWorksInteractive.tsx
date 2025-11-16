@@ -28,27 +28,11 @@ const steps = [
 
 export default function HowItWorksInteractive() {
   const [currentStep, setCurrentStep] = useState(0)
-  const [progress, setProgress] = useState(0)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
-  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   const resetTimer = () => {
-    // Clear existing timers
+    // Clear existing timer
     if (timerRef.current) clearTimeout(timerRef.current)
-    if (progressIntervalRef.current) clearInterval(progressIntervalRef.current)
-    
-    // Reset progress
-    setProgress(0)
-    
-    // Start new progress animation (8 seconds = 8000ms, update every 50ms = 160 steps)
-    let currentProgress = 0
-    progressIntervalRef.current = setInterval(() => {
-      currentProgress += 0.625 // 0.625% per 50ms = 100% in 8 seconds
-      setProgress(currentProgress)
-      if (currentProgress >= 100) {
-        if (progressIntervalRef.current) clearInterval(progressIntervalRef.current)
-      }
-    }, 50)
     
     // Auto-advance after 8 seconds
     timerRef.current = setTimeout(() => {
@@ -62,7 +46,6 @@ export default function HowItWorksInteractive() {
     // Cleanup on unmount
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
-      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current)
     }
   }, [currentStep])
 
@@ -147,8 +130,12 @@ export default function HowItWorksInteractive() {
             key={`progress-${currentStep}`}
             className="absolute top-0 left-0 h-full bg-cosmic-orange/90"
             initial={{ width: '0%' }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.05, ease: 'linear' }}
+            animate={{ width: '100%' }}
+            transition={{ 
+              duration: 8, 
+              ease: 'linear',
+              times: [0, 1]
+            }}
           />
         </div>
       </div>
