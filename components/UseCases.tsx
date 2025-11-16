@@ -43,7 +43,7 @@ export default function UseCases() {
                 {/* Left Content */}
                 <div>
                   {/* River Press Text Logo */}
-                  <h3 className="text-display-sm md:text-display-md font-bold mb-6">
+                  <h3 className="text-heading-xl font-bold mb-6">
                     The Schuylkill <span className="text-[#dbdbdb]">River</span><span className="text-[#3391af]">Press</span>
                   </h3>
                   <p className="text-body-md text-secondary-white mb-6 leading-relaxed">
@@ -52,7 +52,7 @@ export default function UseCases() {
                   </p>
 
                   {/* Features */}
-                  <div className="space-y-4 mb-8">
+                  <div className="space-y-4">
                     {[
                       'Meeting recaps published within hours',
                       'Local features and community spotlights',
@@ -69,10 +69,6 @@ export default function UseCases() {
                       </div>
                     ))}
                   </div>
-
-                  <button className="bg-[#3391af] hover:bg-[#57959f] text-white px-8 py-3 rounded-glass-sm font-semibold transition-all duration-300 hover:scale-105">
-                    Visit SchuylkillRiverPress.com →
-                  </button>
                 </div>
 
                 {/* Right Visual */}
@@ -86,8 +82,8 @@ export default function UseCases() {
                     </div>
                   </div>
 
-                  {/* Placeholder for Screenshot - Flex Grow to Fill Space */}
-                  <div className="glass-container flex-1 flex items-center justify-center relative overflow-hidden rounded-none border-t-0 border-b-0">
+                  {/* Placeholder for Screenshot - Clickable */}
+                  <button className="glass-container flex-1 flex items-center justify-center relative overflow-hidden rounded-none border-t-0 border-b-0 w-full hover:bg-white/5 transition-colors duration-300">
                     <div className="absolute inset-0 bg-gradient-to-br from-[#3391af]/10 to-[#57959f]/10" />
                     <div className="relative z-10 text-center p-8">
                       <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-4 text-[#3391af]">
@@ -99,14 +95,15 @@ export default function UseCases() {
                         Schuylkill River Press Homepage
                       </p>
                     </div>
-                  </div>
+                  </button>
 
-                  {/* Stats Badge - Below Image */}
-                  <div className="overflow-hidden rounded-b-glass">
-                    <div className="bg-[#3391af]/90 px-4 py-3 flex items-center justify-center gap-3">
-                      <span className="text-body-md font-bold text-white">12K+ Monthly Readers</span>
-                    </div>
-                  </div>
+                  {/* Visit Button - Below Image */}
+                  <button className="overflow-hidden rounded-b-glass bg-[#3391af]/90 hover:bg-[#57959f] px-4 py-3 flex items-center justify-center gap-2 transition-all duration-300 hover:scale-105 w-full">
+                    <span className="text-body-md font-bold text-white">Visit RiverPress.com</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white">
+                      <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                  </button>
                 </div>
               </div>
             </motion.div>
