@@ -31,7 +31,7 @@ export default function About() {
   }
 
   return (
-    <section id="overview" ref={ref} className="relative py-16 md:py-20 scroll-mt-20">
+    <section id="overview" ref={ref} className="relative py-12 md:py-15 scroll-mt-20">
       <div className="container-padding">
         <motion.div
           variants={containerVariants}
@@ -80,56 +80,38 @@ export default function About() {
             <motion.div
               whileHover={{ scale: 1.02 }}
               transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-              className="glass-container p-6 group cursor-pointer"
+              className="glass-container overflow-hidden"
             >
-              <div className="w-10 h-10 rounded-glass-sm bg-cosmic-orange/10 flex items-center justify-center mb-4 group-hover:bg-cosmic-orange/20 transition-colors duration-300">
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="text-cosmic-orange"
-                >
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-                </svg>
+              <div className="bg-cosmic-orange/90 px-6 py-3 rounded-t-glass">
+                <h3 className="text-heading-md font-bold text-center text-black">
+                  The Collapse of Local Journalism
+                </h3>
               </div>
-              <h3 className="text-heading-md font-bold mb-3">
-                The Collapse of Local Journalism
-              </h3>
-              <p className="text-body-sm text-medium-gray leading-relaxed">
-                Small towns have lost local news sources, creating information deserts 
-                where community stories go untold.
-              </p>
+              <div className="p-6">
+                <p className="text-body-sm text-medium-gray leading-relaxed text-center">
+                  Small towns have lost local news sources, creating information deserts 
+                  where community stories go untold.
+                </p>
+              </div>
             </motion.div>
 
             {/* Card 2 */}
             <motion.div
               whileHover={{ scale: 1.02 }}
               transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-              className="glass-container p-6 group cursor-pointer"
+              className="glass-container overflow-hidden"
             >
-              <div className="w-10 h-10 rounded-glass-sm bg-cosmic-orange/10 flex items-center justify-center mb-4 group-hover:bg-cosmic-orange/20 transition-colors duration-300">
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="text-cosmic-orange"
-                >
-                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                </svg>
+              <div className="bg-cosmic-orange/90 px-6 py-3 rounded-t-glass">
+                <h3 className="text-heading-md font-bold text-center text-black">
+                  Unsustainable Costs
+                </h3>
               </div>
-              <h3 className="text-heading-md font-bold mb-3">
-                Unsustainable Costs
-              </h3>
-              <p className="text-body-sm text-medium-gray leading-relaxed">
-                Traditional reporting requires significant resources, preventing sustainable coverage 
-                of local government and community events.
-              </p>
+              <div className="p-6">
+                <p className="text-body-sm text-medium-gray leading-relaxed text-center">
+                  Traditional reporting requires significant resources, preventing sustainable coverage 
+                  of local government and community events.
+                </p>
+              </div>
             </motion.div>
           </motion.div>
 

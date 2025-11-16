@@ -120,55 +120,52 @@ export default function UseCases() {
             className="grid md:grid-cols-3 gap-6"
           >
             {/* Media Outlets */}
-            <div className="glass-container p-5 group cursor-pointer hover:bg-white/10 transition-colors duration-300">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-glass bg-cosmic-orange/10 flex items-center justify-center flex-shrink-0 group-hover:bg-cosmic-orange/20 transition-colors duration-300">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-cosmic-orange">
-                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-                    <line x1="4" y1="22" x2="4" y2="15" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-body-md font-bold mb-1 group-hover:text-cosmic-orange transition-colors duration-300">Media Outlets</h3>
-                  <p className="text-body-sm text-medium-gray leading-relaxed">
-                    License Diffuse to augment your newsroom capabilities
-                  </p>
-                </div>
+            <div className="glass-container overflow-hidden group cursor-pointer hover:bg-white/10 transition-colors duration-300">
+              <div className="bg-cosmic-orange/90 px-4 py-2 flex items-center justify-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-black">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                  <path d="M2 17l10 5 10-5" />
+                </svg>
+                <h3 className="text-body-md font-bold text-black">Media Outlets</h3>
+              </div>
+              <div className="p-5">
+                <p className="text-body-sm text-medium-gray leading-relaxed text-center">
+                  License Diffuse to augment your newsroom capabilities
+                </p>
               </div>
             </div>
 
             {/* Municipalities */}
-            <div className="glass-container p-5 group cursor-pointer hover:bg-white/10 transition-colors duration-300">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-glass bg-cosmic-orange/10 flex items-center justify-center flex-shrink-0 group-hover:bg-cosmic-orange/20 transition-colors duration-300">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-cosmic-orange">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                    <polyline points="9 22 9 12 15 12 15 22" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-body-md font-bold mb-1 group-hover:text-cosmic-orange transition-colors duration-300">Municipalities</h3>
-                  <p className="text-body-sm text-medium-gray leading-relaxed">
-                    Improve transparency with auto-generated summaries
-                  </p>
-                </div>
+            <div className="glass-container overflow-hidden group cursor-pointer hover:bg-white/10 transition-colors duration-300">
+              <div className="bg-cosmic-orange/90 px-4 py-2 flex items-center justify-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-black">
+                  <rect x="3" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="3" width="7" height="7" rx="1" />
+                  <rect x="3" y="14" width="7" height="7" rx="1" />
+                  <rect x="14" y="14" width="7" height="7" rx="1" />
+                </svg>
+                <h3 className="text-body-md font-bold text-black">Municipalities</h3>
+              </div>
+              <div className="p-5">
+                <p className="text-body-sm text-medium-gray leading-relaxed text-center">
+                  Improve transparency with auto-generated summaries
+                </p>
               </div>
             </div>
 
             {/* Nonprofits */}
-            <div className="glass-container p-5 group cursor-pointer hover:bg-white/10 transition-colors duration-300">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-glass bg-cosmic-orange/10 flex items-center justify-center flex-shrink-0 group-hover:bg-cosmic-orange/20 transition-colors duration-300">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-cosmic-orange">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-body-md font-bold mb-1 group-hover:text-cosmic-orange transition-colors duration-300">Nonprofits</h3>
-                  <p className="text-body-sm text-medium-gray leading-relaxed">
-                    Deploy Diffuse to serve underrepresented communities
-                  </p>
-                </div>
+            <div className="glass-container overflow-hidden group cursor-pointer hover:bg-white/10 transition-colors duration-300">
+              <div className="bg-cosmic-orange/90 px-4 py-2 flex items-center justify-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-black">
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M4 20v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2" />
+                </svg>
+                <h3 className="text-body-md font-bold text-black">Nonprofits</h3>
+              </div>
+              <div className="p-5">
+                <p className="text-body-sm text-medium-gray leading-relaxed text-center">
+                  Deploy Diffuse to serve underrepresented communities
+                </p>
               </div>
             </div>
           </motion.div>

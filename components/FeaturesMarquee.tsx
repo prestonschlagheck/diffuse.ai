@@ -8,9 +8,9 @@ const features = [
     title: 'Advanced Transcription',
     description: 'Speaker ID, timestamps, context awareness',
     icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-        <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" />
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
       </svg>
     ),
   },
@@ -18,8 +18,8 @@ const features = [
     title: 'Smart Summarization',
     description: 'Key decisions, votes, discussion points',
     icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M3 12h18M3 6h18M3 18h18" />
       </svg>
     ),
   },
@@ -27,8 +27,9 @@ const features = [
     title: 'Editorial Logic',
     description: 'Journalistic standards, factual accuracy',
     icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M9 11l3 3L22 4" />
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
       </svg>
     ),
   },
@@ -36,9 +37,10 @@ const features = [
     title: 'Quote Extraction',
     description: 'Auto-identify important quotes',
     icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z" />
-        <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z" />
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M10 11V9a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1z" />
+        <path d="M18 11V9a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1z" />
+        <path d="M12 16v-4" />
       </svg>
     ),
   },
@@ -46,11 +48,11 @@ const features = [
     title: 'Multi-Format Output',
     description: 'Articles, summaries, social posts',
     icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="3" y="3" width="7" height="7" />
-        <rect x="14" y="3" width="7" height="7" />
-        <rect x="14" y="14" width="7" height="7" />
-        <rect x="3" y="14" width="7" height="7" />
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <rect x="3" y="3" width="7" height="7" rx="1" />
+        <rect x="14" y="3" width="7" height="7" rx="1" />
+        <rect x="3" y="14" width="7" height="7" rx="1" />
+        <rect x="14" y="14" width="7" height="7" rx="1" />
       </svg>
     ),
   },
@@ -58,20 +60,19 @@ const features = [
     title: 'Human-in-the-Loop',
     description: 'Editor workflow for review',
     icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 20v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2" />
       </svg>
     ),
   },
   {
-    title: 'API Integration',
+    title: 'OpenAPI Generation',
     description: 'CMS, publishing platforms',
     icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <polyline points="16 18 22 12 16 6" />
-        <polyline points="8 6 2 12 8 18" />
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 6v6l4 2" />
       </svg>
     ),
   },
@@ -79,10 +80,9 @@ const features = [
     title: 'Scalable Infrastructure',
     description: 'Multiple meetings simultaneously',
     icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-        <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-        <line x1="12" y1="22.08" x2="12" y2="12" />
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M12 2L2 7l10 5 10-5-10-5z" />
+        <path d="M2 17l10 5 10-5" />
       </svg>
     ),
   },
@@ -120,21 +120,21 @@ export default function FeaturesMarquee() {
       >
         {allFeatures.map((feature, index) => (
           <div
-            key={index}
-            className="glass-container p-6 flex-shrink-0 w-80 group hover:bg-white/10 transition-colors duration-300"
+            key={`feature-${index}`}
+            className="glass-container flex-shrink-0 w-80 overflow-hidden group hover:bg-white/10 transition-colors duration-300"
           >
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-glass-sm bg-gradient-to-br from-cosmic-orange/20 to-rich-orange/10 flex items-center justify-center flex-shrink-0 text-cosmic-orange group-hover:from-cosmic-orange/30 group-hover:to-rich-orange/20 transition-all duration-300">
+            <div className="bg-cosmic-orange/90 px-4 py-2 flex items-center justify-center gap-2">
+              <div className="text-black">
                 {feature.icon}
               </div>
-              <div>
-                <h3 className="text-heading-md font-bold mb-2 group-hover:text-cosmic-orange transition-colors duration-300">
-                  {feature.title}
-                </h3>
-                <p className="text-body-sm text-medium-gray leading-relaxed">
-                  {feature.description}
-                </p>
-              </div>
+              <h3 className="text-body-md font-bold text-black">
+                {feature.title}
+              </h3>
+            </div>
+            <div className="p-5">
+              <p className="text-body-sm text-medium-gray leading-relaxed text-center">
+                {feature.description}
+              </p>
             </div>
           </div>
         ))}

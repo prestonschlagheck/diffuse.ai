@@ -135,36 +135,40 @@ export default function Features() {
               </p>
 
               <div className="grid md:grid-cols-3 gap-4 mb-8">
-                <div className="glass-container-sm p-5 text-center">
-                  <div className="text-cosmic-orange mb-2">
-                    <svg className="w-8 h-8 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <polyline points="16 18 22 12 16 6" />
-                      <polyline points="8 6 2 12 8 18" />
-                    </svg>
-                  </div>
-                  <h4 className="text-body-md font-bold mb-1">OpenAI API</h4>
-                  <p className="text-body-sm text-medium-gray">Fully customizable API access</p>
-                </div>
-                <div className="glass-container-sm p-5 text-center">
-                  <div className="text-cosmic-orange mb-2">
-                    <svg className="w-8 h-8 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                    </svg>
-                  </div>
-                  <h4 className="text-body-md font-bold mb-1">Webhooks</h4>
-                  <p className="text-body-sm text-medium-gray">Real-time notifications for events</p>
-                </div>
-                <div className="glass-container-sm p-5 text-center">
-                  <div className="text-cosmic-orange mb-2">
-                    <svg className="w-8 h-8 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <div className="glass-container-sm overflow-hidden">
+                  <div className="bg-cosmic-orange/90 px-4 py-2 flex items-center justify-center gap-2">
+                    <svg className="w-5 h-5 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                       <circle cx="12" cy="12" r="10" />
-                      <path d="M8 14s1.5 2 4 2 4-2 4-2" />
-                      <line x1="9" y1="9" x2="9.01" y2="9" />
-                      <line x1="15" y1="9" x2="15.01" y2="9" />
+                      <path d="M12 6v6l4 2" />
                     </svg>
+                    <h4 className="text-body-md font-bold text-black">OpenAPI Generation</h4>
                   </div>
-                  <h4 className="text-body-md font-bold mb-1">Custom Solutions</h4>
-                  <p className="text-body-sm text-medium-gray">Tailored to your specific needs</p>
+                  <div className="p-5">
+                    <p className="text-body-sm text-medium-gray text-center">Fully customizable API access</p>
+                  </div>
+                </div>
+                <div className="glass-container-sm overflow-hidden">
+                  <div className="bg-cosmic-orange/90 px-4 py-2 flex items-center justify-center gap-2">
+                    <svg className="w-5 h-5 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                    </svg>
+                    <h4 className="text-body-md font-bold text-black">Webhooks</h4>
+                  </div>
+                  <div className="p-5">
+                    <p className="text-body-sm text-medium-gray text-center">Real-time notifications for events</p>
+                  </div>
+                </div>
+                <div className="glass-container-sm overflow-hidden">
+                  <div className="bg-cosmic-orange/90 px-4 py-2 flex items-center justify-center gap-2">
+                    <svg className="w-5 h-5 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                      <path d="M2 17l10 5 10-5" />
+                    </svg>
+                    <h4 className="text-body-md font-bold text-black">Custom Solutions</h4>
+                  </div>
+                  <div className="p-5">
+                    <p className="text-body-sm text-medium-gray text-center">Tailored to your specific needs</p>
+                  </div>
                 </div>
               </div>
 
