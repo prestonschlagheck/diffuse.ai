@@ -72,7 +72,7 @@ export default function UseCases() {
                     ))}
                   </div>
 
-                  <button className="bg-[#3391af] hover:bg-[#57959f] text-white px-8 py-3 rounded-glass font-semibold transition-all duration-300 hover:scale-105">
+                  <button className="bg-[#3391af] hover:bg-[#57959f] text-white px-8 py-3 rounded-glass-sm font-semibold transition-all duration-300 hover:scale-105">
                     Visit SchuylkillRiverPress.com →
                   </button>
                 </div>
