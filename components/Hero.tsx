@@ -20,10 +20,11 @@ export default function Hero() {
           <div className="relative w-full aspect-[16/9]">
             <Image
               src="/hero.png"
-              alt="Diffuse.AI Hero"
+              alt="Diffuse.AI - AI-powered workflow automation platform for local news - Reviving Local News Through Smart Automation"
               fill
               className="object-contain"
               priority
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 85vw, 1200px"
             />
           </div>
         </motion.div>

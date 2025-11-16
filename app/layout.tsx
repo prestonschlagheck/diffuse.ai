@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import { faqSchema, productSchema, serviceSchema, howToSchema } from './schema'
 
 const siteUrl = 'https://diffuse.ai'
 const siteName = 'Diffuse.AI'
@@ -28,6 +29,16 @@ export const metadata: Metadata = {
     'local media',
     'Schuylkill River Press',
     'automated news generation',
+    'GPT 5.1',
+    'OpenAI API',
+    'newsroom automation',
+    'local journalism software',
+    'meeting coverage AI',
+    'municipal news automation',
+    'government meeting transcription',
+    'AI editorial assistant',
+    'news workflow automation',
+    'local news technology',
   ],
   authors: [
     { name: 'Diffuse.AI', url: siteUrl },
@@ -111,6 +122,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="custom-scrollbar">
       <head>
+        {/* Preconnect to optimize loading */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        
         {/* Structured Data - Organization */}
         <script
           type="application/ld+json"
@@ -175,6 +190,34 @@ export default function RootLayout({
                 'query-input': 'required name=search_term_string',
               },
             }),
+          }}
+        />
+        {/* Structured Data - FAQ */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(faqSchema),
+          }}
+        />
+        {/* Structured Data - Product */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(productSchema),
+          }}
+        />
+        {/* Structured Data - Service */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(serviceSchema),
+          }}
+        />
+        {/* Structured Data - HowTo */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(howToSchema),
           }}
         />
       </head>
