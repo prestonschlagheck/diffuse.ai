@@ -40,20 +40,20 @@ export default function HowItWorksInteractive() {
     // Reset progress
     setProgress(0)
     
-    // Start new progress animation (5 seconds = 5000ms, update every 50ms = 100 steps)
+    // Start new progress animation (8 seconds = 8000ms, update every 50ms = 160 steps)
     let currentProgress = 0
     progressIntervalRef.current = setInterval(() => {
-      currentProgress += 1 // 1% per 50ms = 100% in 5 seconds
+      currentProgress += 0.625 // 0.625% per 50ms = 100% in 8 seconds
       setProgress(currentProgress)
       if (currentProgress >= 100) {
         if (progressIntervalRef.current) clearInterval(progressIntervalRef.current)
       }
     }, 50)
     
-    // Auto-advance after 5 seconds
+    // Auto-advance after 8 seconds
     timerRef.current = setTimeout(() => {
       nextStep()
-    }, 5000)
+    }, 8000)
   }
 
   useEffect(() => {
