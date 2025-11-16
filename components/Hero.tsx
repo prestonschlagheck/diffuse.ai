@@ -32,51 +32,47 @@ export default function Hero() {
 
       {/* Content */}
       <div className="relative z-10 container-padding w-full">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left Side - Image */}
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="relative order-2 lg:order-1"
-            >
-              <div className="relative w-full aspect-square max-w-lg mx-auto lg:mx-0">
-                <Image
-                  src="/figure.png"
-                  alt="Diffuse AI Illustration"
-                  fill
-                  className="object-contain"
-                  priority
-                />
-              </div>
-            </motion.div>
+        <div className="max-w-7xl mx-auto relative">
+          {/* Large Figure Image - Overlapping */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-full lg:w-[55%] max-w-3xl z-0 pointer-events-none"
+          >
+            <div className="relative w-full aspect-square">
+              <Image
+                src="/figure.png"
+                alt="Diffuse AI Illustration"
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
+          </motion.div>
 
-            {/* Right Side - Content */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
+          {/* Content - Layered on top */}
+          <div className="relative z-10">
+            {/* Full Width Title */}
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="order-1 lg:order-2 text-center lg:text-left"
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="text-display-sm md:text-display-md lg:text-display-lg font-bold mb-8 text-center lg:text-left w-full"
             >
-              {/* Main Headline */}
-              <motion.h1
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                className="text-display-sm md:text-display-md lg:text-display-lg font-bold mb-6"
-              >
-                Reviving <span className="gradient-text">Local News</span>
-                <br />
-                Through Smart Automation
-              </motion.h1>
+              Reviving <span className="gradient-text">Local News</span>
+              <br />
+              Through Smart Automation
+            </motion.h1>
 
+            {/* Right-aligned Content */}
+            <div className="lg:ml-auto lg:max-w-xl">
               {/* Subheadline */}
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.4 }}
-                className="text-body-md md:text-body-lg text-medium-gray mb-10 max-w-2xl lg:max-w-none"
+                className="text-body-md md:text-body-lg text-medium-gray mb-10 text-center lg:text-left"
               >
                 API-driven automation that transforms local meetings into news articles—no human intervention required. 
                 Built for scalable, tech-first journalism.
@@ -93,7 +89,7 @@ export default function Hero() {
                   Schedule a Demo
                 </button>
               </motion.div>
-            </motion.div>
+            </div>
           </div>
         </div>
       </div>
