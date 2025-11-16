@@ -41,7 +41,7 @@ export default function UseCases() {
                 className="glass-container p-10 md:p-14 mb-12 overflow-hidden group"
               >
                 {/* Content Grid */}
-                <div className="grid lg:grid-cols-2 gap-12 items-start">
+                <div className="grid lg:grid-cols-2 gap-12 items-stretch">
                 {/* Left Content */}
                 <div>
                   {/* River Press Text Logo */}
@@ -78,18 +78,18 @@ export default function UseCases() {
                 </div>
 
                 {/* Right Visual */}
-                <div className="relative">
+                <div className="relative flex flex-col h-full">
                   {/* Badge - Above Image */}
                   <div className="overflow-hidden rounded-t-glass">
-                    <div className="bg-cosmic-orange/90 px-4 py-3 flex items-center justify-center">
-                      <span className="text-body-sm font-bold text-black uppercase tracking-wider">
+                    <div className="bg-[#3391af]/90 px-4 py-3 flex items-center justify-center">
+                      <span className="text-body-sm font-bold text-white uppercase tracking-wider">
                         Pilot Partner
                       </span>
                     </div>
                   </div>
 
-                  {/* Placeholder for Screenshot */}
-                  <div className="glass-container aspect-[4/3] flex items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-500 rounded-none border-t-0 border-b-0">
+                  {/* Placeholder for Screenshot - Flex Grow to Fill Space */}
+                  <div className="glass-container flex-1 flex items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-500 rounded-none border-t-0 border-b-0">
                     <div className="absolute inset-0 bg-gradient-to-br from-[#3391af]/10 to-[#57959f]/10" />
                     <div className="relative z-10 text-center p-8">
                       <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-4 text-[#3391af]">
@@ -105,8 +105,8 @@ export default function UseCases() {
 
                   {/* Stats Badge - Below Image */}
                   <div className="overflow-hidden rounded-b-glass">
-                    <div className="bg-cosmic-orange/90 px-4 py-3 flex items-center justify-center gap-3">
-                      <span className="text-body-md font-bold text-black">12K+ Monthly Readers</span>
+                    <div className="bg-[#3391af]/90 px-4 py-3 flex items-center justify-center gap-3">
+                      <span className="text-body-md font-bold text-white">12K+ Monthly Readers</span>
                     </div>
                   </div>
                 </div>
