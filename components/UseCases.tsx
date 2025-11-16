@@ -36,9 +36,7 @@ export default function UseCases() {
             transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           >
               <motion.div
-                whileHover={{ scale: 1.01 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                className="glass-container p-10 md:p-14 mb-12 overflow-hidden group"
+                className="glass-container p-10 md:p-14 mb-12 overflow-hidden"
               >
                 {/* Content Grid */}
                 <div className="grid lg:grid-cols-2 gap-12 items-stretch">
@@ -89,7 +87,7 @@ export default function UseCases() {
                   </div>
 
                   {/* Placeholder for Screenshot - Flex Grow to Fill Space */}
-                  <div className="glass-container flex-1 flex items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-500 rounded-none border-t-0 border-b-0">
+                  <div className="glass-container flex-1 flex items-center justify-center relative overflow-hidden rounded-none border-t-0 border-b-0">
                     <div className="absolute inset-0 bg-gradient-to-br from-[#3391af]/10 to-[#57959f]/10" />
                     <div className="relative z-10 text-center p-8">
                       <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-4 text-[#3391af]">
