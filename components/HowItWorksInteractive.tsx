@@ -1,7 +1,7 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 const steps = [
   {
@@ -28,6 +28,43 @@ const steps = [
 
 export default function HowItWorksInteractive() {
   const [currentStep, setCurrentStep] = useState(0)
+  const [progress, setProgress] = useState(0)
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
+
+  const resetTimer = () => {
+    // Clear existing timers
+    if (timerRef.current) clearTimeout(timerRef.current)
+    if (progressIntervalRef.current) clearInterval(progressIntervalRef.current)
+    
+    // Reset progress
+    setProgress(0)
+    
+    // Start new progress animation (5 seconds = 5000ms, update every 50ms = 100 steps)
+    let currentProgress = 0
+    progressIntervalRef.current = setInterval(() => {
+      currentProgress += 2 // 2% per 50ms = 100% in 2.5 seconds
+      setProgress(currentProgress)
+      if (currentProgress >= 100) {
+        if (progressIntervalRef.current) clearInterval(progressIntervalRef.current)
+      }
+    }, 50)
+    
+    // Auto-advance after 5 seconds
+    timerRef.current = setTimeout(() => {
+      nextStep()
+    }, 5000)
+  }
+
+  useEffect(() => {
+    resetTimer()
+    
+    // Cleanup on unmount
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current)
+    }
+  }, [currentStep])
 
   const nextStep = () => {
     setCurrentStep((prev) => (prev + 1) % steps.length)
@@ -35,6 +72,10 @@ export default function HowItWorksInteractive() {
 
   const prevStep = () => {
     setCurrentStep((prev) => (prev - 1 + steps.length) % steps.length)
+  }
+
+  const handleManualStepChange = (index: number) => {
+    setCurrentStep(index)
   }
 
   return (
@@ -62,6 +103,17 @@ export default function HowItWorksInteractive() {
           </motion.div>
         </AnimatePresence>
 
+        {/* Progress Bar */}
+        <div className="relative h-2 bg-white/5 overflow-hidden rounded-b-glass">
+          <motion.div
+            key={`progress-${currentStep}`}
+            className="absolute top-0 left-0 h-full bg-cosmic-orange/90"
+            initial={{ width: '0%' }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.05, ease: 'linear' }}
+          />
+        </div>
+
         {/* Navigation */}
         <div className="flex items-center justify-between px-6 pb-6 border-t border-white/10 pt-4">
           <button
@@ -79,7 +131,7 @@ export default function HowItWorksInteractive() {
             {steps.map((_, index) => (
               <button
                 key={index}
-                onClick={() => setCurrentStep(index)}
+                onClick={() => handleManualStepChange(index)}
                 className={`w-2 h-2 rounded-full transition-all duration-300 ${
                   index === currentStep ? 'bg-cosmic-orange w-8' : 'bg-white/20'
                 }`}
