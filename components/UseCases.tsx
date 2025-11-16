@@ -44,8 +44,9 @@ export default function UseCases() {
                 <div className="grid lg:grid-cols-2 gap-12 items-start">
                 {/* Left Content */}
                 <div>
+                  {/* River Press Text Logo */}
                   <h3 className="text-display-sm md:text-display-md font-bold mb-6">
-                    The Schuylkill River Press
+                    The Schuylkill <span className="text-[#dbdbdb]">River</span><span className="text-[#3391af]">Press</span>
                   </h3>
                   <p className="text-body-md text-secondary-white mb-6 leading-relaxed">
                     Digital-first local news outlet serving the Spring-Ford area 
@@ -71,7 +72,7 @@ export default function UseCases() {
                     ))}
                   </div>
 
-                  <button className="btn-primary">
+                  <button className="bg-[#3391af] hover:bg-[#57959f] text-white px-8 py-3 rounded-glass font-semibold transition-all duration-300 hover:scale-105">
                     Visit SchuylkillRiverPress.com →
                   </button>
                 </div>
@@ -80,17 +81,17 @@ export default function UseCases() {
                 <div className="relative">
                   {/* Badge - Above Image */}
                   <div className="inline-flex items-center gap-2 glass-container-sm px-4 py-2 mb-4">
-                    <div className="w-2 h-2 bg-cosmic-orange rounded-full animate-pulse" />
-                    <span className="text-body-sm text-cosmic-orange font-semibold uppercase tracking-wider">
+                    <div className="w-2 h-2 bg-[#3391af] rounded-full animate-pulse" />
+                    <span className="text-body-sm text-[#3391af] font-semibold uppercase tracking-wider">
                       Pilot Project
                     </span>
                   </div>
 
                   {/* Placeholder for Screenshot */}
                   <div className="glass-container aspect-[4/3] flex items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-500">
-                    <div className="absolute inset-0 bg-gradient-to-br from-cosmic-orange/10 to-dusty-blue/10" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#3391af]/10 to-[#57959f]/10" />
                     <div className="relative z-10 text-center p-8">
-                      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-4 text-cosmic-orange">
+                      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-4 text-[#3391af]">
                         <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
                       </svg>
                       <p className="text-body-sm text-medium-gray">
@@ -102,8 +103,8 @@ export default function UseCases() {
                   </div>
 
                   {/* Stats Overlay */}
-                  <div className="absolute -bottom-4 -right-4 glass-container p-4">
-                    <div className="text-heading-xl font-bold gradient-text">12K+</div>
+                  <div className="absolute -bottom-4 -right-4 glass-container p-4 border-[#3391af]/20">
+                    <div className="text-heading-xl font-bold text-[#3391af]">12K+</div>
                     <div className="text-caption text-medium-gray">Monthly Readers</div>
                   </div>
                 </div>
