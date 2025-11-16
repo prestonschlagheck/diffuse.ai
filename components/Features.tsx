@@ -172,12 +172,9 @@ export default function Features() {
                 <p className="text-body-md text-secondary-white mb-5">
                   Ready to automate your newsroom? Let&apos;s discuss how Diffuse fits your workflow.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <div className="flex justify-center">
                   <button className="btn-primary px-6 py-3 text-body-sm">
                     Schedule Integration Call
-                  </button>
-                  <button className="btn-secondary px-6 py-3 text-body-sm">
-                    View API Docs
                   </button>
                 </div>
               </div>

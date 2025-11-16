@@ -2,7 +2,7 @@
 
 import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
-import HowItWorksScroll from './HowItWorksScroll'
+import HowItWorksInteractive from './HowItWorksInteractive'
 
 const steps = [
   {
@@ -56,8 +56,8 @@ export default function HowItWorks() {
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   return (
-    <section id="process" ref={ref} className="relative bg-dark-gray/30 scroll-mt-20">
-      <div className="container-padding py-16 md:py-20">
+    <section id="process" ref={ref} className="relative bg-dark-gray/30 scroll-mt-20 py-16 md:py-20">
+      <div className="container-padding">
         <div className="max-w-6xl mx-auto">
           {/* Section Header */}
           <motion.div
@@ -72,18 +72,18 @@ export default function HowItWorks() {
             <h2 className="text-display-sm md:text-display-md font-bold mb-4">
               How <span className="gradient-text">Diffuse</span> Works
             </h2>
-            <p className="text-body-md text-medium-gray max-w-2xl mx-auto">
+            <p className="text-body-md text-medium-gray max-w-2xl mx-auto mb-8">
               Fully automated workflow from capture to publication. API-first, zero manual intervention.
             </p>
           </motion.div>
+
+          {/* Interactive Steps */}
+          <HowItWorksInteractive />
         </div>
       </div>
 
-      {/* Scroll-based Animation */}
-      <HowItWorksScroll />
-
-      {/* Old Steps - Hidden on desktop, shown on mobile */}
-      <div className="md:hidden container-padding pb-16">
+      {/* Old Mobile Steps - Keep for reference but hidden */}
+      <div className="hidden">
         <div className="max-w-6xl mx-auto">
           <div className="space-y-6">
             {steps.map((step, index) => (

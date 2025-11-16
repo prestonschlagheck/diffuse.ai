@@ -79,8 +79,8 @@ export default function UseCases() {
 
                 {/* Right Visual */}
                 <div className="relative">
-                  {/* Badge - Above Image */}
-                  <div className="inline-flex items-center gap-2 glass-container-sm px-4 py-2 mb-4">
+                  {/* Badge - Above Image (Full Width) */}
+                  <div className="flex items-center justify-center gap-2 bg-[#3391af]/20 backdrop-blur-sm px-4 py-2 mb-0 border-b border-[#3391af]/30">
                     <div className="w-2 h-2 bg-[#3391af] rounded-full animate-pulse" />
                     <span className="text-body-sm text-[#3391af] font-semibold uppercase tracking-wider">
                       Pilot Project
@@ -88,7 +88,7 @@ export default function UseCases() {
                   </div>
 
                   {/* Placeholder for Screenshot */}
-                  <div className="glass-container aspect-[4/3] flex items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-500">
+                  <div className="glass-container aspect-[4/3] flex items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-500 rounded-t-none">
                     <div className="absolute inset-0 bg-gradient-to-br from-[#3391af]/10 to-[#57959f]/10" />
                     <div className="relative z-10 text-center p-8">
                       <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-4 text-[#3391af]">
@@ -102,10 +102,10 @@ export default function UseCases() {
                     </div>
                   </div>
 
-                  {/* Stats Overlay */}
-                  <div className="absolute -bottom-4 -right-4 glass-container p-4 border-[#3391af]/20">
-                    <div className="text-heading-xl font-bold text-[#3391af]">12K+</div>
-                    <div className="text-caption text-medium-gray">Monthly Readers</div>
+                  {/* Stats Badge - Below Image (Full Width) */}
+                  <div className="flex items-center justify-center gap-3 bg-[#3391af]/20 backdrop-blur-sm px-4 py-3 border-t border-[#3391af]/30">
+                    <div className="text-heading-lg font-bold text-[#3391af]">12K+</div>
+                    <div className="text-body-sm text-medium-gray">Monthly Readers</div>
                   </div>
                 </div>
               </div>
@@ -120,57 +120,57 @@ export default function UseCases() {
             className="grid md:grid-cols-3 gap-6"
           >
             {/* Media Outlets */}
-            <motion.div
-              whileHover={{ y: -5 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-              className="glass-container p-6 group cursor-pointer"
-            >
-              <div className="w-10 h-10 rounded-glass-sm bg-cosmic-orange/10 flex items-center justify-center mb-4 group-hover:bg-cosmic-orange/20 transition-colors duration-300">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-cosmic-orange">
-                  <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-                  <line x1="4" y1="22" x2="4" y2="15" />
-                </svg>
+            <div className="glass-container p-5 group cursor-pointer hover:bg-white/10 transition-colors duration-300">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-glass bg-cosmic-orange/10 flex items-center justify-center flex-shrink-0 group-hover:bg-cosmic-orange/20 transition-colors duration-300">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-cosmic-orange">
+                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                    <line x1="4" y1="22" x2="4" y2="15" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-body-md font-bold mb-1 group-hover:text-cosmic-orange transition-colors duration-300">Media Outlets</h3>
+                  <p className="text-body-sm text-medium-gray leading-relaxed">
+                    License Diffuse to augment your newsroom capabilities
+                  </p>
+                </div>
               </div>
-              <h3 className="text-heading-md font-bold mb-2">Media Outlets</h3>
-              <p className="text-body-sm text-medium-gray leading-relaxed">
-                License Diffuse to augment your newsroom capabilities and expand coverage without expanding costs.
-              </p>
-            </motion.div>
+            </div>
 
             {/* Municipalities */}
-            <motion.div
-              whileHover={{ y: -5 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-              className="glass-container p-6 group cursor-pointer"
-            >
-              <div className="w-10 h-10 rounded-glass-sm bg-cosmic-orange/10 flex items-center justify-center mb-4 group-hover:bg-cosmic-orange/20 transition-colors duration-300">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-cosmic-orange">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                  <polyline points="9 22 9 12 15 12 15 22" />
-                </svg>
+            <div className="glass-container p-5 group cursor-pointer hover:bg-white/10 transition-colors duration-300">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-glass bg-cosmic-orange/10 flex items-center justify-center flex-shrink-0 group-hover:bg-cosmic-orange/20 transition-colors duration-300">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-cosmic-orange">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                    <polyline points="9 22 9 12 15 12 15 22" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-body-md font-bold mb-1 group-hover:text-cosmic-orange transition-colors duration-300">Municipalities</h3>
+                  <p className="text-body-sm text-medium-gray leading-relaxed">
+                    Improve transparency with auto-generated summaries
+                  </p>
+                </div>
               </div>
-              <h3 className="text-heading-md font-bold mb-2">Municipalities</h3>
-              <p className="text-body-sm text-medium-gray leading-relaxed">
-                Improve transparency with auto-generated meeting summaries for your residents.
-              </p>
-            </motion.div>
+            </div>
 
             {/* Nonprofits */}
-            <motion.div
-              whileHover={{ y: -5 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-              className="glass-container p-6 group cursor-pointer"
-            >
-              <div className="w-10 h-10 rounded-glass-sm bg-cosmic-orange/10 flex items-center justify-center mb-4 group-hover:bg-cosmic-orange/20 transition-colors duration-300">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-cosmic-orange">
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                </svg>
+            <div className="glass-container p-5 group cursor-pointer hover:bg-white/10 transition-colors duration-300">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-glass bg-cosmic-orange/10 flex items-center justify-center flex-shrink-0 group-hover:bg-cosmic-orange/20 transition-colors duration-300">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-cosmic-orange">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-body-md font-bold mb-1 group-hover:text-cosmic-orange transition-colors duration-300">Nonprofits</h3>
+                  <p className="text-body-sm text-medium-gray leading-relaxed">
+                    Deploy Diffuse to serve underrepresented communities
+                  </p>
+                </div>
               </div>
-              <h3 className="text-heading-md font-bold mb-2">Nonprofits</h3>
-              <p className="text-body-sm text-medium-gray leading-relaxed">
-                Civic journalism organizations can deploy Diffuse to serve underrepresented communities.
-              </p>
-            </motion.div>
+            </div>
           </motion.div>
 
           {/* CTA Section - Compact */}

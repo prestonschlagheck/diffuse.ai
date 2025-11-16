@@ -51,8 +51,8 @@ const config: Config = {
         '20': '5rem',
       },
       borderRadius: {
-        'glass': '24px',
-        'glass-sm': '16px',
+        'glass': '12px',
+        'glass-sm': '12px',
       },
       backdropBlur: {
         'glass': '20px',

@@ -69,9 +69,6 @@ export default function Hero() {
             <button className="btn-primary text-body-md w-full sm:w-auto">
               Schedule a Demo
             </button>
-            <button className="btn-secondary text-body-md w-full sm:w-auto">
-              View API Docs
-            </button>
           </motion.div>
         </motion.div>
       </div>
