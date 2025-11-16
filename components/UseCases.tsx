@@ -123,16 +123,16 @@ export default function UseCases() {
             <motion.div
               whileHover={{ y: -5 }}
               transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-              className="glass-container p-8 group cursor-pointer"
+              className="glass-container p-6 group cursor-pointer"
             >
-              <div className="w-14 h-14 rounded-glass-sm bg-cosmic-orange/10 flex items-center justify-center mb-6 group-hover:bg-cosmic-orange/20 transition-colors duration-300">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-cosmic-orange">
+              <div className="w-10 h-10 rounded-glass-sm bg-cosmic-orange/10 flex items-center justify-center mb-4 group-hover:bg-cosmic-orange/20 transition-colors duration-300">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-cosmic-orange">
                   <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
                   <line x1="4" y1="22" x2="4" y2="15" />
                 </svg>
               </div>
-              <h3 className="text-heading-lg font-bold mb-4">Media Outlets</h3>
-              <p className="text-body-md text-medium-gray leading-relaxed">
+              <h3 className="text-heading-md font-bold mb-2">Media Outlets</h3>
+              <p className="text-body-sm text-medium-gray leading-relaxed">
                 License Diffuse to augment your newsroom capabilities and expand coverage without expanding costs.
               </p>
             </motion.div>
@@ -141,16 +141,16 @@ export default function UseCases() {
             <motion.div
               whileHover={{ y: -5 }}
               transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-              className="glass-container p-8 group cursor-pointer"
+              className="glass-container p-6 group cursor-pointer"
             >
-              <div className="w-14 h-14 rounded-glass-sm bg-cosmic-orange/10 flex items-center justify-center mb-6 group-hover:bg-cosmic-orange/20 transition-colors duration-300">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-cosmic-orange">
+              <div className="w-10 h-10 rounded-glass-sm bg-cosmic-orange/10 flex items-center justify-center mb-4 group-hover:bg-cosmic-orange/20 transition-colors duration-300">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-cosmic-orange">
                   <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                   <polyline points="9 22 9 12 15 12 15 22" />
                 </svg>
               </div>
-              <h3 className="text-heading-lg font-bold mb-4">Municipalities</h3>
-              <p className="text-body-md text-medium-gray leading-relaxed">
+              <h3 className="text-heading-md font-bold mb-2">Municipalities</h3>
+              <p className="text-body-sm text-medium-gray leading-relaxed">
                 Improve transparency with auto-generated meeting summaries for your residents.
               </p>
             </motion.div>
@@ -159,15 +159,15 @@ export default function UseCases() {
             <motion.div
               whileHover={{ y: -5 }}
               transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-              className="glass-container p-8 group cursor-pointer"
+              className="glass-container p-6 group cursor-pointer"
             >
-              <div className="w-14 h-14 rounded-glass-sm bg-cosmic-orange/10 flex items-center justify-center mb-6 group-hover:bg-cosmic-orange/20 transition-colors duration-300">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-cosmic-orange">
+              <div className="w-10 h-10 rounded-glass-sm bg-cosmic-orange/10 flex items-center justify-center mb-4 group-hover:bg-cosmic-orange/20 transition-colors duration-300">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-cosmic-orange">
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                 </svg>
               </div>
-              <h3 className="text-heading-lg font-bold mb-4">Nonprofits</h3>
-              <p className="text-body-md text-medium-gray leading-relaxed">
+              <h3 className="text-heading-md font-bold mb-2">Nonprofits</h3>
+              <p className="text-body-sm text-medium-gray leading-relaxed">
                 Civic journalism organizations can deploy Diffuse to serve underrepresented communities.
               </p>
             </motion.div>
@@ -184,8 +184,8 @@ export default function UseCases() {
               <h3 className="text-heading-xl font-bold mb-3">
                 Ready to Transform Your Newsroom?
               </h3>
-              <p className="text-body-md text-medium-gray mb-6 max-w-xl mx-auto">
-                See how Diffuse integrates with your workflow. Schedule a demo today.
+              <p className="text-body-md text-medium-gray mb-6 max-w-2xl mx-auto">
+                See how Diffuse integrates with your workflow—schedule a demo today.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button className="btn-primary px-6 py-3 text-body-sm">

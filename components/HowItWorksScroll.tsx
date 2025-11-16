@@ -51,58 +51,70 @@ const steps = [
 ]
 
 const StepCard = ({ step, index, scrollYProgress }: { step: typeof steps[0], index: number, scrollYProgress: any }) => {
+  const totalSteps = steps.length
+  const stepProgress = 1 / totalSteps
+  const start = index * stepProgress
+  const end = (index + 1) * stepProgress
+  
+  // Card appears and slides up as if dealing cards
+  const y = useTransform(
+    scrollYProgress,
+    [start, start + stepProgress * 0.3, end - stepProgress * 0.3, end],
+    [100, 0, 0, -100]
+  )
+  
   const opacity = useTransform(
     scrollYProgress,
-    [
-      (index * 0.2) + 0.1,
-      (index * 0.2) + 0.3,
-      (index * 0.2) + 0.5,
-      (index * 0.2) + 0.7,
-    ],
+    [start, start + stepProgress * 0.2, end - stepProgress * 0.2, end],
     [0, 1, 1, 0]
   )
   
   const scale = useTransform(
     scrollYProgress,
-    [
-      (index * 0.2) + 0.1,
-      (index * 0.2) + 0.3,
-      (index * 0.2) + 0.5,
-      (index * 0.2) + 0.7,
-    ],
-    [0.8, 1, 1, 0.8]
+    [start, start + stepProgress * 0.3, end - stepProgress * 0.3, end],
+    [0.85, 1, 1, 0.85]
+  )
+  
+  const rotateX = useTransform(
+    scrollYProgress,
+    [start, start + stepProgress * 0.3, end - stepProgress * 0.3, end],
+    [10, 0, 0, -10]
   )
 
   return (
     <motion.div
       style={{
+        y,
         opacity,
         scale,
+        rotateX,
         position: 'absolute' as const,
-        inset: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        top: '50%',
+        left: '50%',
+        translateX: '-50%',
+        translateY: '-50%',
+        width: '100%',
+        maxWidth: '900px',
       }}
     >
-      <div className="glass-container p-10 md:p-14 max-w-3xl w-full">
-        <div className="flex flex-col md:flex-row items-center gap-8 text-center md:text-left">
+      <div className="glass-container p-8 md:p-10">
+        <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
           {/* Number & Icon */}
-          <div className="flex flex-col items-center gap-4">
-            <div className="text-7xl md:text-8xl font-bold text-cosmic-orange/40">
+          <div className="flex flex-col items-center gap-3 flex-shrink-0">
+            <div className="text-6xl md:text-7xl font-bold text-cosmic-orange/40">
               {step.number}
             </div>
-            <div className="w-20 h-20 rounded-glass bg-cosmic-orange/20 flex items-center justify-center text-cosmic-orange">
+            <div className="w-16 h-16 rounded-glass bg-cosmic-orange/20 flex items-center justify-center text-cosmic-orange">
               {step.icon}
             </div>
           </div>
 
           {/* Content */}
           <div className="flex-1">
-            <h3 className="text-display-sm md:text-display-md font-bold mb-4 gradient-text">
+            <h3 className="text-heading-xl md:text-display-sm font-bold mb-3 gradient-text">
               {step.title}
             </h3>
-            <p className="text-body-lg text-medium-gray leading-relaxed">
+            <p className="text-body-md text-medium-gray leading-relaxed">
               {step.description}
             </p>
           </div>
@@ -117,14 +129,14 @@ export default function HowItWorksScroll() {
   
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ["start end", "end start"]
+    offset: ["start start", "end end"]
   })
 
   return (
-    <div ref={containerRef} className="relative min-h-[200vh]">
+    <div ref={containerRef} className="relative h-[400vh]">
       <div className="sticky top-0 h-screen flex items-center justify-center overflow-hidden">
         <div className="container-padding w-full">
-          <div className="max-w-4xl mx-auto relative h-full">
+          <div className="relative h-[600px] md:h-[500px]">
             {steps.map((step, index) => (
               <StepCard key={index} step={step} index={index} scrollYProgress={scrollYProgress} />
             ))}
