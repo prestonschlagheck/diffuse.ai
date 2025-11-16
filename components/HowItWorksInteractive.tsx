@@ -43,7 +43,7 @@ export default function HowItWorksInteractive() {
     // Start new progress animation (5 seconds = 5000ms, update every 50ms = 100 steps)
     let currentProgress = 0
     progressIntervalRef.current = setInterval(() => {
-      currentProgress += 2 // 2% per 50ms = 100% in 2.5 seconds
+      currentProgress += 1 // 1% per 50ms = 100% in 5 seconds
       setProgress(currentProgress)
       if (currentProgress >= 100) {
         if (progressIntervalRef.current) clearInterval(progressIntervalRef.current)
@@ -103,17 +103,6 @@ export default function HowItWorksInteractive() {
           </motion.div>
         </AnimatePresence>
 
-        {/* Progress Bar */}
-        <div className="relative h-2 bg-white/5 overflow-hidden rounded-b-glass">
-          <motion.div
-            key={`progress-${currentStep}`}
-            className="absolute top-0 left-0 h-full bg-cosmic-orange/90"
-            initial={{ width: '0%' }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.05, ease: 'linear' }}
-          />
-        </div>
-
         {/* Navigation */}
         <div className="flex items-center justify-between px-6 pb-6 border-t border-white/10 pt-4">
           <button
@@ -148,6 +137,17 @@ export default function HowItWorksInteractive() {
               <path d="M9 18l6-6-6-6" />
             </svg>
           </button>
+        </div>
+
+        {/* Progress Bar - Below Navigation */}
+        <div className="relative h-2 bg-white/5 overflow-hidden rounded-b-glass">
+          <motion.div
+            key={`progress-${currentStep}`}
+            className="absolute top-0 left-0 h-full bg-cosmic-orange/90"
+            initial={{ width: '0%' }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.05, ease: 'linear' }}
+          />
         </div>
       </div>
     </div>
