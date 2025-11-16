@@ -49,10 +49,9 @@ export default function About() {
           {/* Headline */}
           <motion.h2
             variants={itemVariants}
-            className="text-display-sm md:text-display-md font-bold mb-8"
+            className="text-heading-xl font-bold mb-8"
           >
-            A New Kind of{' '}
-            <span className="gradient-text">Local News Company</span>
+            A New Kind of <span className="gradient-text">Local News Company</span>
           </motion.h2>
 
           {/* Main Content Glass Container */}

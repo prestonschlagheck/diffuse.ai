@@ -107,11 +107,11 @@ export default function Features() {
             <span className="text-cosmic-orange text-caption uppercase tracking-wider font-semibold mb-3 block">
               Capabilities
             </span>
-            <h2 className="text-display-sm md:text-display-md font-bold mb-4">
+            <h2 className="text-heading-xl font-bold mb-4">
               Powerful <span className="gradient-text">AI Features</span>
             </h2>
-            <p className="text-body-md text-medium-gray max-w-2xl mx-auto">
-              Enterprise-grade NLP trained on journalistic standards. API-accessible for seamless integration.
+            <p className="text-body-md text-medium-gray">
+              Enterprise-grade NLP with API-accessible integration
             </p>
           </motion.div>
 
@@ -126,12 +126,11 @@ export default function Features() {
             className="mt-12"
           >
             <div className="glass-container p-8 md:p-10">
-              <h3 className="text-heading-xl md:text-display-sm font-bold mb-4 text-center">
+              <h3 className="text-heading-xl font-bold mb-4 text-center">
                 Integrate with Your Workflow
               </h3>
-              <p className="text-body-md text-medium-gray mb-8 text-center max-w-3xl mx-auto">
-                Diffuse plugs directly into your existing systems. Whether you use WordPress, custom CMS, 
-                or proprietary publishing platforms—our API adapts to your workflow.
+              <p className="text-body-md text-medium-gray mb-8 text-center">
+                Seamless API integration with WordPress, CMS, and publishing platforms
               </p>
 
               <div className="grid md:grid-cols-3 gap-4 mb-8">

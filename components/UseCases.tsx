@@ -21,11 +21,11 @@ export default function UseCases() {
             <span className="text-cosmic-orange text-caption uppercase tracking-wider font-semibold mb-4 block">
               In Action
             </span>
-            <h2 className="text-display-sm md:text-display-md lg:text-display-lg font-bold mb-6">
+            <h2 className="text-heading-xl font-bold mb-6">
               Powering <span className="gradient-text">Real Newsrooms</span>
             </h2>
-            <p className="text-body-lg text-medium-gray max-w-3xl mx-auto">
-              See how Diffuse is transforming local journalism, one community at a time.
+            <p className="text-body-md text-medium-gray">
+              Transforming local journalism one community at a time
             </p>
           </motion.div>
 

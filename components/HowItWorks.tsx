@@ -69,11 +69,11 @@ export default function HowItWorks() {
             <span className="text-cosmic-orange text-caption uppercase tracking-wider font-semibold mb-3 block">
               The Process
             </span>
-            <h2 className="text-display-sm md:text-display-md font-bold mb-4">
+            <h2 className="text-heading-xl font-bold mb-4">
               How <span className="gradient-text">Diffuse</span> Works
             </h2>
-            <p className="text-body-md text-medium-gray max-w-2xl mx-auto mb-8">
-              Fully automated workflow from capture to publication. API-first, zero manual intervention.
+            <p className="text-body-md text-medium-gray mb-8">
+              API-first automated workflow from capture to publication
             </p>
           </motion.div>
 
