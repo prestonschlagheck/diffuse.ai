@@ -77,20 +77,20 @@ const SoundwaveToText = () => {
                   transition={{ duration: 0.4 }}
                   className="absolute inset-0 flex items-center justify-center"
                 >
-                  <div className="flex items-center justify-center gap-[3px] md:gap-1">
-                    {[...Array(24)].map((_, i) => (
+                  <div className="flex items-center justify-center gap-[5px]">
+                    {[...Array(48)].map((_, i) => (
                       <motion.div
                         key={i}
-                        className="w-1 md:w-1.5 bg-gradient-to-t from-cosmic-orange to-rich-orange rounded-full"
-                        initial={{ height: 8 }}
+                        className="w-[3px] md:w-1 bg-gradient-to-t from-cosmic-orange to-rich-orange rounded-full"
+                        style={{ height: 8 }}
                         animate={{
-                          height: [8, Math.random() * 60 + 20, 8],
+                          height: [8, 20 + (i % 5) * 15, 8],
                         }}
                         transition={{
-                          duration: 0.6 + Math.random() * 0.4,
+                          duration: 0.5 + (i % 3) * 0.2,
                           repeat: Infinity,
                           repeatType: 'reverse',
-                          delay: i * 0.03,
+                          delay: i * 0.015,
                           ease: 'easeInOut',
                         }}
                       />
@@ -110,19 +110,19 @@ const SoundwaveToText = () => {
                   className="absolute inset-0 flex items-center justify-center"
                 >
                   <motion.div
-                    className="flex items-center gap-[3px] md:gap-1"
+                    className="flex items-center gap-[5px]"
                     animate={{ 
                       scaleX: [1, 0.5, 0.1],
                       opacity: [1, 0.8, 0]
                     }}
                     transition={{ duration: 0.4, ease: 'easeIn' }}
                   >
-                    {[...Array(24)].map((_, i) => (
+                    {[...Array(48)].map((_, i) => (
                       <motion.div
                         key={i}
-                        className="w-1 md:w-1.5 bg-gradient-to-t from-cosmic-orange to-rich-orange rounded-full"
+                        className="w-[3px] md:w-1 bg-gradient-to-t from-cosmic-orange to-rich-orange rounded-full"
                         animate={{ height: [40, 4] }}
-                        transition={{ duration: 0.3, delay: i * 0.01 }}
+                        transition={{ duration: 0.3, delay: i * 0.006 }}
                       />
                     ))}
                   </motion.div>
