@@ -7,7 +7,6 @@ import { useState, useEffect } from 'react'
 const SoundwaveToText = () => {
   const [currentHeadline, setCurrentHeadline] = useState(0)
   const [displayedText, setDisplayedText] = useState('')
-  const [isTyping, setIsTyping] = useState(false)
   
   const headlines = [
     "Council Approves $2.3M Budget for Road Repairs",
@@ -21,7 +20,6 @@ const SoundwaveToText = () => {
     const currentText = headlines[currentHeadline]
     let charIndex = 0
     setDisplayedText('')
-    setIsTyping(true)
 
     // Start typing after a short delay
     const startDelay = setTimeout(() => {
@@ -31,17 +29,16 @@ const SoundwaveToText = () => {
           charIndex++
         } else {
           clearInterval(typeInterval)
-          setIsTyping(false)
         }
-      }, 40) // Typing speed
+      }, 50) // Typing speed
 
       return () => clearInterval(typeInterval)
-    }, 500)
+    }, 300)
 
     // Move to next headline after display time
     const nextHeadline = setTimeout(() => {
       setCurrentHeadline((prev) => (prev + 1) % headlines.length)
-    }, 5000)
+    }, 6000)
 
     return () => {
       clearTimeout(startDelay)
@@ -76,27 +73,39 @@ const SoundwaveToText = () => {
         </motion.div>
 
         {/* Transformation visualization - Side by side */}
-        <div className="relative glass-container p-6 md:p-8 min-h-[280px] md:min-h-[260px]">
-          <div className="grid md:grid-cols-2 gap-6 md:gap-8 items-center h-full">
-            {/* Left side - Soundwave */}
-            <div className="flex flex-col items-center">
-              <div className="text-cosmic-orange text-[10px] md:text-caption uppercase tracking-wider font-semibold mb-4">
+        <div className="relative glass-container p-6 md:p-8">
+          {/* Fixed labels row */}
+          <div className="grid grid-cols-2 gap-4 md:gap-8 mb-6">
+            <div className="text-center">
+              <span className="text-cosmic-orange text-[10px] md:text-caption uppercase tracking-wider font-semibold">
                 Audio Input
-              </div>
-              <div className="flex items-center justify-center gap-[4px] md:gap-[5px] h-20">
-                {[...Array(32)].map((_, i) => (
+              </span>
+            </div>
+            <div className="text-center">
+              <span className="text-cosmic-orange text-[10px] md:text-caption uppercase tracking-wider font-semibold">
+                Generated Article
+              </span>
+            </div>
+          </div>
+
+          {/* Content row - fixed height */}
+          <div className="grid grid-cols-2 gap-4 md:gap-8 min-h-[100px] md:min-h-[120px]">
+            {/* Left side - Soundwave */}
+            <div className="flex items-center justify-center">
+              <div className="flex items-center justify-center gap-[3px] md:gap-[4px]">
+                {[...Array(28)].map((_, i) => (
                   <motion.div
                     key={i}
                     className="w-[2px] md:w-[3px] bg-gradient-to-t from-cosmic-orange to-rich-orange rounded-full"
                     style={{ height: 8 }}
                     animate={{
-                      height: isTyping ? [8, 20 + (i % 5) * 12, 8] : [8, 12, 8],
+                      height: [8, 15 + (i % 6) * 10, 8, 20 + (i % 4) * 8, 8],
                     }}
                     transition={{
-                      duration: isTyping ? 0.4 + (i % 3) * 0.15 : 1.5,
+                      duration: 1.2 + (i % 3) * 0.3,
                       repeat: Infinity,
-                      repeatType: 'reverse',
-                      delay: i * 0.02,
+                      repeatType: 'loop',
+                      delay: i * 0.03,
                       ease: 'easeInOut',
                     }}
                   />
@@ -104,74 +113,30 @@ const SoundwaveToText = () => {
               </div>
             </div>
 
-            {/* Center arrow - hidden on mobile */}
-            <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-              <motion.div
-                animate={{ x: [0, 5, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                className="w-10 h-10 rounded-full bg-cosmic-orange/20 flex items-center justify-center"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-cosmic-orange">
-                  <path d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
-              </motion.div>
-            </div>
-
-            {/* Mobile arrow */}
-            <div className="flex md:hidden justify-center -my-2">
-              <motion.div
-                animate={{ y: [0, 3, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                className="w-8 h-8 rounded-full bg-cosmic-orange/20 flex items-center justify-center"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-cosmic-orange rotate-90">
-                  <path d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
-              </motion.div>
-            </div>
-
             {/* Right side - Typed text */}
-            <div className="flex flex-col items-center md:items-start">
-              <div className="text-cosmic-orange text-[10px] md:text-caption uppercase tracking-wider font-semibold mb-4 text-center md:text-left">
-                Generated Article
-              </div>
-              <div className="glass-container-sm p-4 md:p-5 w-full min-h-[80px] flex items-center">
+            <div className="flex items-center">
+              <div className="glass-container-sm p-3 md:p-4 w-full min-h-[80px] md:min-h-[90px] flex items-center">
                 <AnimatePresence mode="wait">
                   <motion.p
                     key={currentHeadline}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="text-sm md:text-base font-semibold text-secondary-white leading-relaxed"
+                    className="text-xs md:text-sm font-semibold text-secondary-white leading-relaxed"
                   >
                     {displayedText}
-                    {isTyping && (
-                      <motion.span
-                        animate={{ opacity: [1, 0] }}
-                        transition={{ duration: 0.5, repeat: Infinity }}
-                        className="inline-block w-0.5 h-4 md:h-5 bg-cosmic-orange ml-0.5 align-middle"
-                      />
-                    )}
+                    <motion.span
+                      animate={{ opacity: [1, 0] }}
+                      transition={{ duration: 0.5, repeat: Infinity }}
+                      className="inline-block w-0.5 h-3 md:h-4 bg-cosmic-orange ml-0.5 align-middle"
+                    />
                   </motion.p>
                 </AnimatePresence>
               </div>
-              {!isTyping && displayedText && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="mt-3 flex items-center gap-2 text-medium-gray text-[10px] md:text-xs"
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-500">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                    <polyline points="22 4 12 14.01 9 11.01" />
-                  </svg>
-                  <span>Generated in 4.2 seconds</span>
-                </motion.div>
-              )}
             </div>
           </div>
 
-          {/* Progress indicator dots - fixed at bottom */}
+          {/* Fixed progress indicator dots */}
           <div className="flex justify-center gap-2 mt-6">
             {headlines.map((_, index) => (
               <div
