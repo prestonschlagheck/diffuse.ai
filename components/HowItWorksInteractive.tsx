@@ -7,7 +7,7 @@ const steps = [
   {
     number: 'Step 1',
     title: 'Capture',
-    description: 'Record local government meetings, town halls, or community events using any audio/video device.',
+    description: 'Record local government meetings, town halls, or community events.',
   },
   {
     number: 'Step 2',

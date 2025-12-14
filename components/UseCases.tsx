@@ -44,11 +44,11 @@ export default function UseCases() {
                 <div>
                   {/* River Press Text Logo */}
                   <h3 className="text-heading-xl font-bold mb-6">
-                    <span className="text-[#dbdbdb]">River</span><span className="text-[#3391af]">Press</span>
+                    <span className="text-[#dbdbdb]">Spring-Ford</span> <span className="text-[#3391af]">Press</span>
                   </h3>
                   <p className="text-body-md text-secondary-white mb-6 leading-relaxed">
                     Digital-first local news outlet serving the Spring-Ford area 
-                    of Pennsylvania. Fully automated coverage via API integration with municipal recording systems.
+                    of Pennsylvania. AI-driven automated coverage integrated with municipal recording systems.
                   </p>
 
                   {/* Features */}
@@ -92,14 +92,14 @@ export default function UseCases() {
                       <p className="text-body-sm text-medium-gray">
                         [Screenshot Placeholder]
                         <br />
-                        Schuylkill River Press Homepage
+                        Spring-Ford Press Homepage
                       </p>
                     </div>
                   </button>
 
                   {/* Visit Button - Below Image */}
                   <button className="overflow-hidden rounded-b-glass bg-[#3391af]/90 hover:bg-[#57959f] px-4 py-3 flex items-center justify-center gap-2 transition-all duration-300 hover:scale-105 w-full">
-                    <span className="text-body-md font-bold text-white">Visit RiverPress.com</span>
+                    <span className="text-body-md font-bold text-white">Visit springford.press</span>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white">
                       <path d="M5 12h14M12 5l7 7-7 7" />
                     </svg>

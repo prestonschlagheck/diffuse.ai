@@ -111,7 +111,7 @@ export default function Features() {
               Powerful <span className="gradient-text">AI Features</span>
             </h2>
             <p className="text-body-md text-medium-gray">
-              Enterprise-grade NLP with API-accessible integration
+              Enterprise-grade NLP with seamless integration
             </p>
           </motion.div>
 

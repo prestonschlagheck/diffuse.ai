@@ -39,19 +39,12 @@ export default function About() {
           animate={isInView ? 'visible' : 'hidden'}
           className="max-w-6xl mx-auto"
         >
-          {/* Section Label */}
-          <motion.div variants={itemVariants} className="mb-6">
-            <span className="text-cosmic-orange text-caption uppercase tracking-wider font-semibold">
-              Overview
-            </span>
-          </motion.div>
-
           {/* Headline */}
           <motion.h2
             variants={itemVariants}
             className="text-heading-xl font-bold mb-8"
           >
-            A New Kind of <span className="gradient-text">Local News Company</span>
+            The Infrastructure for <span className="gradient-text">Modern Local News</span>
           </motion.h2>
 
           {/* Main Content Glass Container */}
@@ -60,13 +53,14 @@ export default function About() {
             className="glass-container p-6 md:p-8 mb-6"
           >
             <p className="text-body-md md:text-body-lg text-secondary-white leading-relaxed mb-4">
-              We&apos;re combining <span className="text-cosmic-orange font-semibold">community reporting</span> with{' '}
-              <span className="text-cosmic-orange font-semibold">AI-powered workflows</span> to solve two critical problems 
+              We&apos;re building the <span className="text-cosmic-orange font-semibold">platform</span> that local newsrooms leverage to combine{' '}
+              <span className="text-cosmic-orange font-semibold">community reporting</span> with{' '}
+              <span className="text-cosmic-orange font-semibold">AI-driven workflows</span>—solving two critical problems 
               facing journalism today.
             </p>
             <p className="text-body-sm md:text-body-md text-medium-gray leading-relaxed">
-              The Schuylkill River Press pilot uses our proprietary automation engine to transform meeting recordings 
-              into publication-ready articles—fully automated via API integrations.
+              The Spring-Ford Press pilot uses our proprietary automation engine to transform meeting recordings 
+              into publication-ready articles—enabling efficient, scalable coverage.
             </p>
           </motion.div>
 
@@ -113,13 +107,12 @@ export default function About() {
           {/* Stats Section */}
           <motion.div
             variants={itemVariants}
-            className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4"
+            className="mt-8 grid grid-cols-3 gap-4"
           >
             {[
               { number: '100%', label: 'Automated' },
               { number: '<5min', label: 'Processing' },
               { number: '24/7', label: 'Coverage' },
-              { number: 'GPT 5.1 API', label: 'Top-tier model' },
             ].map((stat, index) => (
               <motion.div
                 key={index}
@@ -143,4 +136,3 @@ export default function About() {
     </section>
   )
 }
-
