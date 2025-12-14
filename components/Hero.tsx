@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react'
 const SoundwaveToText = () => {
   const [currentHeadline, setCurrentHeadline] = useState(0)
   const [displayedText, setDisplayedText] = useState('')
+  const [phase, setPhase] = useState<'wave' | 'thinking' | 'typing'>('wave')
   
   const headlines = [
     "Council Approves $2.3M Budget for Road Repairs",
@@ -20,9 +21,20 @@ const SoundwaveToText = () => {
     const currentText = headlines[currentHeadline]
     let charIndex = 0
     setDisplayedText('')
+    setPhase('wave')
 
-    // Start typing after a short delay
-    const startDelay = setTimeout(() => {
+    // Phase 1: Wave animation (3 seconds)
+    const waveTimer = setTimeout(() => {
+      setPhase('thinking')
+    }, 3000)
+
+    // Phase 2: Thinking animation (1.5 seconds)
+    const thinkingTimer = setTimeout(() => {
+      setPhase('typing')
+      setDisplayedText('')
+      charIndex = 0
+
+      // Phase 3: Typing animation
       const typeInterval = setInterval(() => {
         if (charIndex < currentText.length) {
           setDisplayedText(currentText.slice(0, charIndex + 1))
@@ -30,18 +42,19 @@ const SoundwaveToText = () => {
         } else {
           clearInterval(typeInterval)
         }
-      }, 50) // Typing speed
+      }, 30) // LLM typing speed
 
       return () => clearInterval(typeInterval)
-    }, 300)
+    }, 4500)
 
-    // Move to next headline after display time
+    // Move to next headline after full cycle
     const nextHeadline = setTimeout(() => {
       setCurrentHeadline((prev) => (prev + 1) % headlines.length)
-    }, 6000)
+    }, 3000 + 1500 + (currentText.length * 30) + 2000) // wave + thinking + typing + pause
 
     return () => {
-      clearTimeout(startDelay)
+      clearTimeout(waveTimer)
+      clearTimeout(thinkingTimer)
       clearTimeout(nextHeadline)
     }
   }, [currentHeadline])
@@ -99,10 +112,18 @@ const SoundwaveToText = () => {
                     className="w-[2px] md:w-[3px] bg-gradient-to-t from-cosmic-orange to-rich-orange rounded-full"
                     style={{ height: 8 }}
                     animate={{
-                      height: [8, 15 + (i % 6) * 10, 8, 20 + (i % 4) * 8, 8],
+                      height: phase === 'wave' 
+                        ? [8, 15 + (i % 6) * 10, 8, 20 + (i % 4) * 8, 8]
+                        : phase === 'thinking'
+                        ? [8, 12 + (i % 3) * 4, 8]
+                        : [8, 6, 8],
                     }}
                     transition={{
-                      duration: 1.2 + (i % 3) * 0.3,
+                      duration: phase === 'wave' 
+                        ? 1.2 + (i % 3) * 0.3
+                        : phase === 'thinking'
+                        ? 0.8 + (i % 2) * 0.2
+                        : 1.5,
                       repeat: Infinity,
                       repeatType: 'loop',
                       delay: i * 0.03,
@@ -113,16 +134,47 @@ const SoundwaveToText = () => {
               </div>
             </div>
 
-            {/* Right side - Typed text */}
-            <div className="flex items-center">
-              <div className="glass-container-sm p-3 md:p-4 w-full min-h-[80px] md:min-h-[90px] flex items-center">
-                <AnimatePresence mode="wait">
-                  <motion.p
-                    key={currentHeadline}
+            {/* Right side - Text (no container box) */}
+            <div className="flex items-center justify-center">
+              <AnimatePresence mode="wait">
+                {phase === 'thinking' && (
+                  <motion.div
+                    key="thinking"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="text-xs md:text-sm font-semibold text-secondary-white leading-relaxed"
+                    className="flex items-center gap-2"
+                  >
+                    <span className="text-cosmic-orange text-sm md:text-base font-semibold">
+                      Thinking
+                    </span>
+                    <div className="flex gap-1">
+                      {[0, 1, 2].map((i) => (
+                        <motion.div
+                          key={i}
+                          className="w-1 h-1 rounded-full bg-cosmic-orange"
+                          animate={{
+                            opacity: [0.3, 1, 0.3],
+                            scale: [1, 1.2, 1],
+                          }}
+                          transition={{
+                            duration: 1.2,
+                            repeat: Infinity,
+                            delay: i * 0.2,
+                            ease: 'easeInOut',
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+                {phase === 'typing' && (
+                  <motion.p
+                    key="typing"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="text-xs md:text-sm font-semibold text-cosmic-orange leading-relaxed text-center"
                   >
                     {displayedText}
                     <motion.span
@@ -131,8 +183,17 @@ const SoundwaveToText = () => {
                       className="inline-block w-0.5 h-3 md:h-4 bg-cosmic-orange ml-0.5 align-middle"
                     />
                   </motion.p>
-                </AnimatePresence>
-              </div>
+                )}
+                {phase === 'wave' && (
+                  <motion.div
+                    key="wave"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="w-full"
+                  />
+                )}
+              </AnimatePresence>
             </div>
           </div>
 
