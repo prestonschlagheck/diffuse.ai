@@ -32,7 +32,7 @@ const SoundwaveToText = () => {
   const [displayedSubtitle, setDisplayedSubtitle] = useState('')
   const [displayedBody, setDisplayedBody] = useState('')
   const [typingStage, setTypingStage] = useState<'headline' | 'subtitle' | 'author' | 'body' | 'complete' | 'fadeout'>('headline')
-  const [phase, setPhase] = useState<'listening' | 'recording' | 'transcribing' | 'processing' | 'typing'>('listening')
+  const [phase, setPhase] = useState<'listening' | 'recording-transcribing' | 'processing' | 'typing'>('listening')
   
   const currentArticleData = articles[currentArticle]
 
@@ -50,9 +50,8 @@ const SoundwaveToText = () => {
     setTypingStage('headline')
     setPhase('listening')
 
-    const listeningTimer = setTimeout(() => setPhase('recording'), 1500)
-    const recordingTimer = setTimeout(() => setPhase('transcribing'), 4000)
-    const transcribingTimer = setTimeout(() => setPhase('processing'), 6500)
+    const listeningTimer = setTimeout(() => setPhase('recording-transcribing'), 1500)
+    const recordingTranscribingTimer = setTimeout(() => setPhase('processing'), 5000)
     
     const processingTimer = setTimeout(() => {
       setPhase('typing')
@@ -106,7 +105,7 @@ const SoundwaveToText = () => {
           }, 300)
         }
       }, 40)
-    }, 8000)
+    }, 6500)
 
     // Calculate timing for next article based on first sentence only
     const firstSentenceEnd = currentArticleData.body.indexOf('. ') + 1
@@ -116,12 +115,11 @@ const SoundwaveToText = () => {
     
     const nextArticle = setTimeout(() => {
       setCurrentArticle((prev) => (prev + 1) % articles.length)
-    }, 8000 + (currentArticleData.headline.length * 40) + 300 + (currentArticleData.subtitle.length * 35) + 500 + 100 + 1200)
+    }, 6500 + (currentArticleData.headline.length * 40) + 300 + (currentArticleData.subtitle.length * 35) + 500 + 100 + 1200)
 
     return () => {
       clearTimeout(listeningTimer)
-      clearTimeout(recordingTimer)
-      clearTimeout(transcribingTimer)
+      clearTimeout(recordingTranscribingTimer)
       clearTimeout(processingTimer)
       clearTimeout(nextArticle)
       clearInterval(headlineInterval)
@@ -130,8 +128,8 @@ const SoundwaveToText = () => {
     }
   }, [currentArticle])
 
-  const showAudioLabel = phase === 'listening' || phase === 'recording'
-  const showArticleLabel = phase === 'transcribing' || phase === 'processing' || phase === 'typing'
+  const showAudioLabel = phase === 'listening' || phase === 'recording-transcribing'
+  const showArticleLabel = phase === 'processing' || phase === 'typing'
 
   return (
     <div className="relative w-full flex items-center justify-center overflow-hidden">
@@ -210,49 +208,44 @@ const SoundwaveToText = () => {
                 </motion.div>
               )}
 
-              {/* Phase 2: Recording */}
-              {phase === 'recording' && (
+              {/* Phase 2: Recording + Transcribing (Simultaneous) */}
+              {phase === 'recording-transcribing' && (
                 <motion.div
-                  key="recording"
+                  key="recording-transcribing"
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.3 }}
-                  className="absolute inset-0 flex items-center justify-center px-4 sm:px-8 md:px-12"
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-6 sm:gap-8 px-4 sm:px-6"
                 >
-                  <div className="flex items-center gap-[2px] sm:gap-[3px] md:gap-1 w-full max-w-3xl">
-                    {[...Array(48)].map((_, i) => (
-                      <motion.div
-                        key={i}
-                        className="flex-1 min-w-[2px] sm:min-w-[3px] md:min-w-[4px] bg-gradient-to-t from-cosmic-orange to-rich-orange rounded-full"
-                        animate={{
-                          height: [4, 12 + (i % 4) * 8, 4],
-                        }}
-                        transition={{
-                          duration: 0.6 + (i % 2) * 0.2,
-                          repeat: Infinity,
-                          repeatType: 'reverse',
-                          delay: i * 0.04,
-                          ease: 'easeInOut',
-                        }}
-                      />
-                    ))}
+                  {/* Recording - Soundwaves */}
+                  <div className="flex flex-col items-center gap-2 sm:gap-3 w-full">
+                    <span className="text-medium-gray text-xs sm:text-sm md:text-base font-medium">
+                      Recording
+                    </span>
+                    <div className="flex items-center gap-[2px] sm:gap-[3px] md:gap-1 w-full max-w-2xl">
+                      {[...Array(48)].map((_, i) => (
+                        <motion.div
+                          key={i}
+                          className="flex-1 min-w-[2px] sm:min-w-[3px] md:min-w-[4px] bg-gradient-to-t from-cosmic-orange to-rich-orange rounded-full"
+                          animate={{
+                            height: [4, 12 + (i % 4) * 8, 4],
+                          }}
+                          transition={{
+                            duration: 0.6 + (i % 2) * 0.2,
+                            repeat: Infinity,
+                            repeatType: 'reverse',
+                            delay: i * 0.04,
+                            ease: 'easeInOut',
+                          }}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </motion.div>
-              )}
 
-              {/* Phase 3: Transcribing */}
-              {phase === 'transcribing' && (
-                <motion.div
-                  key="transcribing"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.3 }}
-                  className="absolute inset-0 flex items-center justify-center px-4 sm:px-6"
-                >
-                  <div className="flex flex-col items-center gap-3 sm:gap-4 w-full max-w-xl">
-                    <span className="text-medium-gray text-sm sm:text-base md:text-lg font-medium">
+                  {/* Transcribing - Flickering Lines */}
+                  <div className="flex flex-col items-center gap-2 sm:gap-3 w-full max-w-xl">
+                    <span className="text-medium-gray text-xs sm:text-sm md:text-base font-medium">
                       Transcribing...
                     </span>
                     <div className="grid grid-cols-3 gap-2 w-full">
@@ -276,7 +269,7 @@ const SoundwaveToText = () => {
                 </motion.div>
               )}
 
-              {/* Phase 4: Processing */}
+              {/* Phase 3: Processing */}
               {phase === 'processing' && (
                 <motion.div
                   key="processing"
@@ -312,7 +305,7 @@ const SoundwaveToText = () => {
                 </motion.div>
               )}
 
-              {/* Phase 5: Typing Article */}
+              {/* Phase 4: Typing Article */}
               {phase === 'typing' && (
                 <motion.div
                   key="typing"
