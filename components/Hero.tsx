@@ -145,14 +145,14 @@ const SoundwaveToText = () => {
                     exit={{ opacity: 0 }}
                     className="flex items-center gap-2"
                   >
-                    <span className="text-cosmic-orange text-sm md:text-base font-semibold">
+                    <span className="text-medium-gray text-sm md:text-base font-semibold">
                       Thinking
                     </span>
                     <div className="flex gap-1">
                       {[0, 1, 2].map((i) => (
                         <motion.div
                           key={i}
-                          className="w-1 h-1 rounded-full bg-cosmic-orange"
+                          className="w-1 h-1 rounded-full bg-medium-gray"
                           animate={{
                             opacity: [0.3, 1, 0.3],
                             scale: [1, 1.2, 1],
