@@ -78,10 +78,6 @@ const SoundwaveToText = () => {
                   setTypingStage('author')
                   setTimeout(() => {
                     setTypingStage('body')
-                    // Start fading out immediately when body typing begins
-                    setTimeout(() => {
-                      setTypingStage('fadeout')
-                    }, 100)
                     
                     // Find first sentence (everything up to first period + space)
                     const firstSentenceEnd = currentArticleData.body.indexOf('. ') + 1
@@ -89,10 +85,18 @@ const SoundwaveToText = () => {
                       ? currentArticleData.body.slice(0, firstSentenceEnd)
                       : currentArticleData.body
                     
+                    // Start fading out near the end of first sentence (75% through)
+                    const fadeStartPoint = Math.floor(firstSentence.length * 0.75)
+                    
                     bodyInterval = setInterval(() => {
                       if (bodyCharIndex < firstSentence.length) {
                         setDisplayedBody(firstSentence.slice(0, bodyCharIndex + 1))
                         bodyCharIndex++
+                        
+                        // Trigger fade when we're 75% through the first sentence
+                        if (bodyCharIndex === fadeStartPoint) {
+                          setTypingStage('fadeout')
+                        }
                       } else {
                         clearInterval(bodyInterval)
                         setTypingStage('complete')
@@ -219,11 +223,13 @@ const SoundwaveToText = () => {
                   className="absolute inset-0 flex flex-col items-center justify-center gap-6 sm:gap-8 px-4 sm:px-6"
                 >
                   {/* Recording - Soundwaves */}
-                  <div className="flex flex-col items-center gap-2 sm:gap-3 w-full">
-                    <span className="text-medium-gray text-xs sm:text-sm md:text-base font-medium">
-                      Recording
-                    </span>
-                    <div className="flex items-center gap-[2px] sm:gap-[3px] md:gap-1 w-full max-w-2xl">
+                  <div className="flex flex-col items-center gap-3 sm:gap-4 w-full">
+                    <div className="h-4 sm:h-5 md:h-6 flex items-center justify-center">
+                      <span className="text-medium-gray text-xs sm:text-sm md:text-base font-medium">
+                        Recording
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-[2px] sm:gap-[3px] md:gap-1 w-full max-w-2xl h-12">
                       {[...Array(48)].map((_, i) => (
                         <motion.div
                           key={i}
@@ -244,10 +250,12 @@ const SoundwaveToText = () => {
                   </div>
 
                   {/* Transcribing - Flickering Lines */}
-                  <div className="flex flex-col items-center gap-2 sm:gap-3 w-full max-w-xl">
-                    <span className="text-medium-gray text-xs sm:text-sm md:text-base font-medium">
-                      Transcribing...
-                    </span>
+                  <div className="flex flex-col items-center gap-3 sm:gap-4 w-full max-w-xl">
+                    <div className="h-4 sm:h-5 md:h-6 flex items-center justify-center">
+                      <span className="text-medium-gray text-xs sm:text-sm md:text-base font-medium">
+                        Transcribing...
+                      </span>
+                    </div>
                     <div className="grid grid-cols-3 gap-2 w-full">
                       {[0, 1, 2, 3, 4, 5].map((i) => (
                         <motion.div
