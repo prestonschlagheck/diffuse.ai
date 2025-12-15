@@ -31,7 +31,7 @@ const SoundwaveToText = () => {
   const [displayedHeadline, setDisplayedHeadline] = useState('')
   const [displayedSubtitle, setDisplayedSubtitle] = useState('')
   const [displayedBody, setDisplayedBody] = useState('')
-  const [typingStage, setTypingStage] = useState<'headline' | 'subtitle' | 'author' | 'body' | 'complete'>('headline')
+  const [typingStage, setTypingStage] = useState<'headline' | 'subtitle' | 'author' | 'body' | 'complete' | 'fadeout'>('headline')
   const [phase, setPhase] = useState<'listening' | 'recording' | 'transcribing' | 'processing' | 'typing'>('listening')
   
   const currentArticleData = articles[currentArticle]
@@ -79,13 +79,23 @@ const SoundwaveToText = () => {
                   setTypingStage('author')
                   setTimeout(() => {
                     setTypingStage('body')
+                    // Find first sentence (everything up to first period + space)
+                    const firstSentenceEnd = currentArticleData.body.indexOf('. ') + 1
+                    const firstSentence = firstSentenceEnd > 0 
+                      ? currentArticleData.body.slice(0, firstSentenceEnd)
+                      : currentArticleData.body
+                    
                     bodyInterval = setInterval(() => {
-                      if (bodyCharIndex < currentArticleData.body.length) {
-                        setDisplayedBody(currentArticleData.body.slice(0, bodyCharIndex + 1))
+                      if (bodyCharIndex < firstSentence.length) {
+                        setDisplayedBody(firstSentence.slice(0, bodyCharIndex + 1))
                         bodyCharIndex++
                       } else {
                         clearInterval(bodyInterval)
                         setTypingStage('complete')
+                        // Wait a moment, then fade out
+                        setTimeout(() => {
+                          setTypingStage('fadeout')
+                        }, 1500)
                       }
                     }, 25)
                   }, 300)
@@ -97,9 +107,15 @@ const SoundwaveToText = () => {
       }, 40)
     }, 8000)
 
+    // Calculate timing for next article based on first sentence only
+    const firstSentenceEnd = currentArticleData.body.indexOf('. ') + 1
+    const firstSentence = firstSentenceEnd > 0 
+      ? currentArticleData.body.slice(0, firstSentenceEnd)
+      : currentArticleData.body
+    
     const nextArticle = setTimeout(() => {
       setCurrentArticle((prev) => (prev + 1) % articles.length)
-    }, 8000 + (currentArticleData.headline.length * 40) + 300 + (currentArticleData.subtitle.length * 35) + 500 + (currentArticleData.body.length * 25) + 2000)
+    }, 8000 + (currentArticleData.headline.length * 40) + 300 + (currentArticleData.subtitle.length * 35) + 500 + (firstSentence.length * 25) + 1500 + 800)
 
     return () => {
       clearTimeout(listeningTimer)
@@ -334,9 +350,12 @@ const SoundwaveToText = () => {
                 <motion.div
                   key="typing"
                   initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
+                  animate={{ 
+                    opacity: typingStage === 'fadeout' ? 0 : 1,
+                    scale: typingStage === 'fadeout' ? 0.95 : 1
+                  }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.3 }}
+                  transition={{ duration: typingStage === 'fadeout' ? 0.8 : 0.3 }}
                   className="absolute inset-0 flex items-start justify-center px-4 sm:px-6 py-4 overflow-hidden"
                 >
                   <div className="w-full max-w-2xl text-left space-y-3">
@@ -359,7 +378,7 @@ const SoundwaveToText = () => {
                     </motion.h2>
 
                     {/* Subtitle */}
-                    {(typingStage === 'subtitle' || typingStage === 'author' || typingStage === 'body' || typingStage === 'complete') && (
+                    {(typingStage === 'subtitle' || typingStage === 'author' || typingStage === 'body' || typingStage === 'complete' || typingStage === 'fadeout') && (
                       <motion.p 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -377,7 +396,7 @@ const SoundwaveToText = () => {
                     )}
 
                     {/* Author */}
-                    {(typingStage === 'author' || typingStage === 'body' || typingStage === 'complete') && (
+                    {(typingStage === 'author' || typingStage === 'body' || typingStage === 'complete' || typingStage === 'fadeout') && (
                       <motion.p 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -388,7 +407,7 @@ const SoundwaveToText = () => {
                     )}
 
                     {/* Body */}
-                    {(typingStage === 'body' || typingStage === 'complete') && (
+                    {(typingStage === 'body' || typingStage === 'complete' || typingStage === 'fadeout') && (
                       <motion.p 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
