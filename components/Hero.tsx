@@ -85,21 +85,17 @@ const SoundwaveToText = () => {
                       ? currentArticleData.body.slice(0, firstSentenceEnd)
                       : currentArticleData.body
                     
-                    // Start fading out near the end of first sentence (75% through)
-                    const fadeStartPoint = Math.floor(firstSentence.length * 0.75)
-                    
                     bodyInterval = setInterval(() => {
                       if (bodyCharIndex < firstSentence.length) {
                         setDisplayedBody(firstSentence.slice(0, bodyCharIndex + 1))
                         bodyCharIndex++
-                        
-                        // Trigger fade when we're 75% through the first sentence
-                        if (bodyCharIndex === fadeStartPoint) {
-                          setTypingStage('fadeout')
-                        }
                       } else {
                         clearInterval(bodyInterval)
                         setTypingStage('complete')
+                        // Wait 800ms after typing completes, then start fadeout
+                        setTimeout(() => {
+                          setTypingStage('fadeout')
+                        }, 800)
                       }
                     }, 25)
                   }, 300)
@@ -223,13 +219,13 @@ const SoundwaveToText = () => {
                   className="absolute inset-0 flex flex-col items-center justify-center gap-6 sm:gap-8 px-4 sm:px-6"
                 >
                   {/* Recording - Soundwaves */}
-                  <div className="flex flex-col items-center gap-3 sm:gap-4 w-full">
+                  <div className="flex flex-col items-center gap-3 sm:gap-4 w-full max-w-xl">
                     <div className="h-4 sm:h-5 md:h-6 flex items-center justify-center">
                       <span className="text-medium-gray text-xs sm:text-sm md:text-base font-medium">
                         Recording
                       </span>
                     </div>
-                    <div className="flex items-center gap-[2px] sm:gap-[3px] md:gap-1 w-full max-w-2xl h-12">
+                    <div className="flex items-center gap-[2px] sm:gap-[3px] md:gap-1 w-full h-12">
                       {[...Array(48)].map((_, i) => (
                         <motion.div
                           key={i}
@@ -323,16 +319,12 @@ const SoundwaveToText = () => {
                     scale: typingStage === 'fadeout' ? 0.95 : 1
                   }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: typingStage === 'fadeout' ? 0.8 : 0.3 }}
+                  transition={{ duration: typingStage === 'fadeout' ? 1.5 : 0.3 }}
                   className="absolute inset-0 flex items-start justify-center px-4 sm:px-6 py-4 overflow-hidden"
                 >
                   <div className="w-full max-w-2xl text-left space-y-3">
                     {/* Headline */}
-                    <motion.h2 
-                      className="text-lg sm:text-xl md:text-2xl font-bold leading-tight"
-                      animate={{ opacity: [0.6, 1] }}
-                      transition={{ duration: 0.5, repeat: Infinity, repeatType: 'reverse' }}
-                    >
+                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold leading-tight">
                       <span className="text-cosmic-orange">
                         {displayedHeadline}
                         {typingStage === 'headline' && (
@@ -343,7 +335,7 @@ const SoundwaveToText = () => {
                           />
                         )}
                       </span>
-                    </motion.h2>
+                    </h2>
 
                     {/* Subtitle */}
                     {(typingStage === 'subtitle' || typingStage === 'author' || typingStage === 'body' || typingStage === 'complete' || typingStage === 'fadeout') && (
