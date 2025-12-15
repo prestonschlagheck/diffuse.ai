@@ -3,7 +3,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
 
-// Animated workflow visualization
 const SoundwaveToText = () => {
   const [currentHeadline, setCurrentHeadline] = useState(0)
   const [displayedText, setDisplayedText] = useState('')
@@ -22,28 +21,14 @@ const SoundwaveToText = () => {
     setDisplayedText('')
     setPhase('listening')
 
-    // Phase 1: Listening (1.5s)
-    const listeningTimer = setTimeout(() => {
-      setPhase('recording')
-    }, 1500)
-
-    // Phase 2: Recording (2.5s)
-    const recordingTimer = setTimeout(() => {
-      setPhase('transcribing')
-    }, 4000)
-
-    // Phase 3: Transcribing (2s)
-    const transcribingTimer = setTimeout(() => {
-      setPhase('processing')
-    }, 6000)
-
-    // Phase 4: Processing/Analyzing (1.5s)
+    const listeningTimer = setTimeout(() => setPhase('recording'), 1500)
+    const recordingTimer = setTimeout(() => setPhase('transcribing'), 4000)
+    const transcribingTimer = setTimeout(() => setPhase('processing'), 6000)
     const processingTimer = setTimeout(() => {
       setPhase('typing')
       setDisplayedText('')
       charIndex = 0
 
-      // Phase 5: Typing animation
       const typeInterval = setInterval(() => {
         if (charIndex < currentText.length) {
           setDisplayedText(currentText.slice(0, charIndex + 1))
@@ -56,7 +41,6 @@ const SoundwaveToText = () => {
       return () => clearInterval(typeInterval)
     }, 7500)
 
-    // Move to next headline
     const nextHeadline = setTimeout(() => {
       setCurrentHeadline((prev) => (prev + 1) % headlines.length)
     }, 7500 + (currentText.length * 30) + 2000)
@@ -70,7 +54,6 @@ const SoundwaveToText = () => {
     }
   }, [currentHeadline])
 
-  // Determine which label to show
   const showAudioLabel = phase === 'listening' || phase === 'recording'
   const showArticleLabel = phase === 'transcribing' || phase === 'processing' || phase === 'typing'
 
@@ -101,18 +84,18 @@ const SoundwaveToText = () => {
         </motion.div>
 
         {/* Workflow visualization */}
-        <div className="relative glass-container p-6 md:p-8">
-          {/* Fixed label at top - transitions between Audio Input and Generated Article */}
-          <div className="text-center mb-6 h-6">
+        <div className="relative glass-container p-8 md:p-10">
+          {/* Static label area - always visible, changes text */}
+          <div className="text-center mb-8 h-5">
             <AnimatePresence mode="wait">
               {showAudioLabel && (
                 <motion.span
                   key="audio"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  transition={{ duration: 0.3 }}
-                  className="text-cosmic-orange text-[10px] md:text-caption uppercase tracking-wider font-semibold inline-block"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="text-cosmic-orange text-xs md:text-sm uppercase tracking-widest font-semibold"
                 >
                   Audio Input
                 </motion.span>
@@ -120,11 +103,11 @@ const SoundwaveToText = () => {
               {showArticleLabel && (
                 <motion.span
                   key="article"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  transition={{ duration: 0.3 }}
-                  className="text-cosmic-orange text-[10px] md:text-caption uppercase tracking-wider font-semibold inline-block"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="text-cosmic-orange text-xs md:text-sm uppercase tracking-widest font-semibold"
                 >
                   Generated Article
                 </motion.span>
@@ -132,34 +115,38 @@ const SoundwaveToText = () => {
             </AnimatePresence>
           </div>
 
-          {/* Content area - fixed height */}
-          <div className="min-h-[120px] md:min-h-[140px] flex items-center justify-center">
+          {/* Content area with fixed height */}
+          <div className="min-h-[140px] md:min-h-[160px] flex items-center justify-center relative">
             <AnimatePresence mode="wait">
               {/* Phase 1: Listening */}
               {phase === 'listening' && (
                 <motion.div
                   key="listening"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex items-center gap-2"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3 }}
+                  className="absolute inset-0 flex items-center justify-center"
                 >
-                  <span className="text-medium-gray text-sm md:text-base font-medium">
-                    Listening for audio
-                  </span>
-                  <div className="flex gap-1">
-                    {[0, 1, 2].map((i) => (
-                      <motion.div
-                        key={i}
-                        className="w-1 h-1 rounded-full bg-medium-gray"
-                        animate={{ opacity: [0.3, 1, 0.3] }}
-                        transition={{
-                          duration: 1,
-                          repeat: Infinity,
-                          delay: i * 0.2,
-                        }}
-                      />
-                    ))}
+                  <div className="flex items-center gap-3">
+                    <span className="text-medium-gray text-base md:text-lg font-medium">
+                      Listening for audio
+                    </span>
+                    <div className="flex gap-1.5">
+                      {[0, 1, 2].map((i) => (
+                        <motion.div
+                          key={i}
+                          className="w-1.5 h-1.5 rounded-full bg-medium-gray"
+                          animate={{ opacity: [0.3, 1, 0.3] }}
+                          transition={{
+                            duration: 1.2,
+                            repeat: Infinity,
+                            delay: i * 0.2,
+                            ease: 'easeInOut',
+                          }}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -168,38 +155,29 @@ const SoundwaveToText = () => {
               {phase === 'recording' && (
                 <motion.div
                   key="recording"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex flex-col items-center gap-3"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3 }}
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-4"
                 >
-                  <span className="text-medium-gray text-xs md:text-sm font-medium">
+                  <span className="text-medium-gray text-sm md:text-base font-medium">
                     Recording
                   </span>
-                  <div className="flex items-center gap-[3px] md:gap-[4px]">
-                    {[...Array(40)].map((_, i) => (
+                  <div className="flex items-center gap-1">
+                    {[...Array(32)].map((_, i) => (
                       <motion.div
                         key={i}
-                        className="w-[2px] md:w-[3px] bg-gradient-to-t from-cosmic-orange to-rich-orange rounded-full"
-                        style={{ height: 8 }}
+                        className="w-[3px] md:w-1 bg-gradient-to-t from-cosmic-orange to-rich-orange rounded-full"
                         animate={{
-                          height: [8, 15 + (i % 6) * 10, 8, 20 + (i % 4) * 8, 8],
-                          x: [0, -2, 0],
+                          height: [4, 12 + (i % 4) * 8, 4],
                         }}
                         transition={{
-                          height: {
-                            duration: 0.8 + (i % 3) * 0.2,
-                            repeat: Infinity,
-                            repeatType: 'loop',
-                            delay: i * 0.05,
-                            ease: 'easeInOut',
-                          },
-                          x: {
-                            duration: 0.3,
-                            repeat: Infinity,
-                            repeatType: 'reverse',
-                            delay: i * 0.02,
-                          }
+                          duration: 0.6 + (i % 2) * 0.2,
+                          repeat: Infinity,
+                          repeatType: 'reverse',
+                          delay: i * 0.04,
+                          ease: 'easeInOut',
                         }}
                       />
                     ))}
@@ -211,42 +189,43 @@ const SoundwaveToText = () => {
               {phase === 'transcribing' && (
                 <motion.div
                   key="transcribing"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex flex-col items-center gap-3"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3 }}
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-4"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="text-medium-gray text-sm md:text-base font-medium">
-                      Transcribing audio to text
+                  <div className="flex items-center gap-3">
+                    <span className="text-medium-gray text-base md:text-lg font-medium">
+                      Transcribing
                     </span>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1.5">
                       {[0, 1, 2].map((i) => (
                         <motion.div
                           key={i}
-                          className="w-1 h-1 rounded-full bg-medium-gray"
+                          className="w-1.5 h-1.5 rounded-full bg-medium-gray"
                           animate={{ opacity: [0.3, 1, 0.3] }}
                           transition={{
-                            duration: 1,
+                            duration: 1.2,
                             repeat: Infinity,
                             delay: i * 0.2,
+                            ease: 'easeInOut',
                           }}
                         />
                       ))}
                     </div>
                   </div>
-                  {/* Scrolling text effect */}
-                  <div className="overflow-hidden w-full max-w-md">
+                  <div className="overflow-hidden w-full max-w-lg">
                     <motion.div
-                      animate={{ x: [-100, -400] }}
+                      animate={{ x: [-50, -350] }}
                       transition={{
-                        duration: 3,
+                        duration: 4,
                         repeat: Infinity,
                         ease: 'linear',
                       }}
-                      className="flex gap-2 text-xs text-medium-gray/50 whitespace-nowrap"
+                      className="text-xs md:text-sm text-medium-gray/40 whitespace-nowrap font-mono"
                     >
-                      <span>council members discussed budget allocation community feedback was positive meeting adjourned at 9pm</span>
+                      council members discussed budget allocation • positive community feedback • meeting adjourned 9pm
                     </motion.div>
                   </div>
                 </motion.div>
@@ -256,31 +235,34 @@ const SoundwaveToText = () => {
               {phase === 'processing' && (
                 <motion.div
                   key="processing"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex items-center gap-2"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3 }}
+                  className="absolute inset-0 flex items-center justify-center"
                 >
-                  <span className="text-medium-gray text-sm md:text-base font-semibold">
-                    Analyzing & structuring
-                  </span>
-                  <div className="flex gap-1">
-                    {[0, 1, 2].map((i) => (
-                      <motion.div
-                        key={i}
-                        className="w-1 h-1 rounded-full bg-medium-gray"
-                        animate={{
-                          opacity: [0.3, 1, 0.3],
-                          scale: [1, 1.2, 1],
-                        }}
-                        transition={{
-                          duration: 1.2,
-                          repeat: Infinity,
-                          delay: i * 0.2,
-                          ease: 'easeInOut',
-                        }}
-                      />
-                    ))}
+                  <div className="flex items-center gap-3">
+                    <span className="text-medium-gray text-base md:text-lg font-medium">
+                      Analyzing & structuring
+                    </span>
+                    <div className="flex gap-1.5">
+                      {[0, 1, 2].map((i) => (
+                        <motion.div
+                          key={i}
+                          className="w-1.5 h-1.5 rounded-full bg-medium-gray"
+                          animate={{
+                            opacity: [0.3, 1, 0.3],
+                            scale: [1, 1.3, 1],
+                          }}
+                          transition={{
+                            duration: 1.2,
+                            repeat: Infinity,
+                            delay: i * 0.2,
+                            ease: 'easeInOut',
+                          }}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -289,17 +271,18 @@ const SoundwaveToText = () => {
               {phase === 'typing' && (
                 <motion.div
                   key="typing"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="w-full px-4"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3 }}
+                  className="absolute inset-0 flex items-center justify-center px-6"
                 >
-                  <p className="text-sm md:text-base font-semibold text-cosmic-orange leading-relaxed text-center">
+                  <p className="text-base md:text-lg font-semibold text-cosmic-orange leading-relaxed text-center max-w-2xl">
                     {displayedText}
                     <motion.span
                       animate={{ opacity: [1, 0] }}
                       transition={{ duration: 0.5, repeat: Infinity }}
-                      className="inline-block w-0.5 h-4 md:h-5 bg-cosmic-orange ml-0.5 align-middle"
+                      className="inline-block w-0.5 h-5 md:h-6 bg-cosmic-orange ml-1 align-middle"
                     />
                   </p>
                 </motion.div>
@@ -307,13 +290,13 @@ const SoundwaveToText = () => {
             </AnimatePresence>
           </div>
 
-          {/* Progress indicator dots */}
-          <div className="flex justify-center gap-2 mt-6">
+          {/* Progress dots */}
+          <div className="flex justify-center gap-2 mt-8">
             {headlines.map((_, index) => (
               <div
                 key={index}
-                className={`h-1.5 md:h-2 rounded-full transition-all duration-300 ${
-                  index === currentHeadline ? 'bg-cosmic-orange w-5 md:w-6' : 'bg-white/20 w-1.5 md:w-2'
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  index === currentHeadline ? 'bg-cosmic-orange w-8' : 'bg-white/20 w-1.5'
                 }`}
               />
             ))}
@@ -325,7 +308,7 @@ const SoundwaveToText = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.6 }}
-          className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center mt-6 md:mt-8"
+          className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center mt-8"
         >
           <a href="#overview" className="btn-primary text-center text-sm md:text-base py-3 md:py-4 w-full sm:w-auto">
             Learn More
