@@ -78,23 +78,27 @@ const SoundwaveToText = () => {
                   setTimeout(() => {
                     setTypingStage('body')
                     
-                    // Find first sentence (everything up to first period + space)
-                    const firstSentenceEnd = currentArticleData.body.indexOf('. ') + 1
-                    const firstSentence = firstSentenceEnd > 0 
-                      ? currentArticleData.body.slice(0, firstSentenceEnd)
-                      : currentArticleData.body
+                    // Find first two sentences for a full line
+                    const firstPeriod = currentArticleData.body.indexOf('. ')
+                    const secondPeriod = firstPeriod > 0 ? currentArticleData.body.indexOf('. ', firstPeriod + 2) : -1
+                    const targetLength = secondPeriod > 0 ? secondPeriod + 1 : (firstPeriod > 0 ? firstPeriod + 1 : currentArticleData.body.length)
+                    const textToType = currentArticleData.body.slice(0, targetLength)
+                    
+                    // Start fade at 70% through typing (while still typing)
+                    const fadePoint = Math.floor(textToType.length * 0.7)
                     
                     bodyInterval = setInterval(() => {
-                      if (bodyCharIndex < firstSentence.length) {
-                        setDisplayedBody(firstSentence.slice(0, bodyCharIndex + 1))
+                      if (bodyCharIndex < textToType.length) {
+                        setDisplayedBody(textToType.slice(0, bodyCharIndex + 1))
                         bodyCharIndex++
+                        
+                        // Trigger fade while still typing
+                        if (bodyCharIndex === fadePoint) {
+                          setTypingStage('fadeout')
+                        }
                       } else {
                         clearInterval(bodyInterval)
                         setTypingStage('complete')
-                        // Wait 800ms after typing completes, then start fadeout
-                        setTimeout(() => {
-                          setTypingStage('fadeout')
-                        }, 800)
                       }
                     }, 25)
                   }, 300)
