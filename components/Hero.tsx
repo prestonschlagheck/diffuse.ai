@@ -32,7 +32,7 @@ const SoundwaveToText = () => {
   const [displayedSubtitle, setDisplayedSubtitle] = useState('')
   const [displayedBody, setDisplayedBody] = useState('')
   const [typingStage, setTypingStage] = useState<'headline' | 'subtitle' | 'author' | 'body' | 'complete' | 'fadeout'>('headline')
-  const [phase, setPhase] = useState<'listening' | 'recording-transcribing' | 'processing' | 'typing'>('listening')
+  const [phase, setPhase] = useState<'recording-transcribing' | 'processing' | 'typing'>('recording-transcribing')
   
   const currentArticleData = articles[currentArticle]
 
@@ -48,10 +48,9 @@ const SoundwaveToText = () => {
     setDisplayedSubtitle('')
     setDisplayedBody('')
     setTypingStage('headline')
-    setPhase('listening')
+    setPhase('recording-transcribing')
 
-    const listeningTimer = setTimeout(() => setPhase('recording-transcribing'), 1500)
-    const recordingTranscribingTimer = setTimeout(() => setPhase('processing'), 5000)
+    const recordingTranscribingTimer = setTimeout(() => setPhase('processing'), 4000)
     
     const processingTimer = setTimeout(() => {
       setPhase('typing')
@@ -105,7 +104,7 @@ const SoundwaveToText = () => {
           }, 300)
         }
       }, 40)
-    }, 6500)
+    }, 5500)
 
     // Calculate timing for next article based on first sentence only
     const firstSentenceEnd = currentArticleData.body.indexOf('. ') + 1
@@ -115,10 +114,9 @@ const SoundwaveToText = () => {
     
     const nextArticle = setTimeout(() => {
       setCurrentArticle((prev) => (prev + 1) % articles.length)
-    }, 6500 + (currentArticleData.headline.length * 40) + 300 + (currentArticleData.subtitle.length * 35) + 500 + 100 + 1200)
+    }, 5500 + (currentArticleData.headline.length * 40) + 300 + (currentArticleData.subtitle.length * 35) + 500 + 100 + 1200)
 
     return () => {
-      clearTimeout(listeningTimer)
       clearTimeout(recordingTranscribingTimer)
       clearTimeout(processingTimer)
       clearTimeout(nextArticle)
@@ -128,7 +126,7 @@ const SoundwaveToText = () => {
     }
   }, [currentArticle])
 
-  const showAudioLabel = phase === 'listening' || phase === 'recording-transcribing'
+  const showAudioLabel = phase === 'recording-transcribing'
   const showArticleLabel = phase === 'processing' || phase === 'typing'
 
   return (
@@ -189,26 +187,10 @@ const SoundwaveToText = () => {
             </AnimatePresence>
           </div>
 
-          {/* Content area with fixed height */}
-          <div className="min-h-[180px] sm:min-h-[200px] md:min-h-[220px] flex items-center justify-center relative">
+          {/* Content area with fixed height - increased for 2 lines of body text */}
+          <div className="min-h-[220px] sm:min-h-[240px] md:min-h-[260px] flex items-center justify-center relative">
             <AnimatePresence mode="wait">
-              {/* Phase 1: Listening */}
-              {phase === 'listening' && (
-                <motion.div
-                  key="listening"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.3 }}
-                  className="absolute inset-0 flex items-center justify-center"
-                >
-                  <span className="text-medium-gray text-sm sm:text-base md:text-lg font-medium">
-                    Listening for audio...
-                  </span>
-                </motion.div>
-              )}
-
-              {/* Phase 2: Recording + Transcribing (Simultaneous) */}
+              {/* Phase 1: Recording + Transcribing (Simultaneous) */}
               {phase === 'recording-transcribing' && (
                 <motion.div
                   key="recording-transcribing"
@@ -273,7 +255,7 @@ const SoundwaveToText = () => {
                 </motion.div>
               )}
 
-              {/* Phase 3: Processing */}
+              {/* Phase 2: Processing */}
               {phase === 'processing' && (
                 <motion.div
                   key="processing"
@@ -309,7 +291,7 @@ const SoundwaveToText = () => {
                 </motion.div>
               )}
 
-              {/* Phase 4: Typing Article */}
+              {/* Phase 3: Typing Article */}
               {phase === 'typing' && (
                 <motion.div
                   key="typing"
@@ -320,9 +302,9 @@ const SoundwaveToText = () => {
                   }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: typingStage === 'fadeout' ? 1.5 : 0.3 }}
-                  className="absolute inset-0 flex items-start justify-center px-4 sm:px-6 py-4 overflow-hidden"
+                  className="absolute inset-0 flex items-start justify-center px-4 sm:px-6 py-2 overflow-hidden"
                 >
-                  <div className="w-full max-w-2xl text-left space-y-3">
+                  <div className="w-full max-w-2xl text-left space-y-2 sm:space-y-3">
                     {/* Headline */}
                     <h2 className="text-lg sm:text-xl md:text-2xl font-bold leading-tight">
                       <span className="text-cosmic-orange">
@@ -371,7 +353,7 @@ const SoundwaveToText = () => {
                       <motion.p 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="text-xs sm:text-sm md:text-base text-secondary-white leading-relaxed pt-2"
+                        className="text-xs sm:text-sm md:text-base text-secondary-white leading-relaxed pt-2 min-h-[3rem] sm:min-h-[3.5rem]"
                       >
                         {displayedBody}
                         {typingStage === 'body' && (
