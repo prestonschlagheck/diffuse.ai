@@ -69,7 +69,7 @@ export default function FeaturesMarquee() {
     const scrollWidth = firstChild.offsetWidth
 
     // Speed in pixels per frame (60fps) - adjust this value to change speed
-    const speed = 2 // Increased from 1 for faster scrolling
+    const speed = 1.2
 
     const animate = () => {
       if (!isPausedRef.current && scroller) {
