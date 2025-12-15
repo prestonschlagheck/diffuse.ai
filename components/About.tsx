@@ -31,7 +31,7 @@ export default function About() {
   }
 
   return (
-    <section id="overview" ref={ref} className="relative py-12 md:py-15 scroll-mt-20">
+    <section id="overview" ref={ref} className="relative py-16 sm:py-20 md:py-24 scroll-mt-20">
       <div className="container-padding">
         <motion.div
           variants={containerVariants}
@@ -42,7 +42,7 @@ export default function About() {
           {/* Headline */}
           <motion.h2
             variants={itemVariants}
-            className="text-heading-xl font-bold mb-8"
+            className="text-2xl sm:text-3xl md:text-heading-xl lg:text-display-sm font-bold mb-6 md:mb-8 px-4 text-center sm:text-left"
           >
             The Infrastructure for <span className="gradient-text">Modern Local News</span>
           </motion.h2>
@@ -52,13 +52,13 @@ export default function About() {
             variants={itemVariants}
             className="glass-container p-6 md:p-8 mb-6"
           >
-            <p className="text-body-md md:text-body-lg text-secondary-white leading-relaxed mb-4">
+            <p className="text-base sm:text-lg md:text-body-lg text-secondary-white leading-relaxed mb-4">
               We&apos;re building the <span className="text-cosmic-orange font-semibold">platform</span> that local newsrooms leverage to combine{' '}
               <span className="text-cosmic-orange font-semibold">community reporting</span> with{' '}
               <span className="text-cosmic-orange font-semibold">AI-driven workflows</span>—solving two critical problems 
               facing journalism today.
             </p>
-            <p className="text-body-sm md:text-body-md text-medium-gray leading-relaxed">
+            <p className="text-sm sm:text-base md:text-body-md text-medium-gray leading-relaxed">
               The Spring-Ford Press pilot uses our proprietary automation engine to transform meeting recordings 
               into publication-ready articles—enabling efficient, scalable coverage.
             </p>
@@ -67,19 +67,19 @@ export default function About() {
           {/* Problem Cards */}
           <motion.div
             variants={itemVariants}
-            className="grid md:grid-cols-2 gap-6"
+            className="grid sm:grid-cols-2 gap-6"
           >
             {/* Card 1 */}
             <motion.div
               className="glass-container overflow-hidden"
             >
               <div className="bg-cosmic-orange/90 px-6 py-3 rounded-t-glass">
-                <h3 className="text-heading-md font-bold text-center text-black">
+                <h3 className="text-lg sm:text-xl md:text-heading-md font-bold text-center text-black">
                   The Collapse of Local Journalism
                 </h3>
               </div>
               <div className="p-6">
-                <p className="text-body-sm text-medium-gray leading-relaxed text-center">
+                <p className="text-sm sm:text-base md:text-body-sm text-medium-gray leading-relaxed text-center">
                   Small towns have lost local news sources, creating information deserts 
                   where community stories go untold.
                 </p>
@@ -91,12 +91,12 @@ export default function About() {
               className="glass-container overflow-hidden"
             >
               <div className="bg-cosmic-orange/90 px-6 py-3 rounded-t-glass">
-                <h3 className="text-heading-md font-bold text-center text-black">
+                <h3 className="text-lg sm:text-xl md:text-heading-md font-bold text-center text-black">
                   Unsustainable Costs
                 </h3>
               </div>
               <div className="p-6">
-                <p className="text-body-sm text-medium-gray leading-relaxed text-center">
+                <p className="text-sm sm:text-base md:text-body-sm text-medium-gray leading-relaxed text-center">
                   Traditional reporting requires significant resources, preventing sustainable coverage 
                   of local government and community events.
                 </p>
@@ -107,7 +107,7 @@ export default function About() {
           {/* Stats Section */}
           <motion.div
             variants={itemVariants}
-            className="mt-8 grid grid-cols-3 gap-4"
+            className="mt-8 grid grid-cols-3 gap-3 sm:gap-4"
           >
             {[
               { number: '100%', label: 'Automated' },
@@ -117,12 +117,12 @@ export default function About() {
               <motion.div
                 key={index}
                 whileHover={{ y: -3 }}
-                className="glass-container p-3 md:p-4 text-center group cursor-default"
+                className="glass-container p-4 md:p-5 text-center group cursor-default"
               >
-                <div className="text-heading-lg md:text-display-sm font-bold gradient-text mb-1">
+                <div className="text-xl sm:text-2xl md:text-heading-lg lg:text-display-sm font-bold gradient-text mb-1">
                   {stat.number}
                 </div>
-                <div className="text-[10px] md:text-caption text-medium-gray uppercase tracking-wider">
+                <div className="text-[10px] sm:text-xs md:text-caption text-medium-gray uppercase tracking-wider">
                   {stat.label}
                 </div>
               </motion.div>

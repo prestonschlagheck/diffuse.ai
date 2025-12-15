@@ -31,10 +31,7 @@ export default function HowItWorksInteractive() {
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
   const resetTimer = () => {
-    // Clear existing timer
     if (timerRef.current) clearTimeout(timerRef.current)
-    
-    // Auto-advance after 8 seconds
     timerRef.current = setTimeout(() => {
       nextStep()
     }, 8000)
@@ -42,8 +39,6 @@ export default function HowItWorksInteractive() {
 
   useEffect(() => {
     resetTimer()
-    
-    // Cleanup on unmount
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
     }
@@ -62,15 +57,17 @@ export default function HowItWorksInteractive() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-4 sm:px-0">
       <div className="glass-container overflow-hidden">
         {/* Orange Header - Static */}
-        <div className="bg-cosmic-orange/90 px-6 py-3">
-          <h3 className="text-body-lg font-bold text-center text-black">{steps[currentStep].number}</h3>
+        <div className="bg-cosmic-orange/90 px-4 sm:px-6 py-3">
+          <h3 className="text-base sm:text-lg md:text-body-lg font-bold text-center text-black">
+            {steps[currentStep].number}
+          </h3>
         </div>
 
         {/* Animated Content Area - Fixed height */}
-        <div className="min-h-[180px] md:min-h-[160px] flex items-center justify-center">
+        <div className="min-h-[200px] sm:min-h-[180px] md:min-h-[160px] flex items-center justify-center">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep}
@@ -78,12 +75,12 @@ export default function HowItWorksInteractive() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.2, ease: 'easeInOut' }}
-              className="p-6 md:p-8 text-center w-full"
+              className="p-6 sm:p-8 md:p-10 text-center w-full"
             >
-              <h4 className="text-heading-lg md:text-heading-xl font-bold mb-3 md:mb-4 gradient-text">
+              <h4 className="text-xl sm:text-2xl md:text-heading-lg lg:text-heading-xl font-bold mb-3 md:mb-4 gradient-text">
                 {steps[currentStep].title}
               </h4>
-              <p className="text-body-sm md:text-body-md text-medium-gray leading-relaxed">
+              <p className="text-sm sm:text-base md:text-body-sm lg:text-body-md text-medium-gray leading-relaxed max-w-2xl mx-auto">
                 {steps[currentStep].description}
               </p>
             </motion.div>
@@ -91,15 +88,15 @@ export default function HowItWorksInteractive() {
         </div>
 
         {/* Navigation */}
-        <div className="flex items-center justify-between px-6 pb-6 border-t border-white/10 pt-4">
+        <div className="flex items-center justify-between px-4 sm:px-6 pb-4 sm:pb-6 border-t border-white/10 pt-4">
           <button
             onClick={prevStep}
-            className="flex items-center gap-2 px-4 py-2 rounded-glass text-secondary-white hover:text-cosmic-orange transition-colors"
+            className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 rounded-glass text-secondary-white hover:text-cosmic-orange transition-colors"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="sm:w-5 sm:h-5">
               <path d="M15 18l-6-6 6-6" />
             </svg>
-            <span className="text-body-sm font-medium">Previous</span>
+            <span className="text-xs sm:text-sm md:text-body-sm font-medium">Previous</span>
           </button>
 
           {/* Step Indicators */}
@@ -109,18 +106,19 @@ export default function HowItWorksInteractive() {
                 key={index}
                 onClick={() => handleManualStepChange(index)}
                 className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  index === currentStep ? 'bg-cosmic-orange w-8' : 'bg-white/20'
+                  index === currentStep ? 'bg-cosmic-orange w-6 sm:w-8' : 'bg-white/20'
                 }`}
+                aria-label={`Go to step ${index + 1}`}
               />
             ))}
           </div>
 
           <button
             onClick={nextStep}
-            className="flex items-center gap-2 px-4 py-2 rounded-glass text-secondary-white hover:text-cosmic-orange transition-colors"
+            className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 rounded-glass text-secondary-white hover:text-cosmic-orange transition-colors"
           >
-            <span className="text-body-sm font-medium">Next</span>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <span className="text-xs sm:text-sm md:text-body-sm font-medium">Next</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="sm:w-5 sm:h-5">
               <path d="M9 18l6-6-6-6" />
             </svg>
           </button>

@@ -8,7 +8,7 @@ export default function UseCases() {
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   return (
-    <section id="use-cases" ref={ref} className="relative py-16 md:py-20 bg-dark-gray/30 scroll-mt-20">
+    <section id="use-cases" ref={ref} className="relative py-16 sm:py-20 md:py-24 bg-dark-gray/30 scroll-mt-20">
       <div className="container-padding">
         <div className="max-w-6xl mx-auto">
           {/* Section Header */}
@@ -16,37 +16,37 @@ export default function UseCases() {
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="text-center mb-20"
+            className="text-center mb-12 md:mb-16 px-4"
           >
-            <span className="text-cosmic-orange text-caption uppercase tracking-wider font-semibold mb-4 block">
+            <span className="text-cosmic-orange text-xs sm:text-sm md:text-caption uppercase tracking-wider font-semibold mb-4 block">
               In Action
             </span>
-            <h2 className="text-heading-xl font-bold mb-6">
+            <h2 className="text-2xl sm:text-3xl md:text-heading-xl lg:text-display-sm font-bold mb-6">
               Powering <span className="gradient-text">Real Newsrooms</span>
             </h2>
-            <p className="text-body-md text-medium-gray">
+            <p className="text-base sm:text-lg md:text-body-md text-medium-gray">
               Transforming local journalism one community at a time
             </p>
           </motion.div>
 
-          {/* Main Use Case - Schuylkill River Press */}
+          {/* Main Use Case - Spring-Ford Press */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           >
-              <motion.div
-                className="glass-container p-10 md:p-14 mb-12 overflow-hidden"
-              >
-                {/* Content Grid */}
-                <div className="grid lg:grid-cols-2 gap-12 items-stretch">
+            <motion.div
+              className="glass-container p-6 sm:p-8 md:p-10 lg:p-14 mb-12 overflow-hidden"
+            >
+              {/* Content Grid */}
+              <div className="grid lg:grid-cols-2 gap-8 md:gap-12 items-stretch">
                 {/* Left Content */}
                 <div>
-                  {/* River Press Text Logo */}
-                  <h3 className="text-heading-xl font-bold mb-6">
+                  {/* Spring-Ford Press Text Logo */}
+                  <h3 className="text-2xl sm:text-3xl md:text-heading-xl font-bold mb-4 md:mb-6">
                     <span className="text-[#dbdbdb]">Spring-Ford</span> <span className="text-[#3391af]">Press</span>
                   </h3>
-                  <p className="text-body-md text-secondary-white mb-6 leading-relaxed">
+                  <p className="text-base sm:text-lg md:text-body-md text-secondary-white mb-6 leading-relaxed">
                     Digital-first local news outlet serving the Spring-Ford area 
                     of Pennsylvania. AI-driven automated coverage integrated with municipal recording systems.
                   </p>
@@ -60,12 +60,12 @@ export default function UseCases() {
                       'Sustainable ad-supported revenue model',
                     ].map((feature, index) => (
                       <div key={index} className="flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-full bg-[#3391af]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#3391af]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-[#3391af]">
                             <polyline points="20 6 9 17 4 12" />
                           </svg>
                         </div>
-                        <span className="text-body-md text-secondary-white">{feature}</span>
+                        <span className="text-sm sm:text-base md:text-body-md text-secondary-white">{feature}</span>
                       </div>
                     ))}
                   </div>
@@ -76,20 +76,20 @@ export default function UseCases() {
                   {/* Badge - Above Image */}
                   <div className="overflow-hidden rounded-t-glass">
                     <div className="bg-[#3391af]/90 px-4 py-3 flex items-center justify-center">
-                      <span className="text-body-sm font-bold text-white uppercase tracking-wider">
+                      <span className="text-sm sm:text-base md:text-body-sm font-bold text-white uppercase tracking-wider">
                         Pilot Partner
                       </span>
                     </div>
                   </div>
 
                   {/* Placeholder for Screenshot - Clickable */}
-                  <button className="glass-container flex-1 flex items-center justify-center relative overflow-hidden rounded-none border-t-0 border-b-0 w-full hover:bg-white/5 transition-colors duration-300">
+                  <button className="glass-container flex-1 flex items-center justify-center relative overflow-hidden rounded-none border-t-0 border-b-0 w-full hover:bg-white/5 transition-colors duration-300 min-h-[200px] sm:min-h-[250px]">
                     <div className="absolute inset-0 bg-gradient-to-br from-[#3391af]/10 to-[#57959f]/10" />
-                    <div className="relative z-10 text-center p-8">
-                      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-4 text-[#3391af]">
+                    <div className="relative z-10 text-center p-6 sm:p-8">
+                      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-4 text-[#3391af]">
                         <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
                       </svg>
-                      <p className="text-body-sm text-medium-gray">
+                      <p className="text-sm md:text-body-sm text-medium-gray">
                         [Screenshot Placeholder]
                         <br />
                         Spring-Ford Press Homepage
@@ -99,7 +99,7 @@ export default function UseCases() {
 
                   {/* Visit Button - Below Image */}
                   <button className="overflow-hidden rounded-b-glass bg-[#3391af]/90 hover:bg-[#57959f] px-4 py-3 flex items-center justify-center gap-2 transition-all duration-300 hover:scale-105 w-full">
-                    <span className="text-body-md font-bold text-white">Visit springford.press</span>
+                    <span className="text-sm sm:text-base md:text-body-md font-bold text-white">Visit springford.press</span>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white">
                       <path d="M5 12h14M12 5l7 7-7 7" />
                     </svg>
@@ -114,15 +114,15 @@ export default function UseCases() {
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="grid md:grid-cols-3 gap-6"
+            className="grid sm:grid-cols-2 md:grid-cols-3 gap-6"
           >
             {/* Media Outlets */}
             <div className="glass-container overflow-hidden group cursor-pointer hover:bg-white/10 transition-colors duration-300">
               <div className="bg-cosmic-orange/90 px-4 py-3 flex items-center justify-center">
-                <h3 className="text-body-md font-bold text-black">Media Outlets</h3>
+                <h3 className="text-base sm:text-lg md:text-body-md font-bold text-black">Media Outlets</h3>
               </div>
               <div className="p-5">
-                <p className="text-body-sm text-medium-gray leading-relaxed text-center">
+                <p className="text-sm md:text-body-sm text-medium-gray leading-relaxed text-center">
                   License Diffuse.AI to augment your newsroom capabilities
                 </p>
               </div>
@@ -131,10 +131,10 @@ export default function UseCases() {
             {/* Municipalities */}
             <div className="glass-container overflow-hidden group cursor-pointer hover:bg-white/10 transition-colors duration-300">
               <div className="bg-cosmic-orange/90 px-4 py-3 flex items-center justify-center">
-                <h3 className="text-body-md font-bold text-black">Municipalities</h3>
+                <h3 className="text-base sm:text-lg md:text-body-md font-bold text-black">Municipalities</h3>
               </div>
               <div className="p-5">
-                <p className="text-body-sm text-medium-gray leading-relaxed text-center">
+                <p className="text-sm md:text-body-sm text-medium-gray leading-relaxed text-center">
                   Improve transparency with auto-generated summaries
                 </p>
               </div>
@@ -143,35 +143,35 @@ export default function UseCases() {
             {/* Nonprofits */}
             <div className="glass-container overflow-hidden group cursor-pointer hover:bg-white/10 transition-colors duration-300">
               <div className="bg-cosmic-orange/90 px-4 py-3 flex items-center justify-center">
-                <h3 className="text-body-md font-bold text-black">Nonprofits</h3>
+                <h3 className="text-base sm:text-lg md:text-body-md font-bold text-black">Nonprofits</h3>
               </div>
               <div className="p-5">
-                <p className="text-body-sm text-medium-gray leading-relaxed text-center">
+                <p className="text-sm md:text-body-sm text-medium-gray leading-relaxed text-center">
                   Deploy Diffuse.AI to serve underrepresented communities
                 </p>
               </div>
             </div>
           </motion.div>
 
-          {/* CTA Section - Compact */}
+          {/* CTA Section */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="mt-12"
           >
-            <div className="glass-container p-8 md:p-10 text-center">
-              <h3 className="text-heading-xl font-bold mb-3">
+            <div className="glass-container p-6 sm:p-8 md:p-10 text-center">
+              <h3 className="text-xl sm:text-2xl md:text-heading-xl font-bold mb-3">
                 Ready to Transform Your Newsroom?
               </h3>
-              <p className="text-body-md text-medium-gray mb-6 max-w-2xl mx-auto">
+              <p className="text-base sm:text-lg md:text-body-md text-medium-gray mb-6 max-w-2xl mx-auto px-4">
                 See how Diffuse.AI integrates with your workflow—schedule a demo today.
               </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <button className="btn-primary px-6 py-3 text-body-sm">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center px-4">
+                <button className="btn-primary px-6 py-3 text-sm sm:text-base md:text-body-sm">
                   Schedule a Demo
                 </button>
-                <button className="btn-secondary px-6 py-3 text-body-sm">
+                <button className="btn-secondary px-6 py-3 text-sm sm:text-base md:text-body-sm">
                   Contact Sales
                 </button>
               </div>
@@ -186,4 +186,3 @@ export default function UseCases() {
     </section>
   )
 }
-

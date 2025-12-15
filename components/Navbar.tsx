@@ -16,7 +16,7 @@ export default function Navbar() {
   const scrollToSection = (href: string) => {
     const element = document.querySelector(href)
     if (element) {
-      const offset = 80 // Account for navbar height
+      const offset = 80
       const elementPosition = element.getBoundingClientRect().top
       const offsetPosition = elementPosition + window.pageYOffset - offset
 
@@ -37,23 +37,23 @@ export default function Navbar() {
               {/* Logo */}
               <button
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                className="text-lg md:text-xl font-bold hover:text-cosmic-orange transition-colors"
+                className="text-lg sm:text-xl md:text-2xl font-bold hover:text-cosmic-orange transition-colors"
               >
                 diffuse<span className="text-cosmic-orange">.ai</span>
               </button>
 
               {/* Desktop Navigation */}
-              <div className="hidden md:flex items-center gap-8">
+              <div className="hidden md:flex items-center gap-6 lg:gap-8">
                 {navLinks.map((link) => (
                   <button
                     key={link.name}
                     onClick={() => scrollToSection(link.href)}
-                    className="text-body-sm text-secondary-white hover:text-cosmic-orange transition-colors"
+                    className="text-sm md:text-body-sm text-secondary-white hover:text-cosmic-orange transition-colors whitespace-nowrap"
                   >
                     {link.name}
                   </button>
                 ))}
-                <button className="btn-primary px-5 py-2 text-body-sm">
+                <button className="btn-primary px-5 py-2.5 text-sm md:text-body-sm whitespace-nowrap">
                   Schedule a Demo
                 </button>
               </div>
@@ -110,12 +110,12 @@ export default function Navbar() {
                 <button
                   key={link.name}
                   onClick={() => scrollToSection(link.href)}
-                  className="text-body-md text-secondary-white hover:text-cosmic-orange transition-colors text-left py-2"
+                  className="text-base md:text-body-md text-secondary-white hover:text-cosmic-orange transition-colors text-left py-2"
                 >
                   {link.name}
                 </button>
               ))}
-              <button className="btn-primary w-full py-3 text-body-sm mt-2">
+              <button className="btn-primary w-full py-3 text-sm md:text-body-sm mt-2">
                 Schedule a Demo
               </button>
             </div>
@@ -125,4 +125,3 @@ export default function Navbar() {
     </>
   )
 }
-
