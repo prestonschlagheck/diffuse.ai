@@ -141,25 +141,25 @@ const SoundwaveToText = () => {
       </div>
 
       {/* Main container */}
-      <div className="relative z-10 w-full max-w-5xl mx-auto px-4 md:px-8">
+      <div className="relative z-10 w-full max-w-5xl mx-auto">
         {/* Header text */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-center mb-8 md:mb-10"
+          className="text-center mb-8 md:mb-10 px-4 md:px-8"
         >
-          <h1 className="text-3xl sm:text-4xl md:text-display-md lg:text-display-lg font-bold mb-4 md:mb-5 leading-tight px-4">
+          <h1 className="text-3xl sm:text-4xl md:text-display-md lg:text-display-lg font-bold mb-4 md:mb-5 leading-tight">
             Reviving Local News Through{' '}
             <span className="gradient-text">Smart Automation</span>
           </h1>
-          <p className="text-base sm:text-lg md:text-body-lg text-medium-gray max-w-2xl mx-auto px-4">
+          <p className="text-base sm:text-lg md:text-body-lg text-medium-gray max-w-2xl mx-auto">
             AI-driven workflow that transforms meeting recordings into publication-ready journalism
           </p>
         </motion.div>
 
         {/* Workflow visualization */}
-        <div className="relative glass-container p-6 sm:p-8 md:p-10">
+        <div className="relative glass-container p-6 sm:p-8 md:p-10 mx-4 md:mx-8">
           {/* Fixed label at top */}
           <div className="text-center mb-6 md:mb-8 h-5">
             <AnimatePresence mode="wait">
@@ -447,7 +447,7 @@ const SoundwaveToText = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.6 }}
-          className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center mt-8 px-4"
+          className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center mt-8 mx-4 md:mx-8"
         >
           <a href="#overview" className="btn-primary text-center text-sm sm:text-base py-3 md:py-4 px-6 md:px-8 w-full sm:w-auto">
             Learn More
