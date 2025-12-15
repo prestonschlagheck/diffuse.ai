@@ -127,7 +127,8 @@ const SoundwaveToText = () => {
   }, [currentArticle])
 
   const showAudioLabel = phase === 'recording-transcribing'
-  const showArticleLabel = phase === 'processing' || phase === 'typing'
+  const showProcessingLabel = phase === 'processing'
+  const showArticleLabel = phase === 'typing'
 
   return (
     <div className="relative w-full flex items-center justify-center overflow-hidden">
@@ -170,6 +171,18 @@ const SoundwaveToText = () => {
                   className="text-cosmic-orange text-xs sm:text-sm md:text-sm uppercase tracking-widest font-semibold"
                 >
                   Audio Input
+                </motion.span>
+              )}
+              {showProcessingLabel && (
+                <motion.span
+                  key="processing"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="text-cosmic-orange text-xs sm:text-sm md:text-sm uppercase tracking-widest font-semibold"
+                >
+                  Processing
                 </motion.span>
               )}
               {showArticleLabel && (
