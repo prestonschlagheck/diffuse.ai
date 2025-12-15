@@ -218,13 +218,13 @@ const SoundwaveToText = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.3 }}
-                  className="absolute inset-0 flex items-center justify-center"
+                  className="absolute inset-0 flex items-center justify-center px-4 sm:px-8 md:px-12"
                 >
-                  <div className="flex items-center gap-0.5 sm:gap-1">
-                    {[...Array(32)].map((_, i) => (
+                  <div className="flex items-center gap-[2px] sm:gap-[3px] md:gap-1 w-full max-w-3xl">
+                    {[...Array(48)].map((_, i) => (
                       <motion.div
                         key={i}
-                        className="w-[2.5px] sm:w-[3px] md:w-1 bg-gradient-to-t from-cosmic-orange to-rich-orange rounded-full"
+                        className="flex-1 min-w-[2px] sm:min-w-[3px] md:min-w-[4px] bg-gradient-to-t from-cosmic-orange to-rich-orange rounded-full"
                         animate={{
                           height: [4, 12 + (i % 4) * 8, 4],
                         }}
@@ -276,12 +276,13 @@ const SoundwaveToText = () => {
                       {[0, 1, 2, 3, 4, 5].map((i) => (
                         <motion.div
                           key={i}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: [0, 0.6, 0.2], scale: 1 }}
+                          animate={{ 
+                            opacity: [0.1, 0.6, 0.1],
+                          }}
                           transition={{
-                            duration: 1.5,
+                            duration: 0.8,
                             repeat: Infinity,
-                            delay: i * 0.3,
+                            delay: i * 0.15,
                             ease: 'easeInOut',
                           }}
                           className="h-2 bg-medium-gray/30 rounded-full"
