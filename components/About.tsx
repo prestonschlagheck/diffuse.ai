@@ -117,12 +117,12 @@ export default function About() {
               <motion.div
                 key={index}
                 whileHover={{ y: -3 }}
-                className="glass-container p-4 text-center group cursor-default"
+                className="glass-container p-3 md:p-4 text-center group cursor-default"
               >
-                <div className="text-heading-xl md:text-display-sm font-bold gradient-text mb-1">
+                <div className="text-heading-lg md:text-display-sm font-bold gradient-text mb-1">
                   {stat.number}
                 </div>
-                <div className="text-caption text-medium-gray uppercase tracking-wider">
+                <div className="text-[10px] md:text-caption text-medium-gray uppercase tracking-wider">
                   {stat.label}
                 </div>
               </motion.div>

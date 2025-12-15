@@ -69,24 +69,26 @@ export default function HowItWorksInteractive() {
           <h3 className="text-body-lg font-bold text-center text-black">{steps[currentStep].number}</h3>
         </div>
 
-        {/* Animated Content Area */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentStep}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2, ease: 'easeInOut' }}
-            className="p-8 text-center"
-          >
-            <h4 className="text-heading-xl font-bold mb-4 gradient-text">
-              {steps[currentStep].title}
-            </h4>
-            <p className="text-body-md text-medium-gray leading-relaxed">
-              {steps[currentStep].description}
-            </p>
-          </motion.div>
-        </AnimatePresence>
+        {/* Animated Content Area - Fixed height */}
+        <div className="min-h-[180px] md:min-h-[160px] flex items-center justify-center">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentStep}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2, ease: 'easeInOut' }}
+              className="p-6 md:p-8 text-center w-full"
+            >
+              <h4 className="text-heading-lg md:text-heading-xl font-bold mb-3 md:mb-4 gradient-text">
+                {steps[currentStep].title}
+              </h4>
+              <p className="text-body-sm md:text-body-md text-medium-gray leading-relaxed">
+                {steps[currentStep].description}
+              </p>
+            </motion.div>
+          </AnimatePresence>
+        </div>
 
         {/* Navigation */}
         <div className="flex items-center justify-between px-6 pb-6 border-t border-white/10 pt-4">
