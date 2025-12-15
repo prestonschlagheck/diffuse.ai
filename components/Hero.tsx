@@ -90,36 +90,24 @@ const SoundwaveToText = () => {
           </p>
         </motion.div>
 
-        {/* Transformation visualization - Side by side */}
+        {/* Transformation visualization - Full width */}
         <div className="relative glass-container p-6 md:p-8">
-          {/* Fixed labels row */}
-          <div className="grid grid-cols-2 gap-4 md:gap-8 mb-6">
-            <div className="text-center">
-              <span className="text-cosmic-orange text-[10px] md:text-caption uppercase tracking-wider font-semibold">
-                Audio Input
-              </span>
-            </div>
-            <div className="text-center">
-              <span className="text-cosmic-orange text-[10px] md:text-caption uppercase tracking-wider font-semibold">
-                Generated Article
-              </span>
-            </div>
-          </div>
-
-          {/* Content row - fixed height */}
-          <div className="grid grid-cols-2 gap-4 md:gap-8 min-h-[100px] md:min-h-[120px]">
-            {/* Left side - Audio visualization */}
-            <div className="flex items-center justify-center">
-              <AnimatePresence mode="wait">
-                {phase === 'listening' && (
-                  <motion.div
-                    key="listening"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex items-center gap-2"
-                  >
-                    <span className="text-medium-gray text-xs md:text-sm font-medium">
+          {/* Content area - fixed height, full width */}
+          <div className="min-h-[140px] md:min-h-[160px] flex items-center justify-center">
+            <AnimatePresence mode="wait">
+              {phase === 'listening' && (
+                <motion.div
+                  key="listening"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex flex-col items-center gap-4"
+                >
+                  <span className="text-cosmic-orange text-[10px] md:text-caption uppercase tracking-wider font-semibold">
+                    Audio Input
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-medium-gray text-sm md:text-base font-medium">
                       Listening for audio
                     </span>
                     <div className="flex gap-1">
@@ -138,97 +126,62 @@ const SoundwaveToText = () => {
                         />
                       ))}
                     </div>
-                  </motion.div>
-                )}
-                {phase === 'recording' && (
-                  <motion.div
-                    key="recording"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex items-center justify-center overflow-hidden w-full"
-                  >
-                    <div className="flex items-center gap-[3px] md:gap-[4px]">
-                      {[...Array(28)].map((_, i) => (
-                        <motion.div
-                          key={i}
-                          className="w-[2px] md:w-[3px] bg-gradient-to-t from-cosmic-orange to-rich-orange rounded-full"
-                          style={{ height: 8 }}
-                          animate={{
-                            height: [8, 15 + (i % 6) * 10, 8, 20 + (i % 4) * 8, 8],
-                            x: [0, -2, 0],
-                          }}
-                          transition={{
-                            height: {
-                              duration: 0.8 + (i % 3) * 0.2,
-                              repeat: Infinity,
-                              repeatType: 'loop',
-                              delay: i * 0.05,
-                              ease: 'easeInOut',
-                            },
-                            x: {
-                              duration: 0.3,
-                              repeat: Infinity,
-                              repeatType: 'reverse',
-                              delay: i * 0.02,
-                            }
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-                {(phase === 'thinking' || phase === 'typing') && (
-                  <motion.div
-                    key="idle"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex items-center justify-center"
-                  >
-                    <div className="flex items-center gap-[3px] md:gap-[4px]">
-                      {[...Array(28)].map((_, i) => (
-                        <motion.div
-                          key={i}
-                          className="w-[2px] md:w-[3px] bg-gradient-to-t from-cosmic-orange/50 to-rich-orange/50 rounded-full"
-                          style={{ height: 6 }}
-                          animate={{
-                            height: [6, 8, 6],
-                          }}
-                          transition={{
-                            duration: 2,
+                  </div>
+                </motion.div>
+              )}
+              {phase === 'recording' && (
+                <motion.div
+                  key="recording"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex flex-col items-center gap-4 w-full"
+                >
+                  <span className="text-cosmic-orange text-[10px] md:text-caption uppercase tracking-wider font-semibold">
+                    Audio Input
+                  </span>
+                  <div className="flex items-center gap-[3px] md:gap-[4px]">
+                    {[...Array(40)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        className="w-[2px] md:w-[3px] bg-gradient-to-t from-cosmic-orange to-rich-orange rounded-full"
+                        style={{ height: 8 }}
+                        animate={{
+                          height: [8, 15 + (i % 6) * 10, 8, 20 + (i % 4) * 8, 8],
+                          x: [0, -2, 0],
+                        }}
+                        transition={{
+                          height: {
+                            duration: 0.8 + (i % 3) * 0.2,
                             repeat: Infinity,
-                            delay: i * 0.03,
+                            repeatType: 'loop',
+                            delay: i * 0.05,
                             ease: 'easeInOut',
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Right side - Text */}
-            <div className="flex items-center justify-center">
-              <AnimatePresence mode="wait">
-                {(phase === 'listening' || phase === 'recording') && (
-                  <motion.div
-                    key="waiting"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="w-full"
-                  />
-                )}
-                {phase === 'thinking' && (
-                  <motion.div
-                    key="thinking"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex items-center gap-2"
-                  >
+                          },
+                          x: {
+                            duration: 0.3,
+                            repeat: Infinity,
+                            repeatType: 'reverse',
+                            delay: i * 0.02,
+                          }
+                        }}
+                      />
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+              {phase === 'thinking' && (
+                <motion.div
+                  key="thinking"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex flex-col items-center gap-4"
+                >
+                  <span className="text-cosmic-orange text-[10px] md:text-caption uppercase tracking-wider font-semibold">
+                    Generated Article
+                  </span>
+                  <div className="flex items-center gap-2">
                     <span className="text-medium-gray text-sm md:text-base font-semibold">
                       Thinking
                     </span>
@@ -250,26 +203,31 @@ const SoundwaveToText = () => {
                         />
                       ))}
                     </div>
-                  </motion.div>
-                )}
-                {phase === 'typing' && (
-                  <motion.p
-                    key="typing"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="text-xs md:text-sm font-semibold text-cosmic-orange leading-relaxed text-center"
-                  >
+                  </div>
+                </motion.div>
+              )}
+              {phase === 'typing' && (
+                <motion.div
+                  key="typing"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex flex-col items-center gap-4 w-full px-4"
+                >
+                  <span className="text-cosmic-orange text-[10px] md:text-caption uppercase tracking-wider font-semibold">
+                    Generated Article
+                  </span>
+                  <p className="text-sm md:text-base font-semibold text-cosmic-orange leading-relaxed text-center">
                     {displayedText}
                     <motion.span
                       animate={{ opacity: [1, 0] }}
                       transition={{ duration: 0.5, repeat: Infinity }}
-                      className="inline-block w-0.5 h-3 md:h-4 bg-cosmic-orange ml-0.5 align-middle"
+                      className="inline-block w-0.5 h-4 md:h-5 bg-cosmic-orange ml-0.5 align-middle"
                     />
-                  </motion.p>
-                )}
-              </AnimatePresence>
-            </div>
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Fixed progress indicator dots */}
