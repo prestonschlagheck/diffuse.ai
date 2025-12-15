@@ -79,6 +79,11 @@ const SoundwaveToText = () => {
                   setTypingStage('author')
                   setTimeout(() => {
                     setTypingStage('body')
+                    // Start fading out immediately when body typing begins
+                    setTimeout(() => {
+                      setTypingStage('fadeout')
+                    }, 100)
+                    
                     // Find first sentence (everything up to first period + space)
                     const firstSentenceEnd = currentArticleData.body.indexOf('. ') + 1
                     const firstSentence = firstSentenceEnd > 0 
@@ -92,10 +97,6 @@ const SoundwaveToText = () => {
                       } else {
                         clearInterval(bodyInterval)
                         setTypingStage('complete')
-                        // Wait a moment, then fade out
-                        setTimeout(() => {
-                          setTypingStage('fadeout')
-                        }, 1500)
                       }
                     }, 25)
                   }, 300)
@@ -115,7 +116,7 @@ const SoundwaveToText = () => {
     
     const nextArticle = setTimeout(() => {
       setCurrentArticle((prev) => (prev + 1) % articles.length)
-    }, 8000 + (currentArticleData.headline.length * 40) + 300 + (currentArticleData.subtitle.length * 35) + 500 + (firstSentence.length * 25) + 1500 + 800)
+    }, 8000 + (currentArticleData.headline.length * 40) + 300 + (currentArticleData.subtitle.length * 35) + 500 + 100 + 1200)
 
     return () => {
       clearTimeout(listeningTimer)
@@ -203,26 +204,9 @@ const SoundwaveToText = () => {
                   transition={{ duration: 0.3 }}
                   className="absolute inset-0 flex items-center justify-center"
                 >
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <span className="text-medium-gray text-sm sm:text-base md:text-lg font-medium">
-                      Listening for audio
-                    </span>
-                    <div className="flex gap-1 sm:gap-1.5">
-                      {[0, 1, 2].map((i) => (
-                        <motion.div
-                          key={i}
-                          className="w-1 sm:w-1.5 h-1 sm:h-1.5 rounded-full bg-medium-gray"
-                          animate={{ opacity: [0.3, 1, 0.3] }}
-                          transition={{
-                            duration: 1.2,
-                            repeat: Infinity,
-                            delay: i * 0.2,
-                            ease: 'easeInOut',
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </div>
+                  <span className="text-medium-gray text-sm sm:text-base md:text-lg font-medium">
+                    Listening for audio...
+                  </span>
                 </motion.div>
               )}
 
@@ -268,26 +252,9 @@ const SoundwaveToText = () => {
                   className="absolute inset-0 flex items-center justify-center px-4 sm:px-6"
                 >
                   <div className="flex flex-col items-center gap-3 sm:gap-4 w-full max-w-xl">
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <span className="text-medium-gray text-sm sm:text-base md:text-lg font-medium">
-                        Transcribing
-                      </span>
-                      <div className="flex gap-1 sm:gap-1.5">
-                        {[0, 1, 2].map((i) => (
-                          <motion.div
-                            key={i}
-                            className="w-1 sm:w-1.5 h-1 sm:h-1.5 rounded-full bg-medium-gray"
-                            animate={{ opacity: [0.3, 1, 0.3] }}
-                            transition={{
-                              duration: 1.2,
-                              repeat: Infinity,
-                              delay: i * 0.2,
-                              ease: 'easeInOut',
-                            }}
-                          />
-                        ))}
-                      </div>
-                    </div>
+                    <span className="text-medium-gray text-sm sm:text-base md:text-lg font-medium">
+                      Transcribing...
+                    </span>
                     <div className="grid grid-cols-3 gap-2 w-full">
                       {[0, 1, 2, 3, 4, 5].map((i) => (
                         <motion.div
