@@ -3,56 +3,115 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
 
+const articles = [
+  {
+    headline: "Council Approves $2.3M Budget for Road Repairs",
+    subtitle: "Infrastructure improvements to begin next month across township",
+    body: "The township council unanimously approved a $2.3 million budget allocation for road repairs during Tuesday's meeting. The funding will address critical infrastructure needs..."
+  },
+  {
+    headline: "School Board Votes to Extend Summer Programs",
+    subtitle: "Extended learning opportunities will benefit over 500 students",
+    body: "In a 6-1 vote, the school board approved extending summer educational programs through August. The decision comes after positive feedback from parents and strong student participation..."
+  },
+  {
+    headline: "Fire Department Receives New Emergency Equipment",
+    subtitle: "State grant funds advanced rescue tools and safety gear",
+    body: "The volunteer fire department received $150,000 in new emergency equipment, funded by a state safety grant. Fire Chief Michael Roberts said the equipment will significantly improve response capabilities..."
+  },
+  {
+    headline: "Parks Committee Announces Summer Concert Series",
+    subtitle: "Free outdoor concerts to take place every Friday evening",
+    body: "The Parks and Recreation Committee unveiled plans for a summer concert series featuring local musicians. Events will take place at Central Park starting June 2nd, with performances scheduled every Friday evening..."
+  },
+]
+
 const SoundwaveToText = () => {
-  const [currentHeadline, setCurrentHeadline] = useState(0)
-  const [displayedText, setDisplayedText] = useState('')
+  const [currentArticle, setCurrentArticle] = useState(0)
+  const [displayedHeadline, setDisplayedHeadline] = useState('')
+  const [displayedSubtitle, setDisplayedSubtitle] = useState('')
+  const [displayedBody, setDisplayedBody] = useState('')
+  const [typingStage, setTypingStage] = useState<'headline' | 'subtitle' | 'author' | 'body' | 'complete'>('headline')
   const [phase, setPhase] = useState<'listening' | 'recording' | 'transcribing' | 'processing' | 'typing'>('listening')
   
-  const headlines = [
-    "Council Approves $2.3M Budget for Road Repairs",
-    "School Board Votes to Extend Summer Programs",
-    "Fire Department Receives New Emergency Equipment",
-    "Parks Committee Announces Summer Concert Series",
-  ]
+  const currentArticleData = articles[currentArticle]
 
   useEffect(() => {
-    const currentText = headlines[currentHeadline]
-    let charIndex = 0
-    setDisplayedText('')
+    let headlineInterval: NodeJS.Timeout
+    let subtitleInterval: NodeJS.Timeout
+    let bodyInterval: NodeJS.Timeout
+    let headlineCharIndex = 0
+    let subtitleCharIndex = 0
+    let bodyCharIndex = 0
+
+    setDisplayedHeadline('')
+    setDisplayedSubtitle('')
+    setDisplayedBody('')
+    setTypingStage('headline')
     setPhase('listening')
 
     const listeningTimer = setTimeout(() => setPhase('recording'), 1500)
     const recordingTimer = setTimeout(() => setPhase('transcribing'), 4000)
     const transcribingTimer = setTimeout(() => setPhase('processing'), 6500)
+    
     const processingTimer = setTimeout(() => {
       setPhase('typing')
-      setDisplayedText('')
-      charIndex = 0
-
-      const typeInterval = setInterval(() => {
-        if (charIndex < currentText.length) {
-          setDisplayedText(currentText.slice(0, charIndex + 1))
-          charIndex++
+      setTypingStage('headline')
+      
+      // Type headline
+      headlineInterval = setInterval(() => {
+        if (headlineCharIndex < currentArticleData.headline.length) {
+          setDisplayedHeadline(currentArticleData.headline.slice(0, headlineCharIndex + 1))
+          headlineCharIndex++
         } else {
-          clearInterval(typeInterval)
+          clearInterval(headlineInterval)
+          // Short pause then start subtitle
+          setTimeout(() => {
+            setTypingStage('subtitle')
+            subtitleInterval = setInterval(() => {
+              if (subtitleCharIndex < currentArticleData.subtitle.length) {
+                setDisplayedSubtitle(currentArticleData.subtitle.slice(0, subtitleCharIndex + 1))
+                subtitleCharIndex++
+              } else {
+                clearInterval(subtitleInterval)
+                // Show author, then start body
+                setTimeout(() => {
+                  setTypingStage('author')
+                  setTimeout(() => {
+                    setTypingStage('body')
+                    bodyInterval = setInterval(() => {
+                      if (bodyCharIndex < currentArticleData.body.length) {
+                        setDisplayedBody(currentArticleData.body.slice(0, bodyCharIndex + 1))
+                        bodyCharIndex++
+                      } else {
+                        clearInterval(bodyInterval)
+                        setTypingStage('complete')
+                      }
+                    }, 25)
+                  }, 300)
+                }, 200)
+              }
+            }, 35)
+          }, 300)
         }
-      }, 30)
-
-      return () => clearInterval(typeInterval)
+      }, 40)
     }, 8000)
 
-    const nextHeadline = setTimeout(() => {
-      setCurrentHeadline((prev) => (prev + 1) % headlines.length)
-    }, 8000 + (currentText.length * 30) + 2000)
+    const nextArticle = setTimeout(() => {
+      setCurrentArticle((prev) => (prev + 1) % articles.length)
+    }, 8000 + (currentArticleData.headline.length * 40) + 300 + (currentArticleData.subtitle.length * 35) + 500 + (currentArticleData.body.length * 25) + 2000)
 
     return () => {
       clearTimeout(listeningTimer)
       clearTimeout(recordingTimer)
       clearTimeout(transcribingTimer)
       clearTimeout(processingTimer)
-      clearTimeout(nextHeadline)
+      clearTimeout(nextArticle)
+      clearInterval(headlineInterval)
+      clearInterval(subtitleInterval)
+      clearInterval(bodyInterval)
     }
-  }, [currentHeadline])
+  }, [currentArticle])
 
   const showAudioLabel = phase === 'listening' || phase === 'recording'
   const showArticleLabel = phase === 'transcribing' || phase === 'processing' || phase === 'typing'
@@ -116,7 +175,7 @@ const SoundwaveToText = () => {
           </div>
 
           {/* Content area with fixed height */}
-          <div className="min-h-[140px] sm:min-h-[150px] md:min-h-[160px] flex items-center justify-center relative">
+          <div className="min-h-[180px] sm:min-h-[200px] md:min-h-[220px] flex items-center justify-center relative">
             <AnimatePresence mode="wait">
               {/* Phase 1: Listening */}
               {phase === 'listening' && (
@@ -151,7 +210,7 @@ const SoundwaveToText = () => {
                 </motion.div>
               )}
 
-              {/* Phase 2: Recording - NO TEXT LABEL */}
+              {/* Phase 2: Recording */}
               {phase === 'recording' && (
                 <motion.div
                   key="recording"
@@ -182,7 +241,7 @@ const SoundwaveToText = () => {
                 </motion.div>
               )}
 
-              {/* Phase 3: Transcribing - NEW ANIMATION */}
+              {/* Phase 3: Transcribing */}
               {phase === 'transcribing' && (
                 <motion.div
                   key="transcribing"
@@ -213,7 +272,6 @@ const SoundwaveToText = () => {
                         ))}
                       </div>
                     </div>
-                    {/* Animated text blocks appearing */}
                     <div className="grid grid-cols-3 gap-2 w-full">
                       {[0, 1, 2, 3, 4, 5].map((i) => (
                         <motion.div
@@ -270,7 +328,7 @@ const SoundwaveToText = () => {
                 </motion.div>
               )}
 
-              {/* Phase 5: Typing */}
+              {/* Phase 5: Typing Article */}
               {phase === 'typing' && (
                 <motion.div
                   key="typing"
@@ -278,22 +336,74 @@ const SoundwaveToText = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.3 }}
-                  className="absolute inset-0 flex items-center justify-center px-4 sm:px-6"
+                  className="absolute inset-0 flex items-start justify-center px-4 sm:px-6 py-4 overflow-hidden"
                 >
-                  <p className="text-base sm:text-lg md:text-xl font-semibold leading-relaxed text-center max-w-2xl">
-                    <motion.span
-                      animate={{ opacity: [0.5, 1] }}
+                  <div className="w-full max-w-2xl text-left space-y-3">
+                    {/* Headline */}
+                    <motion.h2 
+                      className="text-lg sm:text-xl md:text-2xl font-bold leading-tight"
+                      animate={{ opacity: [0.6, 1] }}
                       transition={{ duration: 0.5, repeat: Infinity, repeatType: 'reverse' }}
-                      className="text-cosmic-orange"
                     >
-                      {displayedText}
-                    </motion.span>
-                    <motion.span
-                      animate={{ opacity: [1, 0] }}
-                      transition={{ duration: 0.5, repeat: Infinity }}
-                      className="inline-block w-0.5 h-5 sm:h-6 bg-cosmic-orange ml-1 align-middle"
-                    />
-                  </p>
+                      <span className="text-cosmic-orange">
+                        {displayedHeadline}
+                        {typingStage === 'headline' && (
+                          <motion.span
+                            animate={{ opacity: [1, 0] }}
+                            transition={{ duration: 0.5, repeat: Infinity }}
+                            className="inline-block w-0.5 h-5 sm:h-6 bg-cosmic-orange ml-1 align-middle"
+                          />
+                        )}
+                      </span>
+                    </motion.h2>
+
+                    {/* Subtitle */}
+                    {(typingStage === 'subtitle' || typingStage === 'author' || typingStage === 'body' || typingStage === 'complete') && (
+                      <motion.p 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-sm sm:text-base md:text-lg text-medium-gray italic"
+                      >
+                        {displayedSubtitle}
+                        {typingStage === 'subtitle' && (
+                          <motion.span
+                            animate={{ opacity: [1, 0] }}
+                            transition={{ duration: 0.5, repeat: Infinity }}
+                            className="inline-block w-0.5 h-4 sm:h-5 bg-medium-gray ml-1 align-middle"
+                          />
+                        )}
+                      </motion.p>
+                    )}
+
+                    {/* Author */}
+                    {(typingStage === 'author' || typingStage === 'body' || typingStage === 'complete') && (
+                      <motion.p 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-xs sm:text-sm text-medium-gray/70 uppercase tracking-wider pt-1 border-t border-white/10"
+                      >
+                        Written by Diffuse.AI
+                      </motion.p>
+                    )}
+
+                    {/* Body */}
+                    {(typingStage === 'body' || typingStage === 'complete') && (
+                      <motion.p 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-xs sm:text-sm md:text-base text-secondary-white leading-relaxed pt-2"
+                      >
+                        {displayedBody}
+                        {typingStage === 'body' && (
+                          <motion.span
+                            animate={{ opacity: [1, 0] }}
+                            transition={{ duration: 0.5, repeat: Infinity }}
+                            className="inline-block w-0.5 h-3 sm:h-4 bg-secondary-white ml-1 align-middle"
+                          />
+                        )}
+                      </motion.p>
+                    )}
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -301,11 +411,11 @@ const SoundwaveToText = () => {
 
           {/* Progress dots */}
           <div className="flex justify-center gap-2 mt-6 md:mt-8">
-            {headlines.map((_, index) => (
+            {articles.map((_, index) => (
               <div
                 key={index}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
-                  index === currentHeadline ? 'bg-cosmic-orange w-8' : 'bg-white/20 w-1.5'
+                  index === currentArticle ? 'bg-cosmic-orange w-8' : 'bg-white/20 w-1.5'
                 }`}
               />
             ))}
