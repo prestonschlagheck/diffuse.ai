@@ -13,7 +13,9 @@ export default function DashboardNav() {
   const [showUserMenu, setShowUserMenu] = useState(false)
 
   const navItems = [
+    { name: 'Organization', href: '/dashboard/organization', icon: '🏢' },
     { name: 'Projects', href: '/dashboard', icon: '📁' },
+    { name: 'Recordings', href: '/dashboard/recordings', icon: '🎙️' },
     { name: 'Settings', href: '/dashboard/settings', icon: '⚙️' },
   ]
 
@@ -31,14 +33,14 @@ export default function DashboardNav() {
         </Link>
       </div>
 
-      {/* Workspace Selector */}
+      {/* Organization Selector */}
       {workspaces.length > 0 && (
         <div className="p-4 border-b border-white/10 relative">
           <button
             onClick={() => setShowWorkspaceMenu(!showWorkspaceMenu)}
             className="w-full px-4 py-3 bg-white/5 rounded-glass text-left text-body-sm text-secondary-white hover:bg-white/10 transition-colors flex items-center justify-between"
           >
-            <span className="truncate">{currentWorkspace?.name || 'Select Workspace'}</span>
+            <span className="truncate">{currentWorkspace?.name || 'Select Organization'}</span>
             <span className="text-cosmic-orange">▼</span>
           </button>
 

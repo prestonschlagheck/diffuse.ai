@@ -5,169 +5,309 @@ import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import { formatDate } from '@/lib/utils/format'
 import LoadingSpinner from '@/components/dashboard/LoadingSpinner'
-import InviteMemberModal from '@/components/dashboard/InviteMemberModal'
-import type { DiffuseWorkspaceMember } from '@/types/database'
+
+type SubscriptionTier = 'free' | 'pro' | 'pro_max'
+type UserLevel = 'individual' | 'contractor' | 'admin' | 'enterprise_admin'
+
+interface UserProfile {
+  id: string
+  full_name: string | null
+  subscription_tier: SubscriptionTier
+  user_level: UserLevel
+}
 
 export default function SettingsPage() {
   const { user, currentWorkspace, workspaces } = useAuth()
-  const [members, setMembers] = useState<DiffuseWorkspaceMember[]>([])
+  const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [showInviteModal, setShowInviteModal] = useState(false)
-  const [userRole, setUserRole] = useState<'admin' | 'member' | null>(null)
+  const [fullName, setFullName] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
   const supabase = createClient()
 
-  const getUserRole = useCallback(() => {
-    if (!currentWorkspace) return
-    const workspace = workspaces.find((w) => w.workspace.id === currentWorkspace.id)
-    setUserRole(workspace?.role || null)
-  }, [currentWorkspace, workspaces])
-
-  const fetchMembers = useCallback(async () => {
-    if (!currentWorkspace) return
+  const fetchProfile = useCallback(async () => {
+    if (!user) return
 
     setLoading(true)
     try {
       const { data, error } = await supabase
-        .from('diffuse_workspace_members')
+        .from('user_profiles')
         .select('*')
-        .eq('workspace_id', currentWorkspace.id)
+        .eq('id', user.id)
+        .single()
 
-      if (error) throw error
-      setMembers(data || [])
+      if (error && error.code !== 'PGRST116') throw error
+
+      if (data) {
+        setProfile(data)
+        setFullName(data.full_name || '')
+      } else {
+        // Create default profile
+        const newProfile = {
+          id: user.id,
+          full_name: null,
+          subscription_tier: 'free' as SubscriptionTier,
+          user_level: 'individual' as UserLevel,
+        }
+        
+        const { error: insertError } = await supabase
+          .from('user_profiles')
+          .insert(newProfile)
+
+        if (!insertError) {
+          setProfile(newProfile)
+        }
+      }
     } catch (error) {
-      console.error('Error fetching members:', error)
+      console.error('Error fetching profile:', error)
     } finally {
       setLoading(false)
     }
-  }, [currentWorkspace, supabase])
+  }, [user, supabase])
 
   useEffect(() => {
-    if (currentWorkspace) {
-      fetchMembers()
-      getUserRole()
-    }
-  }, [currentWorkspace, fetchMembers, getUserRole])
+    fetchProfile()
+  }, [fetchProfile])
 
-  const handleRemoveMember = async (memberId: string) => {
-    if (!confirm('Are you sure you want to remove this member?')) return
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user) return
+
+    setSaving(true)
+    setMessage(null)
 
     try {
       const { error } = await supabase
-        .from('diffuse_workspace_members')
-        .delete()
-        .eq('id', memberId)
+        .from('user_profiles')
+        .update({ full_name: fullName })
+        .eq('id', user.id)
 
       if (error) throw error
-      fetchMembers()
-    } catch (error) {
-      console.error('Error removing member:', error)
-      alert('Failed to remove member')
+
+      setMessage({ type: 'success', text: 'Profile updated successfully!' })
+      fetchProfile()
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'Failed to update profile' })
+    } finally {
+      setSaving(false)
     }
   }
 
-  if (!currentWorkspace) {
+  const handleChangeSubscription = async (tier: SubscriptionTier) => {
+    if (!user || !confirm(`Upgrade to ${tier.replace('_', ' ').toUpperCase()}?`)) return
+
+    setSaving(true)
+    setMessage(null)
+
+    try {
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ subscription_tier: tier })
+        .eq('id', user.id)
+
+      if (error) throw error
+
+      setMessage({ type: 'success', text: 'Subscription updated successfully!' })
+      fetchProfile()
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'Failed to update subscription' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (!user) return
+
+    const confirmation = prompt('Type "DELETE" to confirm account deletion:')
+    if (confirmation !== 'DELETE') return
+
+    setSaving(true)
+    try {
+      // In a real app, you'd have a secure backend endpoint for this
+      // For now, we'll just sign out
+      alert('Account deletion would be processed here. For now, signing out.')
+      await supabase.auth.signOut()
+      window.location.href = '/'
+    } catch (error) {
+      console.error('Error deleting account:', error)
+      alert('Failed to delete account')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const userRole = currentWorkspace 
+    ? workspaces.find(w => w.workspace.id === currentWorkspace.id)?.role 
+    : null
+
+  const subscriptionDetails = {
+    free: { name: 'Free', projects: 3, price: '$0' },
+    pro: { name: 'Pro', projects: 15, price: '$29/mo' },
+    pro_max: { name: 'Pro Max', projects: 'Unlimited', price: '$99/mo' },
+  }
+
+  const userLevelLabels: Record<UserLevel, string> = {
+    individual: 'Individual',
+    contractor: 'Contractor',
+    admin: 'Admin',
+    enterprise_admin: 'Enterprise Admin',
+  }
+
+  if (loading || !profile) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-body-lg text-medium-gray">Please select a workspace</p>
+        <LoadingSpinner size="lg" />
       </div>
     )
   }
+
+  const currentSub = subscriptionDetails[profile.subscription_tier]
 
   return (
     <div className="max-w-4xl">
       <h1 className="text-display-sm text-secondary-white mb-8">Settings</h1>
 
-      {/* Workspace Info */}
-      <div className="glass-container p-6 mb-8">
-        <h2 className="text-heading-lg text-secondary-white mb-4">Workspace Information</h2>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-caption text-medium-gray mb-1">Name</label>
-            <p className="text-body-md text-secondary-white">{currentWorkspace.name}</p>
-          </div>
-          {currentWorkspace.description && (
+      {/* Message */}
+      {message && (
+        <div
+          className={`mb-6 p-4 rounded-glass border ${
+            message.type === 'error'
+              ? 'bg-red-500/10 border-red-500/30 text-red-400'
+              : 'bg-cosmic-orange/10 border-cosmic-orange/30 text-cosmic-orange'
+          }`}
+        >
+          <p className="text-body-sm">{message.text}</p>
+        </div>
+      )}
+
+      {/* Organization Info */}
+      {currentWorkspace && (
+        <div className="glass-container p-6 mb-6">
+          <h2 className="text-heading-lg text-secondary-white mb-4">Organization</h2>
+          <div className="space-y-3">
             <div>
-              <label className="block text-caption text-medium-gray mb-1">Description</label>
-              <p className="text-body-md text-secondary-white">{currentWorkspace.description}</p>
+              <label className="block text-caption text-medium-gray mb-1">Name</label>
+              <p className="text-body-md text-secondary-white">{currentWorkspace.name}</p>
             </div>
-          )}
-          <div>
-            <label className="block text-caption text-medium-gray mb-1">Created</label>
-            <p className="text-body-md text-secondary-white">
-              {formatDate(currentWorkspace.created_at)}
-            </p>
+            {currentWorkspace.description && (
+              <div>
+                <label className="block text-caption text-medium-gray mb-1">Description</label>
+                <p className="text-body-md text-secondary-white">{currentWorkspace.description}</p>
+              </div>
+            )}
+            <div>
+              <label className="block text-caption text-medium-gray mb-1">Your Role</label>
+              <p className="text-body-md text-secondary-white capitalize">
+                {userRole || 'member'}
+              </p>
+            </div>
+            <div>
+              <label className="block text-caption text-medium-gray mb-1">User Level</label>
+              <p className="text-body-md text-cosmic-orange font-medium">
+                {userLevelLabels[profile.user_level]}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Members */}
-      <div className="glass-container p-6 mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-heading-lg text-secondary-white">Members</h2>
-          {userRole === 'admin' && (
-            <button
-              onClick={() => setShowInviteModal(true)}
-              className="btn-primary px-4 py-2 text-body-sm"
-            >
-              + Invite Member
-            </button>
-          )}
+      {/* Subscription */}
+      <div className="glass-container p-6 mb-6">
+        <h2 className="text-heading-lg text-secondary-white mb-4">Subscription</h2>
+        <div className="mb-6">
+          <div className="flex items-baseline gap-3 mb-2">
+            <span className="text-2xl font-bold text-cosmic-orange">{currentSub.name}</span>
+            <span className="text-body-md text-medium-gray">{currentSub.price}</span>
+          </div>
+          <p className="text-body-sm text-medium-gray">
+            {currentSub.projects} {typeof currentSub.projects === 'number' ? 'projects allowed' : 'projects'}
+          </p>
         </div>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <LoadingSpinner />
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {members.map((member) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {(Object.keys(subscriptionDetails) as SubscriptionTier[]).map((tier) => {
+            const sub = subscriptionDetails[tier]
+            const isCurrent = profile.subscription_tier === tier
+            
+            return (
               <div
-                key={member.id}
-                className="flex items-center justify-between p-4 bg-white/5 rounded-glass border border-white/10"
+                key={tier}
+                className={`p-4 rounded-glass border-2 ${
+                  isCurrent
+                    ? 'border-cosmic-orange bg-cosmic-orange/10'
+                    : 'border-white/10 bg-white/5'
+                }`}
               >
-                <div>
-                  <p className="text-body-md text-secondary-white">{member.user_id}</p>
-                  <p className="text-caption text-medium-gray capitalize">{member.role}</p>
-                </div>
-                {userRole === 'admin' && member.user_id !== user?.id && (
+                <h3 className="text-heading-md text-secondary-white mb-2">{sub.name}</h3>
+                <p className="text-body-lg text-cosmic-orange font-bold mb-2">{sub.price}</p>
+                <p className="text-body-sm text-medium-gray mb-4">
+                  {sub.projects} projects
+                </p>
+                {!isCurrent && (
                   <button
-                    onClick={() => handleRemoveMember(member.id)}
-                    className="text-body-sm text-red-400 hover:text-red-300 transition-colors"
+                    onClick={() => handleChangeSubscription(tier)}
+                    disabled={saving}
+                    className="btn-secondary w-full py-2 text-body-sm disabled:opacity-50"
                   >
-                    Remove
+                    Upgrade
                   </button>
                 )}
+                {isCurrent && (
+                  <div className="text-center py-2">
+                    <span className="text-body-sm text-cosmic-orange font-medium">Current Plan</span>
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
-        )}
+            )
+          })}
+        </div>
       </div>
 
-      {/* Personal Settings */}
-      <div className="glass-container p-6">
-        <h2 className="text-heading-lg text-secondary-white mb-6">Personal Settings</h2>
-        <div className="space-y-4">
+      {/* Profile Settings */}
+      <div className="glass-container p-6 mb-6">
+        <h2 className="text-heading-lg text-secondary-white mb-6">Profile</h2>
+        <form onSubmit={handleSaveProfile} className="space-y-4">
           <div>
             <label className="block text-caption text-medium-gray mb-1">Email</label>
             <p className="text-body-md text-secondary-white">{user?.email}</p>
           </div>
           <div>
-            <button className="btn-secondary px-4 py-2 text-body-sm">
-              Change Password
-            </button>
+            <label className="block text-body-sm text-secondary-white mb-2">
+              Full Name
+            </label>
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="John Doe"
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md focus:outline-none focus:border-cosmic-orange transition-colors"
+            />
           </div>
-        </div>
+          <button
+            type="submit"
+            disabled={saving}
+            className="btn-primary px-6 py-3 disabled:opacity-50"
+          >
+            {saving ? 'Saving...' : 'Save Changes'}
+          </button>
+        </form>
       </div>
 
-      {/* Invite Member Modal */}
-      {showInviteModal && (
-        <InviteMemberModal
-          workspaceId={currentWorkspace.id}
-          onClose={() => setShowInviteModal(false)}
-          onSuccess={fetchMembers}
-        />
-      )}
+      {/* Danger Zone */}
+      <div className="glass-container p-6 border-2 border-red-500/30">
+        <h2 className="text-heading-lg text-red-400 mb-4">Danger Zone</h2>
+        <p className="text-body-sm text-medium-gray mb-4">
+          Once you delete your account, there is no going back. Please be certain.
+        </p>
+        <button
+          onClick={handleDeleteAccount}
+          disabled={saving}
+          className="btn-secondary px-6 py-3 text-red-400 hover:text-red-300 disabled:opacity-50"
+        >
+          Delete Account
+        </button>
+      </div>
     </div>
   )
 }
-
