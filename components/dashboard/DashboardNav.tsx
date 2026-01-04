@@ -66,7 +66,7 @@ export default function DashboardNav() {
         </Link>
       </div>
 
-      {/* Organization Selector */}
+      {/* Organization Selector - Only show if user has workspaces */}
       {workspaces.length > 0 && (
         <div className="p-4 border-b border-white/10 relative">
           <button

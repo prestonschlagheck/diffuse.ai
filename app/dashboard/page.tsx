@@ -33,15 +33,21 @@ export default function DashboardPage() {
   }
 
   const fetchProjects = useCallback(async () => {
-    if (!currentWorkspace) return
+    if (!user) return
 
     setLoading(true)
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('diffuse_projects')
         .select('*')
-        .eq('workspace_id', currentWorkspace.id)
-        .order('created_at', { ascending: false })
+        .eq('created_by', user.id)
+
+      // If user has a workspace selected, also show workspace projects
+      if (currentWorkspace) {
+        query = query.or(`workspace_id.eq.${currentWorkspace.id},created_by.eq.${user.id}`)
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false })
 
       if (error) throw error
       setProjects(data || [])
@@ -50,7 +56,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false)
     }
-  }, [currentWorkspace, supabase])
+  }, [user, currentWorkspace, supabase])
 
   const fetchUserProfile = useCallback(async () => {
     if (!user) return
@@ -78,38 +84,16 @@ export default function DashboardPage() {
   }, [user, supabase])
 
   useEffect(() => {
-    if (currentWorkspace) {
-      fetchProjects()
-    }
     if (user) {
+      fetchProjects()
       fetchUserProfile()
     }
-  }, [currentWorkspace, user, fetchProjects, fetchUserProfile])
+  }, [user, currentWorkspace, fetchProjects, fetchUserProfile])
 
   if (authLoading || !user) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <LoadingSpinner size="lg" />
-      </div>
-    )
-  }
-
-  if (!currentWorkspace) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <EmptyState
-          icon={
-            <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-          }
-          title="Setting up your workspace..."
-          description="If this takes too long, try refreshing the page or click the button below."
-          action={{
-            label: 'Retry',
-            onClick: fetchWorkspaces,
-          }}
-        />
       </div>
     )
   }
@@ -127,6 +111,7 @@ export default function DashboardPage() {
           <h1 className="text-display-sm text-secondary-white mb-2">Projects</h1>
           <p className="text-body-md text-medium-gray">
             {projectCount} of {projectLimit === null ? 'Unlimited' : projectLimit} projects • {subscriptionNames[subscriptionTier]} Plan
+            {currentWorkspace && ` • ${currentWorkspace.name}`}
           </p>
         </div>
         <button
@@ -287,7 +272,7 @@ export default function DashboardPage() {
       {/* Create Project Modal */}
       {showCreateModal && (
         <CreateProjectModal
-          workspaceId={currentWorkspace.id}
+          workspaceId={currentWorkspace?.id || null}
           onClose={() => setShowCreateModal(false)}
           onSuccess={fetchProjects}
         />

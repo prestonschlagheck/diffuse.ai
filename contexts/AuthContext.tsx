@@ -67,54 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       `)
       .eq('user_id', userId)
 
-    // If user has no workspaces, create a default personal workspace
-    if (!memberships || memberships.length === 0) {
-      try {
-        console.log('Creating personal workspace for user:', userId)
-        
-        // Create personal workspace
-        const { data: newWorkspace, error: workspaceError } = await supabase
-          .from('diffuse_workspaces')
-          .insert({
-            name: 'Personal Workspace',
-            description: 'Your personal workspace',
-            owner_id: userId,
-          })
-          .select()
-          .single()
-
-        if (workspaceError) {
-          console.error('Workspace creation error:', workspaceError)
-          throw workspaceError
-        }
-
-        console.log('Workspace created:', newWorkspace)
-
-        // Add user as admin of the workspace
-        const { error: memberError } = await supabase
-          .from('diffuse_workspace_members')
-          .insert({
-            workspace_id: newWorkspace.id,
-            user_id: userId,
-            role: 'admin',
-          })
-
-        if (memberError) {
-          console.error('Member insertion error:', memberError)
-          throw memberError
-        }
-
-        console.log('User added as admin to workspace')
-
-        // Set the new workspace as current
-        setWorkspaces([{ workspace: newWorkspace, role: 'admin' }])
-        setCurrentWorkspace(newWorkspace)
-        console.log('Workspace set as current')
-      } catch (error) {
-        console.error('Error creating default workspace:', error)
-        alert('Failed to create workspace. Please check the browser console for details.')
-      }
-    } else {
+    if (memberships && memberships.length > 0) {
       const workspaceData = memberships.map((m: any) => ({
         workspace: m.workspace,
         role: m.role as UserRole,
@@ -125,6 +78,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!currentWorkspace && workspaceData.length > 0) {
         setCurrentWorkspace(workspaceData[0].workspace)
       }
+    } else {
+      // User has no workspaces - that's okay!
+      setWorkspaces([])
+      setCurrentWorkspace(null)
     }
   }
 

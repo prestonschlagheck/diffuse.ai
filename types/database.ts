@@ -28,7 +28,7 @@ export interface DiffuseWorkspaceMember {
 
 export interface DiffuseProject {
   id: string
-  workspace_id: string
+  workspace_id: string | null
   name: string
   description?: string
   visibility: ProjectVisibility

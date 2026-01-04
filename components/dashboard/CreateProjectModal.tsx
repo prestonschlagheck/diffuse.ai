@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 interface CreateProjectModalProps {
-  workspaceId: string
+  workspaceId?: string | null
   onClose: () => void
   onSuccess: () => void
 }
@@ -27,7 +27,7 @@ export default function CreateProjectModal({ workspaceId, onClose, onSuccess }: 
       if (!user) throw new Error('Not authenticated')
 
       const { error: insertError } = await supabase.from('diffuse_projects').insert({
-        workspace_id: workspaceId,
+        workspace_id: workspaceId || null,
         name,
         description: description || null,
         visibility,
