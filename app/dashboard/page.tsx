@@ -219,8 +219,8 @@ export default function DashboardPage() {
             <thead>
               <tr className="border-b border-white/10">
                 <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">NAME</th>
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">INPUTS</th>
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">OUTPUTS</th>
+                <th className="text-center py-4 px-6 text-caption text-medium-gray font-medium">INPUTS</th>
+                <th className="text-center py-4 px-6 text-caption text-medium-gray font-medium">OUTPUTS</th>
                 <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">VISIBILITY</th>
                 <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">CREATED</th>
               </tr>
@@ -236,7 +236,7 @@ export default function DashboardPage() {
                     <p className="text-body-md text-secondary-white font-medium">{project.name}</p>
                   </td>
                   <td className="py-4 px-6">
-                    <span className="flex items-center gap-1 text-body-sm text-medium-gray">
+                    <span className="flex items-center justify-center gap-1 text-body-sm text-medium-gray">
                       {project.input_count > 0 ? (
                         Array.from({ length: Math.min(project.input_count, 5) }).map((_, i) => (
                           <svg key={i} className="w-4 h-4 text-cosmic-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -252,7 +252,7 @@ export default function DashboardPage() {
                     </span>
                   </td>
                   <td className="py-4 px-6">
-                    <span className="flex items-center gap-1 text-body-sm text-medium-gray">
+                    <span className="flex items-center justify-center gap-1 text-body-sm text-medium-gray">
                       {project.output_count > 0 ? (
                         Array.from({ length: Math.min(project.output_count, 5) }).map((_, i) => (
                           <svg key={i} className="w-4 h-4 text-cosmic-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">

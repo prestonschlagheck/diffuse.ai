@@ -108,38 +108,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const fetchWorkspaces = async (userId: string) => {
-    const { data: memberships } = await supabase
-      .from('diffuse_workspace_members')
-      .select(`
-        role,
-        workspace:diffuse_workspaces (
-          id,
-          name,
-          description,
-          invite_code,
-          plan,
-          created_at,
-          updated_at,
-          owner_id
-        )
-      `)
-      .eq('user_id', userId)
+    try {
+      // First get the memberships
+      const { data: memberships, error: memberError } = await supabase
+        .from('diffuse_workspace_members')
+        .select('role, workspace_id')
+        .eq('user_id', userId)
 
-    if (memberships && memberships.length > 0) {
-      const workspaceData = memberships.map((m: any) => ({
-        workspace: m.workspace,
-        role: m.role as UserRole,
-      }))
-      setWorkspaces(workspaceData)
-      
-      // Set first workspace as current if none selected
-      if (!currentWorkspace && workspaceData.length > 0) {
-        setCurrentWorkspace(workspaceData[0].workspace)
+      if (memberError) {
+        console.error('Error fetching memberships:', memberError)
+        setWorkspaces([])
+        return
       }
-    } else {
-      // User has no workspaces - that's okay!
+
+      if (!memberships || memberships.length === 0) {
+        setWorkspaces([])
+        return
+      }
+
+      // Then get the workspaces separately
+      const workspaceIds = memberships.map(m => m.workspace_id)
+      const { data: workspacesData, error: workspaceError } = await supabase
+        .from('diffuse_workspaces')
+        .select('*')
+        .in('id', workspaceIds)
+
+      if (workspaceError) {
+        console.error('Error fetching workspaces:', workspaceError)
+        setWorkspaces([])
+        return
+      }
+
+      if (workspacesData && workspacesData.length > 0) {
+        const workspaceData = memberships.map((m: any) => ({
+          workspace: workspacesData.find(w => w.id === m.workspace_id),
+          role: m.role as UserRole,
+        })).filter(w => w.workspace) // Filter out any null workspaces
+        
+        setWorkspaces(workspaceData)
+        
+        // Set first workspace as current if none selected
+        if (!currentWorkspace && workspaceData.length > 0) {
+          setCurrentWorkspace(workspaceData[0].workspace)
+        }
+      } else {
+        setWorkspaces([])
+      }
+    } catch (error) {
+      console.error('Error in fetchWorkspaces:', error)
       setWorkspaces([])
-      setCurrentWorkspace(null)
     }
   }
 

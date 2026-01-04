@@ -46,22 +46,40 @@ export default function OrganizationPage() {
     setMessage(null)
 
     try {
-      // Find organization by invite code
+      const codeToFind = joinCode.toUpperCase().trim()
+      
+      // Find organization by invite code - use maybeSingle to handle no results gracefully
       const { data: org, error: orgError } = await supabase
         .from('diffuse_workspaces')
         .select('*')
-        .eq('invite_code', joinCode.toUpperCase())
-        .single()
+        .eq('invite_code', codeToFind)
+        .maybeSingle()
 
       if (orgError) {
+        console.error('Error finding organization:', orgError)
         if (orgError.code === '42703') {
           throw new Error('Organization invite codes not yet configured in database')
         }
-        throw new Error('Invalid organization code')
+        if (orgError.code === 'PGRST116') {
+          throw new Error('Invalid organization code')
+        }
+        throw new Error(`Error: ${orgError.message}`)
       }
 
       if (!org) {
-        throw new Error('Invalid organization code')
+        throw new Error('Invalid organization code - no organization found with this code')
+      }
+
+      // Check if user is already a member
+      const { data: existingMember } = await supabase
+        .from('diffuse_workspace_members')
+        .select('id')
+        .eq('workspace_id', org.id)
+        .eq('user_id', user?.id)
+        .maybeSingle()
+
+      if (existingMember) {
+        throw new Error('You are already a member of this organization')
       }
 
       // Add user as member
@@ -73,13 +91,17 @@ export default function OrganizationPage() {
           role: 'member',
         })
 
-      if (memberError) throw memberError
+      if (memberError) {
+        console.error('Error adding member:', memberError)
+        throw new Error(`Failed to join: ${memberError.message}`)
+      }
 
       setMessage({ type: 'success', text: `Successfully joined ${org.name}!` })
       setJoinCode('')
       setShowJoinModal(false)
       window.location.reload()
     } catch (error: any) {
+      console.error('Join organization error:', error)
       setMessage({ type: 'error', text: error.message || 'Failed to join organization' })
     } finally {
       setLoading(false)

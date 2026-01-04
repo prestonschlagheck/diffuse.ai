@@ -374,7 +374,7 @@ export default function ProjectDetailPage() {
               : 'text-secondary-white hover:text-white'
           }`}
         >
-          Visibility
+          Visibility ({visibility === 'public' ? selectedOrgs.length : 0})
           {activeTab === 'visibility' && (
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-cosmic-orange" />
           )}

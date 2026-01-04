@@ -39,6 +39,10 @@ export default function OrganizationDetailPage() {
   const [userRole, setUserRole] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [savingPlan, setSavingPlan] = useState(false)
+  const [editingOrg, setEditingOrg] = useState(false)
+  const [editOrgName, setEditOrgName] = useState('')
+  const [editOrgDescription, setEditOrgDescription] = useState('')
+  const [copiedCode, setCopiedCode] = useState(false)
   const supabase = createClient()
 
   const fetchOrganizationData = useCallback(async () => {
@@ -172,6 +176,34 @@ export default function OrganizationDetailPage() {
     }
   }
 
+  const handleEditOrg = () => {
+    if (workspace) {
+      setEditOrgName(workspace.name)
+      setEditOrgDescription(workspace.description || '')
+      setEditingOrg(true)
+    }
+  }
+
+  const handleSaveOrg = async () => {
+    if (!workspace) return
+    try {
+      const { error } = await supabase
+        .from('diffuse_workspaces')
+        .update({ 
+          name: editOrgName,
+          description: editOrgDescription || null
+        })
+        .eq('id', workspace.id)
+
+      if (error) throw error
+      setEditingOrg(false)
+      fetchOrganizationData()
+    } catch (error) {
+      console.error('Error saving organization:', error)
+      alert('Failed to save organization')
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -199,53 +231,93 @@ export default function OrganizationDetailPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <Link 
-              href="/dashboard/organization" 
-              className="text-medium-gray hover:text-secondary-white transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </Link>
-            <h1 className="text-display-sm text-secondary-white">{workspace.name}</h1>
-          </div>
-          <p className="text-body-md text-medium-gray">
-            {workspace.description || 'Public projects from organization members'}
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <p className="text-body-sm text-medium-gray">Members</p>
-            <p className="text-heading-md text-secondary-white">{members.length}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-body-sm text-medium-gray">Public Projects</p>
-            <p className="text-heading-md text-secondary-white">{projects.length}</p>
-          </div>
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-2">
+          <Link 
+            href="/dashboard/organization" 
+            className="text-medium-gray hover:text-secondary-white transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </Link>
+          {editingOrg ? (
+            <div className="flex-1 space-y-3">
+              <input
+                type="text"
+                value={editOrgName}
+                onChange={(e) => setEditOrgName(e.target.value)}
+                className="w-full text-display-sm bg-white/5 border border-white/10 rounded-glass px-4 py-2 text-secondary-white focus:outline-none focus:border-cosmic-orange"
+              />
+              <textarea
+                value={editOrgDescription}
+                onChange={(e) => setEditOrgDescription(e.target.value)}
+                placeholder="Description (optional)"
+                rows={2}
+                className="w-full text-body-lg bg-white/5 border border-white/10 rounded-glass px-4 py-2 text-medium-gray focus:outline-none focus:border-cosmic-orange resize-none"
+              />
+              <div className="flex gap-2">
+                <button onClick={handleSaveOrg} className="btn-primary px-4 py-2 text-body-sm">
+                  Save
+                </button>
+                <button onClick={() => setEditingOrg(false)} className="btn-secondary px-4 py-2 text-body-sm">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="group flex-1">
+              <div className="flex items-center gap-3">
+                <h1 className="text-display-sm text-secondary-white">{workspace.name}</h1>
+                {userRole === 'admin' && (
+                  <button
+                    onClick={handleEditOrg}
+                    className="opacity-0 group-hover:opacity-100 text-medium-gray hover:text-cosmic-orange transition-all"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              {workspace.description && (
+                <p className="text-body-md text-medium-gray mt-1">
+                  {workspace.description}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Invite Code */}
-      {workspace.invite_code && (
-        <div className="glass-container p-4 mb-8 flex items-center justify-between">
-          <div>
-            <p className="text-body-sm text-medium-gray">Invite Code</p>
-            <code className="text-heading-md text-cosmic-orange">{workspace.invite_code}</code>
-          </div>
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(workspace.invite_code || '')
-              alert('Invite code copied!')
-            }}
-            className="btn-secondary px-4 py-2 text-body-sm"
-          >
-            Copy Code
-          </button>
+      {/* Stats Row */}
+      <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="glass-container p-4 text-center">
+          <p className="text-body-sm text-medium-gray mb-1">Members</p>
+          <p className="text-heading-lg text-secondary-white">{members.length}</p>
         </div>
-      )}
+        <div className="glass-container p-4 text-center">
+          <p className="text-body-sm text-medium-gray mb-1">Projects</p>
+          <p className="text-heading-lg text-secondary-white">{projects.length}</p>
+        </div>
+        <div className="glass-container p-4 text-center">
+          <p className="text-body-sm text-medium-gray mb-1">Invite Code</p>
+          {workspace.invite_code ? (
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(workspace.invite_code || '')
+                setCopiedCode(true)
+                setTimeout(() => setCopiedCode(false), 2000)
+              }}
+              className="text-heading-lg text-cosmic-orange hover:text-cosmic-orange/80 transition-colors"
+            >
+              {copiedCode ? 'Copied!' : workspace.invite_code}
+            </button>
+          ) : (
+            <span className="text-heading-lg text-medium-gray">—</span>
+          )}
+        </div>
+      </div>
 
       {/* Projects */}
       <h2 className="text-heading-lg text-secondary-white mb-4">Projects</h2>
@@ -266,8 +338,8 @@ export default function OrganizationDetailPage() {
             <thead>
               <tr className="border-b border-white/10">
                 <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">NAME</th>
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">INPUTS</th>
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">OUTPUTS</th>
+                <th className="text-center py-4 px-6 text-caption text-medium-gray font-medium">INPUTS</th>
+                <th className="text-center py-4 px-6 text-caption text-medium-gray font-medium">OUTPUTS</th>
                 <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">CREATED</th>
               </tr>
             </thead>
@@ -282,7 +354,7 @@ export default function OrganizationDetailPage() {
                     <p className="text-body-md text-secondary-white font-medium">{project.name}</p>
                   </td>
                   <td className="py-4 px-6">
-                    <span className="flex items-center gap-1 text-body-sm text-medium-gray">
+                    <span className="flex items-center justify-center gap-1 text-body-sm text-medium-gray">
                       {project.input_count > 0 ? (
                         Array.from({ length: Math.min(project.input_count, 5) }).map((_, i) => (
                           <svg key={i} className="w-4 h-4 text-cosmic-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -298,7 +370,7 @@ export default function OrganizationDetailPage() {
                     </span>
                   </td>
                   <td className="py-4 px-6">
-                    <span className="flex items-center gap-1 text-body-sm text-medium-gray">
+                    <span className="flex items-center justify-center gap-1 text-body-sm text-medium-gray">
                       {project.output_count > 0 ? (
                         Array.from({ length: Math.min(project.output_count, 5) }).map((_, i) => (
                           <svg key={i} className="w-4 h-4 text-cosmic-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
