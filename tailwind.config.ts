@@ -22,7 +22,7 @@ const config: Config = {
         'off-white': '#f4f4f4',
       },
       fontFamily: {
-        mono: ['IBM Plex Mono', 'monospace'],
+        mono: ['Space Grotesk', 'sans-serif'],
       },
       fontSize: {
         // Design system typography
