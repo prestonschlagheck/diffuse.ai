@@ -390,7 +390,9 @@ export default function RecordingsPage() {
                 onClick={() => setSelectedRecording(null)}
                 className="text-medium-gray hover:text-secondary-white transition-colors"
               >
-                ✕
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
             <div className="mb-4">
