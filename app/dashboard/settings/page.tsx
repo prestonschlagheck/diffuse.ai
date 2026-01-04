@@ -225,21 +225,23 @@ export default function SettingsPage() {
             <label className="block text-body-sm text-secondary-white mb-2">
               Full Name
             </label>
-            <input
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="John Doe"
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md focus:outline-none focus:border-cosmic-orange transition-colors"
-            />
+            <div className="flex gap-4">
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="John Doe"
+                className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md focus:outline-none focus:border-cosmic-orange transition-colors"
+              />
+              <button
+                type="submit"
+                disabled={saving}
+                className="btn-primary px-6 py-3 disabled:opacity-50 whitespace-nowrap"
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
           </div>
-          <button
-            type="submit"
-            disabled={saving}
-            className="btn-primary px-6 py-3 disabled:opacity-50"
-          >
-            {saving ? 'Saving...' : 'Save Changes'}
-          </button>
         </form>
       </div>
 
