@@ -28,11 +28,33 @@ export default function RecordingsPage() {
   const [pendingRecording, setPendingRecording] = useState<Blob | null>(null)
   const [selectedRecording, setSelectedRecording] = useState<Recording | null>(null)
   const [transcribing, setTranscribing] = useState(false)
+  const [micPermission, setMicPermission] = useState<'granted' | 'denied' | 'prompt' | 'unknown'>('unknown')
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const supabase = createClient()
+
+  // Check microphone permission on mount
+  useEffect(() => {
+    const checkMicPermission = async () => {
+      try {
+        if (navigator.permissions) {
+          const result = await navigator.permissions.query({ name: 'microphone' as PermissionName })
+          setMicPermission(result.state as 'granted' | 'denied' | 'prompt')
+          
+          // Listen for permission changes
+          result.onchange = () => {
+            setMicPermission(result.state as 'granted' | 'denied' | 'prompt')
+          }
+        }
+      } catch (error) {
+        // Some browsers don't support permission query for microphone
+        console.log('Permission query not supported, will check on recording start')
+      }
+    }
+    checkMicPermission()
+  }, [])
 
   const fetchRecordings = useCallback(async () => {
     if (!user) return
@@ -66,24 +88,47 @@ export default function RecordingsPage() {
   }, [fetchRecordings])
 
   const startRecording = async () => {
+    // Check if browser supports getUserMedia
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert('Your browser does not support audio recording. Please use a modern browser like Chrome, Firefox, or Safari.')
+      return
+    }
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const mediaRecorder = new MediaRecorder(stream)
+      // Request microphone permission
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 44100
+        } 
+      })
+      
+      // Check for supported MIME type
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') 
+        ? 'audio/webm' 
+        : MediaRecorder.isTypeSupported('audio/mp4')
+          ? 'audio/mp4'
+          : 'audio/ogg'
+      
+      const mediaRecorder = new MediaRecorder(stream, { mimeType })
       mediaRecorderRef.current = mediaRecorder
       audioChunksRef.current = []
 
       mediaRecorder.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data)
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data)
+        }
       }
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType })
         setPendingRecording(audioBlob)
         setShowTitleModal(true)
         stream.getTracks().forEach(track => track.stop())
       }
 
-      mediaRecorder.start()
+      mediaRecorder.start(1000) // Collect data every second
       setRecording(true)
       setRecordingTime(0)
 
@@ -91,9 +136,43 @@ export default function RecordingsPage() {
       timerRef.current = setInterval(() => {
         setRecordingTime((prev) => prev + 1)
       }, 1000)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error starting recording:', error)
-      alert('Failed to access microphone. Please check permissions.')
+      
+      // Provide specific error messages
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        alert('Microphone access was denied. Please allow microphone access in your browser settings and try again.\n\nIn Chrome: Click the lock icon in the address bar → Site settings → Microphone → Allow')
+      } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+        alert('No microphone found. Please connect a microphone and try again.')
+      } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+        alert('Your microphone is busy or unavailable. Please close other apps using the microphone and try again.')
+      } else if (error.name === 'OverconstrainedError') {
+        alert('Could not satisfy audio constraints. Trying with default settings...')
+        // Retry with basic settings
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+          const mediaRecorder = new MediaRecorder(stream)
+          mediaRecorderRef.current = mediaRecorder
+          audioChunksRef.current = []
+          mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) audioChunksRef.current.push(event.data)
+          }
+          mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+            setPendingRecording(audioBlob)
+            setShowTitleModal(true)
+            stream.getTracks().forEach(track => track.stop())
+          }
+          mediaRecorder.start(1000)
+          setRecording(true)
+          setRecordingTime(0)
+          timerRef.current = setInterval(() => setRecordingTime((prev) => prev + 1), 1000)
+        } catch (retryError) {
+          alert('Failed to access microphone. Please check your browser permissions.')
+        }
+      } else {
+        alert(`Failed to access microphone: ${error.message || 'Unknown error'}. Please check your browser permissions.`)
+      }
     }
   }
 
@@ -205,7 +284,14 @@ export default function RecordingsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-display-sm text-secondary-white">Recordings</h1>
+        <div>
+          <h1 className="text-display-sm text-secondary-white">Recordings</h1>
+          {micPermission === 'denied' && (
+            <p className="text-body-sm text-red-400 mt-1">
+              Microphone access denied. Please enable it in your browser settings.
+            </p>
+          )}
+        </div>
         
         {/* Recording Controls */}
         {!recording ? (
