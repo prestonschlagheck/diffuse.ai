@@ -6,7 +6,7 @@ const assemblyai = new AssemblyAI({
   apiKey: process.env.ASSEMBLYAI_API_KEY!,
 })
 
-// Create a Supabase client with service role for server-side operations
+// Create a Supabase client for database operations
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -14,31 +14,21 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
   try {
-    const { recordingId, filePath } = await request.json()
+    const { recordingId, audioUrl } = await request.json()
 
-    if (!recordingId || !filePath) {
+    if (!recordingId || !audioUrl) {
       return NextResponse.json(
-        { error: 'Missing recordingId or filePath' },
+        { error: 'Missing recordingId or audioUrl' },
         { status: 400 }
       )
     }
 
-    // Get a signed URL for the audio file (valid for 1 hour)
-    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-      .from('recordings')
-      .createSignedUrl(filePath, 3600)
-
-    if (signedUrlError || !signedUrlData?.signedUrl) {
-      console.error('Error getting signed URL:', signedUrlError)
-      return NextResponse.json(
-        { error: 'Failed to get audio file URL' },
-        { status: 500 }
-      )
-    }
+    console.log('Starting transcription for recording:', recordingId)
+    console.log('Audio URL:', audioUrl.substring(0, 100) + '...')
 
     // Transcribe using AssemblyAI
     const transcript = await assemblyai.transcripts.transcribe({
-      audio: signedUrlData.signedUrl,
+      audio: audioUrl,
       speech_model: 'universal',
     })
 

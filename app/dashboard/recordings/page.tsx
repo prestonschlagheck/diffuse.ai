@@ -230,12 +230,22 @@ export default function RecordingsPage() {
     setTranscribing(true)
 
     try {
+      // First get a signed URL using the client-side auth
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+        .from('recordings')
+        .createSignedUrl(recording.file_path, 3600) // 1 hour expiry
+
+      if (signedUrlError || !signedUrlData?.signedUrl) {
+        throw new Error('Failed to get audio URL for transcription')
+      }
+
+      // Send the signed URL to the transcription API
       const response = await fetch('/api/transcribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           recordingId: recording.id,
-          filePath: recording.file_path,
+          audioUrl: signedUrlData.signedUrl,
         }),
       })
 
@@ -255,23 +265,25 @@ export default function RecordingsPage() {
     }
   }
 
-  // Fetch signed URL for audio playback
+  // Fetch signed URL for audio playback using client-side Supabase
   const fetchAudioUrl = async (filePath: string) => {
     setLoadingAudio(true)
     try {
-      const response = await fetch('/api/recordings/signed-url', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filePath }),
-      })
+      // Use client-side Supabase which has the user's auth session
+      const { data, error } = await supabase.storage
+        .from('recordings')
+        .createSignedUrl(filePath, 3600) // 1 hour expiry
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to get audio URL')
+      if (error) {
+        console.error('Supabase signed URL error:', error)
+        throw error
       }
 
-      setAudioUrl(data.signedUrl)
+      if (data?.signedUrl) {
+        setAudioUrl(data.signedUrl)
+      } else {
+        throw new Error('No signed URL returned')
+      }
     } catch (error) {
       console.error('Error fetching audio URL:', error)
       setAudioUrl(null)
