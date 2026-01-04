@@ -5,12 +5,23 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 
+const subscriptionNames: Record<string, string> = {
+  free: 'Free',
+  pro: 'Pro',
+  pro_max: 'Pro Max',
+}
+
 export default function DashboardNav() {
   const pathname = usePathname()
   const router = useRouter()
-  const { user, workspaces, currentWorkspace, setCurrentWorkspace, signOut } = useAuth()
+  const { user, userProfile, workspaces, currentWorkspace, setCurrentWorkspace, signOut } = useAuth()
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
+
+  // Get display name - use full_name if available, otherwise email prefix
+  const displayName = userProfile?.full_name || user?.email?.split('@')[0] || 'User'
+  const subscriptionTier = userProfile?.subscription_tier || 'free'
+  const subscriptionLabel = subscriptionNames[subscriptionTier] || 'Free'
 
   const navItems = [
     { 
@@ -134,13 +145,21 @@ export default function DashboardNav() {
           className="w-full px-4 py-3 bg-white/5 rounded-glass text-left text-body-sm text-secondary-white hover:bg-white/10 transition-colors flex items-center justify-between"
         >
           <div className="truncate">
-            <div className="font-medium truncate">{user?.email}</div>
+            <div className="font-medium truncate">{displayName}</div>
+            <div className="text-caption text-cosmic-orange">{subscriptionLabel}</div>
           </div>
           <span className="text-cosmic-orange">▼</span>
         </button>
 
         {showUserMenu && (
           <div className="absolute bottom-full left-4 right-4 mb-2 glass-container border border-white/10 z-50">
+            <Link
+              href="/dashboard/settings"
+              onClick={() => setShowUserMenu(false)}
+              className="block w-full px-4 py-3 text-left text-body-sm text-secondary-white hover:bg-white/10 transition-colors border-b border-white/10"
+            >
+              Account
+            </Link>
             <button
               onClick={handleSignOut}
               className="w-full px-4 py-3 text-left text-body-sm text-secondary-white hover:bg-white/10 transition-colors"

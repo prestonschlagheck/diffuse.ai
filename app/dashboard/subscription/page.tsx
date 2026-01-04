@@ -24,8 +24,8 @@ export default function SubscriptionPage() {
 
   const subscriptionDetails = {
     free: { name: 'Free', projects: 3, price: '$0/mo' },
-    pro: { name: 'Pro', projects: 15, price: '$29/mo' },
-    pro_max: { name: 'Pro Max', projects: 'Unlimited', price: '$99/mo' },
+    pro: { name: 'Pro', projects: 15, price: '$20/mo' },
+    pro_max: { name: 'Pro Max', projects: 'Unlimited', price: '$60/mo' },
   }
 
   const fetchProfile = useCallback(async () => {
