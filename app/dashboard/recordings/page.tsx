@@ -363,6 +363,25 @@ export default function RecordingsPage() {
     return () => clearInterval(pollInterval)
   }, [selectedRecording?.id, selectedRecording?.status, supabase])
 
+  // Open a recording - fetch fresh data from DB
+  const openRecording = async (rec: Recording) => {
+    // Fetch fresh data to ensure we have the latest status/transcription
+    const { data, error } = await supabase
+      .from('diffuse_recordings')
+      .select('*')
+      .eq('id', rec.id)
+      .single()
+
+    if (error || !data) {
+      console.error('Error fetching recording:', error)
+      // Fall back to cached data if fetch fails
+      setSelectedRecording(rec)
+      return
+    }
+
+    setSelectedRecording(data)
+  }
+
   const deleteRecording = async (id: string, filePath: string) => {
     try {
       // Delete from storage
@@ -467,7 +486,7 @@ export default function RecordingsPage() {
               {recordings.map((rec) => (
                 <tr
                   key={rec.id}
-                  onClick={() => setSelectedRecording(rec)}
+                  onClick={() => openRecording(rec)}
                   className="border-b border-white/10 hover:bg-white/5 transition-colors cursor-pointer"
                 >
                   <td className="py-4 px-6">
