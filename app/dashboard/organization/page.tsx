@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import LoadingSpinner from '@/components/dashboard/LoadingSpinner'
@@ -222,12 +223,12 @@ export default function OrganizationPage() {
                   className="border-b border-white/10 hover:bg-white/5 transition-colors"
                 >
                   <td className="py-4 px-6">
-                    <div>
-                      <p className="text-body-md text-secondary-white font-medium">{workspace.name}</p>
+                    <Link href={`/dashboard/organization/${workspace.id}`} className="block">
+                      <p className="text-body-md text-secondary-white font-medium hover:text-cosmic-orange transition-colors">{workspace.name}</p>
                       {workspace.description && (
                         <p className="text-body-sm text-medium-gray truncate max-w-md">{workspace.description}</p>
                       )}
-                    </div>
+                    </Link>
                   </td>
                   <td className="py-4 px-6">
                     <span className="inline-block px-3 py-1 text-caption font-medium rounded-full border bg-cosmic-orange/20 text-cosmic-orange border-cosmic-orange/30 capitalize">
