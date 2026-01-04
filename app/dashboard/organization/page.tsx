@@ -19,7 +19,15 @@ export default function OrganizationPage() {
   const [orgDescription, setOrgDescription] = useState('')
   const [inviteEmail, setInviteEmail] = useState('')
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
+  const [copiedCode, setCopiedCode] = useState<string | null>(null)
   const supabase = createClient()
+
+  const copyInviteCode = (code: string, e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent row click
+    navigator.clipboard.writeText(code)
+    setCopiedCode(code)
+    setTimeout(() => setCopiedCode(null), 2000)
+  }
 
   const generateOrgCode = () => {
     return Math.random().toString(36).substring(2, 10).toUpperCase()
@@ -225,12 +233,7 @@ export default function OrganizationPage() {
                   className="border-b border-white/10 hover:bg-white/5 transition-colors cursor-pointer"
                 >
                   <td className="py-4 px-6">
-                    <div>
-                      <p className="text-body-md text-secondary-white font-medium">{workspace.name}</p>
-                      {workspace.description && (
-                        <p className="text-body-sm text-medium-gray truncate max-w-md">{workspace.description}</p>
-                      )}
-                    </div>
+                    <p className="text-body-md text-secondary-white font-medium">{workspace.name}</p>
                   </td>
                   <td className="py-4 px-6">
                     <span className="inline-block px-3 py-1 text-caption font-medium rounded-full border bg-cosmic-orange/20 text-cosmic-orange border-cosmic-orange/30 capitalize">
@@ -239,9 +242,16 @@ export default function OrganizationPage() {
                   </td>
                   <td className="py-4 px-6">
                     {workspace.invite_code ? (
-                      <code className="text-body-sm text-secondary-white bg-white/5 px-3 py-1 rounded">
-                        {workspace.invite_code}
-                      </code>
+                      <button
+                        onClick={(e) => copyInviteCode(workspace.invite_code!, e)}
+                        className="text-body-sm text-secondary-white bg-white/5 px-3 py-1 rounded hover:bg-white/10 transition-colors"
+                      >
+                        {copiedCode === workspace.invite_code ? (
+                          <span className="text-cosmic-orange">Copied!</span>
+                        ) : (
+                          <code>{workspace.invite_code}</code>
+                        )}
+                      </button>
                     ) : (
                       <span className="text-body-sm text-medium-gray">—</span>
                     )}

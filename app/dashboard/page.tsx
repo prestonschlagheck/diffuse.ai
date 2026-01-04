@@ -214,12 +214,7 @@ export default function DashboardPage() {
                     className="border-b border-white/10 hover:bg-white/5 transition-colors cursor-pointer"
                   >
                     <td className="py-4 px-6">
-                      <div>
-                        <p className="text-body-md text-secondary-white font-medium">{project.name}</p>
-                        {project.description && (
-                          <p className="text-body-sm text-medium-gray truncate max-w-md">{project.description}</p>
-                        )}
-                      </div>
+                      <p className="text-body-md text-secondary-white font-medium">{project.name}</p>
                     </td>
                     <td className="py-4 px-6">
                       <span
