@@ -66,7 +66,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       `)
       .eq('user_id', userId)
 
-    if (memberships) {
+    // If user has no workspaces, create a default personal workspace
+    if (!memberships || memberships.length === 0) {
+      try {
+        // Create personal workspace
+        const { data: newWorkspace, error: workspaceError } = await supabase
+          .from('diffuse_workspaces')
+          .insert({
+            name: 'Personal Workspace',
+            description: 'Your personal workspace',
+            owner_id: userId,
+          })
+          .select()
+          .single()
+
+        if (workspaceError) throw workspaceError
+
+        // Add user as admin of the workspace
+        const { error: memberError } = await supabase
+          .from('diffuse_workspace_members')
+          .insert({
+            workspace_id: newWorkspace.id,
+            user_id: userId,
+            role: 'admin',
+          })
+
+        if (memberError) throw memberError
+
+        // Set the new workspace as current
+        setWorkspaces([{ workspace: newWorkspace, role: 'admin' }])
+        setCurrentWorkspace(newWorkspace)
+      } catch (error) {
+        console.error('Error creating default workspace:', error)
+      }
+    } else {
       const workspaceData = memberships.map((m: any) => ({
         workspace: m.workspace,
         role: m.role as UserRole,

@@ -96,10 +96,9 @@ export default function DashboardPage() {
 
   if (!currentWorkspace) {
     return (
-      <EmptyState
-        title="No Organization Selected"
-        description="Please select an organization from the sidebar to view your projects."
-      />
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <LoadingSpinner size="lg" />
+      </div>
     )
   }
 
