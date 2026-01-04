@@ -31,7 +31,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
   }
 
   return (
-    <div className="glass-container p-4">
+    <div className="glass-container p-4 relative">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-1 pb-3 mb-3 border-b border-white/10">
         <button
@@ -129,27 +129,29 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
       </div>
 
       {/* Editor */}
-      <div
-        ref={editorRef}
-        contentEditable
-        onInput={handleInput}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
-        dangerouslySetInnerHTML={{ __html: value }}
-        className={`min-h-[200px] p-4 bg-white/5 rounded-glass text-secondary-white text-body-md focus:outline-none transition-colors ${
-          isFocused ? 'ring-2 ring-cosmic-orange' : ''
-        }`}
-        style={{
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-word',
-        }}
-      />
-      
-      {!value && !isFocused && placeholder && (
-        <div className="pointer-events-none absolute top-[88px] left-8 text-medium-gray text-body-md">
-          {placeholder}
-        </div>
-      )}
+      <div className="relative">
+        <div
+          ref={editorRef}
+          contentEditable
+          onInput={handleInput}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          dangerouslySetInnerHTML={{ __html: value }}
+          className={`min-h-[200px] p-4 bg-white/5 rounded-glass text-secondary-white text-body-md focus:outline-none transition-colors ${
+            isFocused ? 'ring-2 ring-cosmic-orange' : ''
+          }`}
+          style={{
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+          }}
+        />
+        
+        {!value && !isFocused && placeholder && (
+          <div className="pointer-events-none absolute top-4 left-4 text-medium-gray text-body-md">
+            {placeholder}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
