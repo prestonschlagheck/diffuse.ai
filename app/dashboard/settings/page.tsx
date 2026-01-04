@@ -115,28 +115,6 @@ export default function SettingsPage() {
     }
   }
 
-  const handleChangeSubscription = async (tier: SubscriptionTier) => {
-    if (!user || !confirm(`Upgrade to ${tier.replace('_', ' ').toUpperCase()}?`)) return
-
-    setSaving(true)
-    setMessage(null)
-
-    try {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ subscription_tier: tier })
-        .eq('id', user.id)
-
-      if (error) throw error
-
-      setMessage({ type: 'success', text: 'Subscription updated successfully!' })
-      fetchProfile()
-    } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Failed to update subscription' })
-    } finally {
-      setSaving(false)
-    }
-  }
 
   const handleDeleteAccount = async () => {
     if (!user) return
@@ -163,12 +141,6 @@ export default function SettingsPage() {
     ? workspaces.find(w => w.workspace.id === currentWorkspace.id)?.role 
     : null
 
-  const subscriptionDetails = {
-    free: { name: 'Free', projects: 3, price: '$0' },
-    pro: { name: 'Pro', projects: 15, price: '$29/mo' },
-    pro_max: { name: 'Pro Max', projects: 'Unlimited', price: '$99/mo' },
-  }
-
   const userLevelLabels: Record<UserLevel, string> = {
     individual: 'Individual',
     contractor: 'Contractor',
@@ -183,8 +155,6 @@ export default function SettingsPage() {
       </div>
     )
   }
-
-  const currentSub = subscriptionDetails[profile.subscription_tier] || subscriptionDetails.free
 
   return (
     <div>
@@ -242,58 +212,6 @@ export default function SettingsPage() {
           </div>
         </div>
       )}
-
-      {/* Subscription */}
-      <div className="glass-container p-6 mb-6">
-        <h2 className="text-heading-lg text-secondary-white mb-4">Subscription</h2>
-        <div className="mb-6">
-          <div className="flex items-baseline gap-3 mb-2">
-            <span className="text-2xl font-bold text-cosmic-orange">{currentSub.name}</span>
-            <span className="text-body-md text-medium-gray">{currentSub.price}</span>
-          </div>
-          <p className="text-body-sm text-medium-gray">
-            {currentSub.projects} {typeof currentSub.projects === 'number' ? 'projects allowed' : 'projects'}
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {(Object.keys(subscriptionDetails) as SubscriptionTier[]).map((tier) => {
-            const sub = subscriptionDetails[tier]
-            const isCurrent = profile.subscription_tier === tier
-            
-            return (
-              <div
-                key={tier}
-                className={`p-4 rounded-glass border-2 ${
-                  isCurrent
-                    ? 'border-cosmic-orange bg-cosmic-orange/10'
-                    : 'border-white/10 bg-white/5'
-                }`}
-              >
-                <h3 className="text-heading-md text-secondary-white mb-2">{sub.name}</h3>
-                <p className="text-body-lg text-cosmic-orange font-bold mb-2">{sub.price}</p>
-                <p className="text-body-sm text-medium-gray mb-4">
-                  {sub.projects} projects
-                </p>
-                {!isCurrent && (
-                  <button
-                    onClick={() => handleChangeSubscription(tier)}
-                    disabled={saving}
-                    className="btn-secondary w-full py-2 text-body-sm disabled:opacity-50"
-                  >
-                    Upgrade
-                  </button>
-                )}
-                {isCurrent && (
-                  <button className="btn-primary w-full py-2 text-body-sm cursor-default">
-                    Current
-                  </button>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      </div>
 
       {/* Profile Settings */}
       <div className="glass-container p-6 mb-6">

@@ -112,7 +112,7 @@ export default function FeaturesMarquee() {
       <div className="absolute right-0 top-0 bottom-0 w-24 sm:w-32 md:w-48 bg-gradient-to-l from-black to-transparent z-10 pointer-events-none" />
 
       {/* Scrolling container */}
-      <div 
+      <div
         className="relative"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
@@ -125,7 +125,7 @@ export default function FeaturesMarquee() {
           {/* Render 3 sets for seamless infinite scroll */}
           {[...Array(3)].map((_, setIndex) => (
             <div key={setIndex} className="flex gap-6 md:gap-8 flex-shrink-0" aria-hidden={setIndex > 0}>
-              {features.map((feature, index) => (
+          {features.map((feature, index) => (
                 <FeatureCard key={`${setIndex}-${index}`} feature={feature} />
               ))}
             </div>
