@@ -71,45 +71,39 @@ export default function UseCases() {
                   </div>
                 </div>
 
-                {/* Right Visual */}
-                <div className="relative flex flex-col h-full">
+                {/* Right Visual - Entire card is clickable */}
+                <a 
+                  href="https://springford.press" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="relative flex flex-col h-full group transition-transform duration-300 hover:scale-[1.03]"
+                >
                   {/* Badge - Above Image */}
                   <div className="overflow-hidden rounded-t-glass">
-                    <div className="bg-[#3391af]/90 px-4 py-3 flex items-center justify-center">
+                    <div className="bg-[#3391af]/90 group-hover:bg-[#57959f] px-4 py-3 flex items-center justify-center transition-colors duration-300">
                       <span className="text-sm sm:text-base md:text-body-sm font-bold text-white uppercase tracking-wider">
                         Pilot Partner
                       </span>
                     </div>
                   </div>
 
-                  {/* Placeholder for Screenshot - Clickable */}
-                  <button className="glass-container flex-1 flex items-center justify-center relative overflow-hidden rounded-none border-t-0 border-b-0 w-full hover:bg-white/5 transition-colors duration-300 min-h-[200px] sm:min-h-[250px]">
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#3391af]/10 to-[#57959f]/10" />
-                    <div className="relative z-10 text-center p-6 sm:p-8">
-                      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-4 text-[#3391af]">
-                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-                      </svg>
-                      <p className="text-sm md:text-body-sm text-medium-gray">
-                        [Screenshot Placeholder]
-                        <br />
-                        Spring-Ford Press Homepage
-                      </p>
-                    </div>
-                  </button>
+                  {/* Screenshot Image */}
+                  <div className="glass-container flex-1 flex items-center justify-center relative overflow-hidden rounded-none border-t-0 border-b-0 w-full min-h-[200px] sm:min-h-[250px]">
+                    <img 
+                      src="/sfpthumbnail.png" 
+                      alt="Spring-Ford Press Homepage" 
+                      className="w-full h-full object-cover object-top"
+                    />
+                  </div>
 
                   {/* Visit Button - Below Image */}
-                  <a 
-                    href="https://springford.press" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="overflow-hidden rounded-b-glass bg-[#3391af]/90 hover:bg-[#57959f] px-4 py-3 flex items-center justify-center gap-2 transition-all duration-300 hover:scale-105 w-full"
-                  >
+                  <div className="overflow-hidden rounded-b-glass bg-[#3391af]/90 group-hover:bg-[#57959f] px-4 py-3 flex items-center justify-center gap-2 transition-colors duration-300 w-full">
                     <span className="text-sm sm:text-base md:text-body-md font-bold text-white">Visit springford.press</span>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white">
                       <path d="M5 12h14M12 5l7 7-7 7" />
                     </svg>
-                  </a>
-                </div>
+                  </div>
+                </a>
               </div>
             </motion.div>
           </motion.div>
