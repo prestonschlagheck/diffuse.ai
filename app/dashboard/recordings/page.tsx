@@ -363,6 +363,28 @@ export default function RecordingsPage() {
     return () => clearInterval(pollInterval)
   }, [selectedRecording?.id, selectedRecording?.status, supabase])
 
+  // Cancel transcription - reset status to 'recorded'
+  const cancelTranscription = async (recordingId: string) => {
+    try {
+      const { error } = await supabase
+        .from('diffuse_recordings')
+        .update({ status: 'recorded' })
+        .eq('id', recordingId)
+
+      if (error) throw error
+
+      // Update local state
+      if (selectedRecording && selectedRecording.id === recordingId) {
+        setSelectedRecording({ ...selectedRecording, status: 'recorded' })
+      }
+      setTranscribing(false)
+      fetchRecordings()
+    } catch (error) {
+      console.error('Error cancelling transcription:', error)
+      alert('Failed to cancel transcription')
+    }
+  }
+
   // Open a recording - fetch fresh data from DB
   const openRecording = async (rec: Recording) => {
     // Fetch fresh data to ensure we have the latest status/transcription
@@ -659,6 +681,14 @@ export default function RecordingsPage() {
               >
                 Close
               </button>
+              {(selectedRecording.status === 'generating' || transcribing) && (
+                <button
+                  onClick={() => cancelTranscription(selectedRecording.id)}
+                  className="btn-secondary py-3 px-6 text-yellow-400 hover:text-yellow-300"
+                >
+                  Cancel
+                </button>
+              )}
               <button
                 onClick={() => {
                   if (confirm('Are you sure you want to delete this recording?')) {
