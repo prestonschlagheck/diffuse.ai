@@ -267,12 +267,17 @@ export default function RecordingsPage() {
 
   // Fetch signed URL for audio playback using client-side Supabase
   const fetchAudioUrl = async (filePath: string) => {
+    console.log('Fetching audio URL for:', filePath)
     setLoadingAudio(true)
+    setAudioUrl(null)
+    
     try {
       // Use client-side Supabase which has the user's auth session
       const { data, error } = await supabase.storage
         .from('recordings')
         .createSignedUrl(filePath, 3600) // 1 hour expiry
+
+      console.log('Signed URL response:', { data, error })
 
       if (error) {
         console.error('Supabase signed URL error:', error)
@@ -280,12 +285,13 @@ export default function RecordingsPage() {
       }
 
       if (data?.signedUrl) {
+        console.log('Setting audio URL:', data.signedUrl.substring(0, 100) + '...')
         setAudioUrl(data.signedUrl)
       } else {
         throw new Error('No signed URL returned')
       }
-    } catch (error) {
-      console.error('Error fetching audio URL:', error)
+    } catch (error: any) {
+      console.error('Error fetching audio URL:', error?.message || error)
       setAudioUrl(null)
     } finally {
       setLoadingAudio(false)
