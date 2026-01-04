@@ -128,7 +128,7 @@ const SoundwaveToText = () => {
       clearInterval(subtitleInterval)
       clearInterval(bodyInterval)
     }
-  }, [currentArticle])
+  }, [currentArticle, currentArticleData.headline, currentArticleData.subtitle, currentArticleData.body])
 
   const showAudioLabel = phase === 'recording-transcribing'
   const showProcessingLabel = phase === 'processing'

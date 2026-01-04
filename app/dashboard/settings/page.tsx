@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import { formatDate } from '@/lib/utils/format'
@@ -16,20 +16,13 @@ export default function SettingsPage() {
   const [userRole, setUserRole] = useState<'admin' | 'member' | null>(null)
   const supabase = createClient()
 
-  useEffect(() => {
-    if (currentWorkspace) {
-      fetchMembers()
-      getUserRole()
-    }
-  }, [currentWorkspace])
-
-  const getUserRole = () => {
+  const getUserRole = useCallback(() => {
     if (!currentWorkspace) return
     const workspace = workspaces.find((w) => w.workspace.id === currentWorkspace.id)
     setUserRole(workspace?.role || null)
-  }
+  }, [currentWorkspace, workspaces])
 
-  const fetchMembers = async () => {
+  const fetchMembers = useCallback(async () => {
     if (!currentWorkspace) return
 
     setLoading(true)
@@ -46,7 +39,14 @@ export default function SettingsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentWorkspace, supabase])
+
+  useEffect(() => {
+    if (currentWorkspace) {
+      fetchMembers()
+      getUserRole()
+    }
+  }, [currentWorkspace, fetchMembers, getUserRole])
 
   const handleRemoveMember = async (memberId: string) => {
     if (!confirm('Are you sure you want to remove this member?')) return

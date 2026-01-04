@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import ProjectCard from '@/components/dashboard/ProjectCard'
@@ -16,13 +16,7 @@ export default function DashboardPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const supabase = createClient()
 
-  useEffect(() => {
-    if (currentWorkspace) {
-      fetchProjects()
-    }
-  }, [currentWorkspace])
-
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     if (!currentWorkspace) return
 
     setLoading(true)
@@ -40,7 +34,13 @@ export default function DashboardPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentWorkspace, supabase])
+
+  useEffect(() => {
+    if (currentWorkspace) {
+      fetchProjects()
+    }
+  }, [currentWorkspace, fetchProjects])
 
   if (authLoading || !user) {
     return (

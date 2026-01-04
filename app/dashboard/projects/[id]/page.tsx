@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { formatRelativeTime, truncateText } from '@/lib/utils/format'
@@ -24,11 +24,7 @@ export default function ProjectDetailPage() {
   const [selectedOutput, setSelectedOutput] = useState<DiffuseProjectOutput | null>(null)
   const supabase = createClient()
 
-  useEffect(() => {
-    fetchProjectData()
-  }, [projectId])
-
-  const fetchProjectData = async () => {
+  const fetchProjectData = useCallback(async () => {
     setLoading(true)
     try {
       // Fetch project
@@ -65,7 +61,11 @@ export default function ProjectDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [projectId, supabase])
+
+  useEffect(() => {
+    fetchProjectData()
+  }, [fetchProjectData])
 
   if (loading) {
     return (

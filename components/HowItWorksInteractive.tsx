@@ -1,7 +1,7 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
 const steps = [
   {
@@ -30,23 +30,23 @@ export default function HowItWorksInteractive() {
   const [currentStep, setCurrentStep] = useState(0)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
-  const resetTimer = () => {
+  const nextStep = useCallback(() => {
+    setCurrentStep((prev) => (prev + 1) % steps.length)
+  }, [])
+
+  const resetTimer = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => {
       nextStep()
     }, 8000)
-  }
+  }, [nextStep])
 
   useEffect(() => {
     resetTimer()
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
     }
-  }, [currentStep])
-
-  const nextStep = () => {
-    setCurrentStep((prev) => (prev + 1) % steps.length)
-  }
+  }, [currentStep, resetTimer])
 
   const prevStep = () => {
     setCurrentStep((prev) => (prev - 1 + steps.length) % steps.length)
