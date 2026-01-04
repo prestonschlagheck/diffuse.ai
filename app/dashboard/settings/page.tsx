@@ -276,9 +276,9 @@ export default function SettingsPage() {
                   </button>
                 )}
                 {isCurrent && (
-                  <div className="text-center py-2">
-                    <span className="text-body-sm text-cosmic-orange font-medium">Current Plan</span>
-                  </div>
+                  <button className="btn-primary w-full py-2 text-body-sm cursor-default">
+                    Current
+                  </button>
                 )}
               </div>
             )

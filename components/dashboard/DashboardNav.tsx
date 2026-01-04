@@ -58,7 +58,7 @@ export default function DashboardNav() {
   }
 
   return (
-    <nav className="fixed top-0 left-0 bottom-0 w-64 glass-container border-r border-white/10 flex flex-col">
+    <nav className="fixed top-0 left-0 bottom-0 w-64 glass-container border-r border-white/10 flex flex-col rounded-l-none">
       {/* Logo */}
       <div className="p-6 border-b border-white/10">
         <Link href="/dashboard" className="text-xl font-bold">

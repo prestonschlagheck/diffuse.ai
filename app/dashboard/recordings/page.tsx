@@ -256,59 +256,82 @@ export default function RecordingsPage() {
           }}
         />
       ) : (
-        <div className="space-y-4">
-          {recordings.map((recording) => (
-            <div
-              key={recording.id}
-              className="glass-container p-6 hover:bg-white/5 transition-colors"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="text-heading-md text-secondary-white mb-2">
-                    {recording.title}
-                  </h3>
-                  <p className="text-body-sm text-medium-gray mb-3">
-                    {formatDuration(recording.duration)} • {formatRelativeTime(recording.created_at)}
-                  </p>
-                  
-                  {recording.transcription && (
-                    <div className="mt-4 p-4 bg-white/5 rounded-glass">
-                      <p className="text-body-sm text-secondary-white whitespace-pre-wrap">
-                        {recording.transcription}
-                      </p>
+        <div className="glass-container overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-white/10">
+                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">TITLE</th>
+                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">DURATION</th>
+                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">CREATED</th>
+                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">STATUS</th>
+                <th className="text-right py-4 px-6 text-caption text-medium-gray font-medium">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recordings.map((recording) => (
+                <tr
+                  key={recording.id}
+                  className="border-b border-white/10 hover:bg-white/5 transition-colors"
+                >
+                  <td className="py-4 px-6">
+                    <p className="text-body-md text-secondary-white font-medium">{recording.title}</p>
+                  </td>
+                  <td className="py-4 px-6 text-body-sm text-medium-gray">
+                    {formatDuration(recording.duration)}
+                  </td>
+                  <td className="py-4 px-6 text-body-sm text-medium-gray">
+                    {formatRelativeTime(recording.created_at)}
+                  </td>
+                  <td className="py-4 px-6">
+                    {recording.transcription ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 text-caption font-medium rounded-full border bg-cosmic-orange/20 text-cosmic-orange border-cosmic-orange/30">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Transcribed
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 text-caption font-medium rounded-full border bg-medium-gray/20 text-medium-gray border-medium-gray/30">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Pending
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-4 px-6">
+                    <div className="flex gap-2 justify-end">
+                      {!recording.transcription ? (
+                        <button
+                          onClick={() => transcribeRecording(recording)}
+                          disabled={transcribing}
+                          className="text-body-sm text-cosmic-orange hover:text-rich-orange transition-colors disabled:opacity-50"
+                        >
+                          {transcribing && selectedRecording?.id === recording.id
+                            ? 'Transcribing...'
+                            : 'Transcribe'}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setSelectedRecording(recording)}
+                          className="text-body-sm text-cosmic-orange hover:text-rich-orange transition-colors"
+                        >
+                          View
+                        </button>
+                      )}
+                      <span className="text-medium-gray">|</span>
+                      <button
+                        onClick={() => deleteRecording(recording.id, recording.file_path)}
+                        className="text-body-sm text-red-400 hover:text-red-300 transition-colors"
+                      >
+                        Delete
+                      </button>
                     </div>
-                  )}
-                </div>
-
-                <div className="flex gap-2 ml-4">
-                  {!recording.transcription ? (
-                    <button
-                      onClick={() => transcribeRecording(recording)}
-                      disabled={transcribing}
-                      className="btn-secondary px-4 py-2 text-body-sm disabled:opacity-50"
-                    >
-                      {transcribing && selectedRecording?.id === recording.id
-                        ? 'Transcribing...'
-                        : 'Transcribe'}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => setSelectedRecording(recording)}
-                      className="btn-secondary px-4 py-2 text-body-sm"
-                    >
-                      View
-                    </button>
-                  )}
-                  <button
-                    onClick={() => deleteRecording(recording.id, recording.file_path)}
-                    className="btn-secondary px-4 py-2 text-body-sm text-red-400 hover:text-red-300"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
