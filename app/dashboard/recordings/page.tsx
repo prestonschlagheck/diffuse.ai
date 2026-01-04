@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { formatRelativeTime, formatDuration } from '@/lib/utils/format'
 import LoadingSpinner from '@/components/dashboard/LoadingSpinner'
 import EmptyState from '@/components/dashboard/EmptyState'
+import AudioPlayer from '@/components/dashboard/AudioPlayer'
 
 interface Recording {
   id: string
@@ -517,19 +518,12 @@ export default function RecordingsPage() {
             <div className="mb-6">
               <h3 className="text-body-sm text-medium-gray mb-3">Audio Playback</h3>
               {loadingAudio ? (
-                <div className="flex items-center justify-center py-4">
+                <div className="flex items-center justify-center py-4 bg-white/5 rounded-glass">
                   <LoadingSpinner size="sm" />
                   <span className="ml-2 text-body-sm text-medium-gray">Loading audio...</span>
                 </div>
               ) : audioUrl ? (
-                <audio
-                  controls
-                  className="w-full"
-                  src={audioUrl}
-                  preload="metadata"
-                >
-                  Your browser does not support the audio element.
-                </audio>
+                <AudioPlayer src={audioUrl} onError={() => setAudioUrl(null)} />
               ) : (
                 <div className="p-4 bg-white/5 rounded-glass text-center">
                   <p className="text-body-sm text-red-400">Failed to load audio. The file may be unavailable.</p>
