@@ -110,9 +110,11 @@ export default function SubscriptionPage() {
     )
   }
 
-  const currentSub = subscriptionDetails[profile.subscription_tier] || subscriptionDetails.free
-
-  console.log('Profile subscription_tier:', profile.subscription_tier, 'Current sub:', currentSub.name)
+  // Ensure we have a valid subscription tier, default to 'free'
+  const currentTier: SubscriptionTier = profile.subscription_tier && subscriptionDetails[profile.subscription_tier] 
+    ? profile.subscription_tier 
+    : 'free'
+  const currentSub = subscriptionDetails[currentTier]
 
   return (
     <div>
@@ -163,13 +165,10 @@ export default function SubscriptionPage() {
         <h2 className="text-heading-lg text-secondary-white mb-6">Available Plans</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {(Object.keys(subscriptionDetails) as SubscriptionTier[])
-            .filter((tier) => {
-              console.log('Comparing tier:', tier, 'with current:', profile.subscription_tier)
-              return tier !== profile.subscription_tier
-            })
+            .filter((tier) => tier !== currentTier)
             .map((tier) => {
               const sub = subscriptionDetails[tier]
-              const isDowngrade = tier === 'free' || (tier === 'pro' && profile.subscription_tier === 'pro_max')
+              const isDowngrade = tier === 'free' || (tier === 'pro' && currentTier === 'pro_max')
               
               return (
                 <div
