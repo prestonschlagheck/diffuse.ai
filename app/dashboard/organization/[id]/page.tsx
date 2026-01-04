@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import LoadingSpinner from '@/components/dashboard/LoadingSpinner'
 import EmptyState from '@/components/dashboard/EmptyState'
-import { formatRelativeTime } from '@/lib/utils/format'
+import { formatDateWithTime } from '@/lib/utils/format'
 import type { DiffuseWorkspace, DiffuseProject, OrganizationPlan } from '@/types/database'
 
 const planDetails = {
@@ -15,9 +15,17 @@ const planDetails = {
   enterprise_pro_max: { name: 'Enterprise Pro Max', projects: 'Unlimited', price: '$500/mo' },
 }
 
-interface ProjectWithCreator extends DiffuseProject {
+interface ProjectWithCounts extends DiffuseProject {
   creator_name?: string
-  creator_email?: string
+  input_count: number
+  output_count: number
+}
+
+interface MemberWithDetails {
+  user_id: string
+  role: string
+  name: string
+  project_count: number
 }
 
 export default function OrganizationDetailPage() {
@@ -26,18 +34,12 @@ export default function OrganizationDetailPage() {
   const orgId = params.id as string
   const { user } = useAuth()
   const [workspace, setWorkspace] = useState<DiffuseWorkspace | null>(null)
-  const [projects, setProjects] = useState<ProjectWithCreator[]>([])
-  const [members, setMembers] = useState<{ user_id: string; role: string; email?: string; name?: string }[]>([])
+  const [projects, setProjects] = useState<ProjectWithCounts[]>([])
+  const [members, setMembers] = useState<MemberWithDetails[]>([])
   const [userRole, setUserRole] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [savingPlan, setSavingPlan] = useState(false)
   const supabase = createClient()
-
-  const statusColors: Record<string, string> = {
-    active: 'bg-green-500/20 text-green-400 border-green-500/30',
-    archived: 'bg-medium-gray/20 text-medium-gray border-medium-gray/30',
-    draft: 'bg-pale-blue/20 text-pale-blue border-pale-blue/30',
-  }
 
   const fetchOrganizationData = useCallback(async () => {
     if (!user || !orgId) return
@@ -63,11 +65,36 @@ export default function OrganizationDetailPage() {
       if (membersError) throw membersError
       
       const memberIds = membersData?.map(m => m.user_id) || []
-      setMembers(membersData || [])
       
       // Find current user's role
       const currentUserMember = membersData?.find(m => m.user_id === user.id)
       setUserRole(currentUserMember?.role || null)
+
+      // Fetch member details (name and project count)
+      const membersWithDetails: MemberWithDetails[] = []
+      for (const member of membersData || []) {
+        // Get user profile
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('full_name')
+          .eq('id', member.user_id)
+          .single()
+
+        // Get public project count for this member
+        const { count: projectCount } = await supabase
+          .from('diffuse_projects')
+          .select('*', { count: 'exact', head: true })
+          .eq('created_by', member.user_id)
+          .eq('visibility', 'public')
+
+        membersWithDetails.push({
+          user_id: member.user_id,
+          role: member.role,
+          name: profile?.full_name || 'Unknown',
+          project_count: projectCount || 0,
+        })
+      }
+      setMembers(membersWithDetails)
 
       // Fetch public projects from all members of this workspace
       if (memberIds.length > 0) {
@@ -80,23 +107,38 @@ export default function OrganizationDetailPage() {
 
         if (projectsError) throw projectsError
 
-        // Fetch creator info for each project
-        const projectsWithCreators: ProjectWithCreator[] = []
+        // Fetch input/output counts for each project
+        const projectsWithCounts: ProjectWithCounts[] = []
         for (const project of projectsData || []) {
-          // Try to get user profile
+          // Get creator name
           const { data: profile } = await supabase
             .from('user_profiles')
             .select('full_name')
             .eq('id', project.created_by)
             .single()
 
-          projectsWithCreators.push({
+          // Get input/output counts
+          const [{ count: inputCount }, { count: outputCount }] = await Promise.all([
+            supabase
+              .from('diffuse_project_inputs')
+              .select('*', { count: 'exact', head: true })
+              .eq('project_id', project.id)
+              .is('deleted_at', null),
+            supabase
+              .from('diffuse_project_outputs')
+              .select('*', { count: 'exact', head: true })
+              .eq('project_id', project.id),
+          ])
+
+          projectsWithCounts.push({
             ...project,
             creator_name: profile?.full_name || undefined,
+            input_count: inputCount || 0,
+            output_count: outputCount || 0,
           })
         }
 
-        setProjects(projectsWithCreators)
+        setProjects(projectsWithCounts)
       }
     } catch (error) {
       console.error('Error fetching organization data:', error)
@@ -205,8 +247,8 @@ export default function OrganizationDetailPage() {
         </div>
       )}
 
-      {/* Public Projects */}
-      <h2 className="text-heading-lg text-secondary-white mb-4">Public Projects</h2>
+      {/* Projects */}
+      <h2 className="text-heading-lg text-secondary-white mb-4">Projects</h2>
       
       {projects.length === 0 ? (
         <EmptyState
@@ -219,13 +261,13 @@ export default function OrganizationDetailPage() {
           description="Members of this organization haven't shared any public projects yet."
         />
       ) : (
-        <div className="glass-container overflow-hidden">
+        <div className="glass-container overflow-hidden mb-12">
           <table className="w-full">
             <thead>
               <tr className="border-b border-white/10">
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">PROJECT</th>
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">CREATED BY</th>
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">STATUS</th>
+                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">NAME</th>
+                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">INPUTS</th>
+                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">OUTPUTS</th>
                 <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">CREATED</th>
               </tr>
             </thead>
@@ -234,23 +276,45 @@ export default function OrganizationDetailPage() {
                 <tr
                   key={project.id}
                   onClick={() => router.push(`/dashboard/projects/${project.id}`)}
-                  className="border-b border-white/5 last:border-b-0 hover:bg-white/5 transition-colors cursor-pointer"
+                  className="border-b border-white/10 hover:bg-white/5 transition-colors cursor-pointer"
                 >
                   <td className="py-4 px-6">
                     <p className="text-body-md text-secondary-white font-medium">{project.name}</p>
                   </td>
                   <td className="py-4 px-6">
-                    <p className="text-body-sm text-secondary-white">
-                      {project.creator_name || 'Unknown'}
-                    </p>
+                    <span className="flex items-center gap-1 text-body-sm text-medium-gray">
+                      {project.input_count > 0 ? (
+                        Array.from({ length: Math.min(project.input_count, 5) }).map((_, i) => (
+                          <svg key={i} className="w-4 h-4 text-cosmic-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        ))
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      )}
+                      {project.input_count > 5 && <span className="text-caption">+{project.input_count - 5}</span>}
+                    </span>
                   </td>
                   <td className="py-4 px-6">
-                    <span className={`px-3 py-1 text-caption font-medium rounded-full border ${statusColors[project.status]}`}>
-                      {project.status}
+                    <span className="flex items-center gap-1 text-body-sm text-medium-gray">
+                      {project.output_count > 0 ? (
+                        Array.from({ length: Math.min(project.output_count, 5) }).map((_, i) => (
+                          <svg key={i} className="w-4 h-4 text-cosmic-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        ))
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      )}
+                      {project.output_count > 5 && <span className="text-caption">+{project.output_count - 5}</span>}
                     </span>
                   </td>
                   <td className="py-4 px-6 text-body-sm text-medium-gray">
-                    {formatRelativeTime(project.created_at)}
+                    {formatDateWithTime(project.created_at)}
                   </td>
                 </tr>
               ))}
@@ -259,10 +323,49 @@ export default function OrganizationDetailPage() {
         </div>
       )}
 
-      {/* Organization Settings */}
+      {/* Members */}
+      <h2 className="text-heading-lg text-secondary-white mb-4">Members</h2>
+      
+      <div className="glass-container overflow-hidden mb-12">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-white/10">
+              <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">NAME</th>
+              <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">PROJECTS</th>
+              <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">ROLE</th>
+            </tr>
+          </thead>
+          <tbody>
+            {members.map((member) => (
+              <tr
+                key={member.user_id}
+                className="border-b border-white/10 last:border-b-0"
+              >
+                <td className="py-4 px-6">
+                  <p className="text-body-md text-secondary-white font-medium">{member.name}</p>
+                </td>
+                <td className="py-4 px-6 text-body-sm text-medium-gray">
+                  {member.project_count}
+                </td>
+                <td className="py-4 px-6">
+                  <span className={`px-3 py-1 text-caption font-medium rounded-full border capitalize ${
+                    member.role === 'admin' 
+                      ? 'bg-cosmic-orange/20 text-cosmic-orange border-cosmic-orange/30'
+                      : 'bg-medium-gray/20 text-medium-gray border-medium-gray/30'
+                  }`}>
+                    {member.role}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Settings */}
       {userRole === 'admin' && (
-        <div className="mt-12">
-          <h2 className="text-heading-lg text-secondary-white mb-4">Organization Settings</h2>
+        <div>
+          <h2 className="text-heading-lg text-secondary-white mb-4">Settings</h2>
           
           {/* Current Plan */}
           <div className="glass-container p-6 mb-6">
