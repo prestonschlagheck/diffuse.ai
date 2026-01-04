@@ -531,13 +531,13 @@ export default function RecordingsPage() {
         />
       ) : (
         <div className="glass-container overflow-hidden">
-          <table className="w-full">
+          <table className="w-full table-fixed">
             <thead>
               <tr className="border-b border-white/10">
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">TITLE</th>
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">DURATION</th>
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">CREATED</th>
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">STATUS</th>
+                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium w-1/2">TITLE</th>
+                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium w-24">DURATION</th>
+                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium w-32">CREATED</th>
+                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium w-32">STATUS</th>
               </tr>
             </thead>
             <tbody>
@@ -548,12 +548,12 @@ export default function RecordingsPage() {
                   className="border-b border-white/10 hover:bg-white/5 transition-colors cursor-pointer"
                 >
                   <td className="py-4 px-6">
-                    <p className="text-body-md text-secondary-white font-medium">{rec.title}</p>
+                    <p className="text-body-md text-secondary-white font-medium break-words">{rec.title}</p>
                   </td>
-                  <td className="py-4 px-6 text-body-sm text-medium-gray">
+                  <td className="py-4 px-6 text-body-sm text-medium-gray whitespace-nowrap">
                     {formatDuration(rec.duration)}
                   </td>
-                  <td className="py-4 px-6 text-body-sm text-medium-gray">
+                  <td className="py-4 px-6 text-body-sm text-medium-gray whitespace-nowrap">
                     {formatRelativeTime(rec.created_at)}
                   </td>
                   <td className="py-4 px-6">

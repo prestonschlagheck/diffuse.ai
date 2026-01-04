@@ -130,8 +130,8 @@ export default function SubscriptionPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-display-sm text-secondary-white mb-2">Subscription</h1>
-          <p className="text-body-md text-medium-gray">
+          <h1 className="text-display-sm text-secondary-white">Subscription</h1>
+          <p className="text-body-md text-medium-gray mt-1">
             Manage your plan and billing
           </p>
         </div>

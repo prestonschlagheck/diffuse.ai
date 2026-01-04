@@ -145,8 +145,8 @@ export default function SettingsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-display-sm text-secondary-white mb-2">Settings</h1>
-          <p className="text-body-md text-medium-gray">
+          <h1 className="text-display-sm text-secondary-white">Settings</h1>
+          <p className="text-body-md text-medium-gray mt-1">
             Manage your account and preferences
           </p>
         </div>
@@ -170,9 +170,9 @@ export default function SettingsPage() {
         {workspaces.length > 0 && (
         <div className="glass-container p-6 mb-6">
           <h2 className="text-heading-lg text-secondary-white mb-4">Organizations</h2>
-          <div className="space-y-3">
+          <div className="divide-y divide-white/10">
             {workspaces.map(({ workspace, role }) => (
-              <div key={workspace.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-b-0">
+              <div key={workspace.id} className="flex items-center justify-between py-4 first:pt-0 last:pb-0">
                 <p className="text-body-md text-secondary-white">{workspace.name}</p>
                 <span className="px-3 py-1 text-caption font-medium rounded-full border bg-cosmic-orange/20 text-cosmic-orange border-cosmic-orange/30 capitalize">
                   {role}

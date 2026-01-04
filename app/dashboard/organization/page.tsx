@@ -186,8 +186,8 @@ export default function OrganizationPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-display-sm text-secondary-white mb-2">Organization</h1>
-          <p className="text-body-md text-medium-gray">
+          <h1 className="text-display-sm text-secondary-white">Organization</h1>
+          <p className="text-body-md text-medium-gray mt-1">
             {workspaces.length > 0 ? `Member of ${workspaces.length} organization${workspaces.length !== 1 ? 's' : ''}` : 'Collaborate with your team'}
           </p>
         </div>

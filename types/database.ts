@@ -55,6 +55,7 @@ export interface DiffuseProjectInput {
   metadata?: Record<string, any>
   created_at: string
   created_by: string
+  deleted_at?: string | null
 }
 
 export interface DiffuseProjectOutput {
