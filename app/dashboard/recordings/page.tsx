@@ -8,6 +8,8 @@ import LoadingSpinner from '@/components/dashboard/LoadingSpinner'
 import EmptyState from '@/components/dashboard/EmptyState'
 import AudioPlayer from '@/components/dashboard/AudioPlayer'
 
+type RecordingStatus = 'recorded' | 'generating' | 'transcribed'
+
 interface Recording {
   id: string
   user_id: string
@@ -15,6 +17,7 @@ interface Recording {
   duration: number
   file_path: string
   transcription: string | null
+  status: RecordingStatus
   created_at: string
 }
 
@@ -210,6 +213,7 @@ export default function RecordingsPage() {
           title: newRecordingTitle,
           duration: recordingTime,
           file_path: fileName,
+          status: 'recorded',
         })
 
       if (dbError) throw dbError
@@ -231,12 +235,27 @@ export default function RecordingsPage() {
     setTranscribing(true)
 
     try {
+      // Update status to 'generating'
+      await supabase
+        .from('diffuse_recordings')
+        .update({ status: 'generating' })
+        .eq('id', recording.id)
+
+      // Update local state immediately
+      setSelectedRecording({ ...recording, status: 'generating' })
+      fetchRecordings()
+
       // First get a signed URL using the client-side auth
       const { data: signedUrlData, error: signedUrlError } = await supabase.storage
         .from('recordings')
         .createSignedUrl(recording.file_path, 3600) // 1 hour expiry
 
       if (signedUrlError || !signedUrlData?.signedUrl) {
+        // Revert status on error
+        await supabase
+          .from('diffuse_recordings')
+          .update({ status: 'recorded' })
+          .eq('id', recording.id)
         throw new Error('Failed to get audio URL for transcription')
       }
 
@@ -253,14 +272,21 @@ export default function RecordingsPage() {
       const data = await response.json()
 
       if (!response.ok) {
+        // Revert status on error
+        await supabase
+          .from('diffuse_recordings')
+          .update({ status: 'recorded' })
+          .eq('id', recording.id)
         throw new Error(data.error || 'Transcription failed')
       }
 
+      // Transcription successful - status is already set to 'transcribed' by API
       fetchRecordings()
-      setSelectedRecording({ ...recording, transcription: data.transcription })
+      setSelectedRecording({ ...recording, status: 'transcribed', transcription: data.transcription })
     } catch (error) {
       console.error('Error transcribing:', error)
       alert(error instanceof Error ? error.message : 'Failed to transcribe recording')
+      fetchRecordings() // Refresh to get correct status
     } finally {
       setTranscribing(false)
     }
@@ -424,19 +450,26 @@ export default function RecordingsPage() {
                     {formatRelativeTime(rec.created_at)}
                   </td>
                   <td className="py-4 px-6">
-                    {rec.transcription ? (
+                    {rec.status === 'transcribed' ? (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 text-caption font-medium rounded-full border bg-cosmic-orange/20 text-cosmic-orange border-cosmic-orange/30">
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                         Transcribed
                       </span>
+                    ) : rec.status === 'generating' ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 text-caption font-medium rounded-full border bg-pale-blue/20 text-pale-blue border-pale-blue/30">
+                        <svg className="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Generating
+                      </span>
                     ) : (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 text-caption font-medium rounded-full border bg-medium-gray/20 text-medium-gray border-medium-gray/30">
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                         </svg>
-                        Pending
+                        Recorded
                       </span>
                     )}
                   </td>

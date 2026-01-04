@@ -8,6 +8,8 @@ export type InputType = 'text' | 'audio'
 
 export type WorkflowStatus = 'pending' | 'processing' | 'completed' | 'failed'
 
+export type RecordingStatus = 'recorded' | 'generating' | 'transcribed'
+
 export interface DiffuseWorkspace {
   id: string
   name: string
@@ -62,6 +64,17 @@ export interface DiffuseProjectOutput {
   workflow_metadata?: Record<string, any>
   created_at: string
   updated_at: string
+}
+
+export interface DiffuseRecording {
+  id: string
+  user_id: string
+  title: string
+  duration: number
+  file_path: string
+  transcription: string | null
+  status: RecordingStatus
+  created_at: string
 }
 
 export interface UserWithWorkspaces {

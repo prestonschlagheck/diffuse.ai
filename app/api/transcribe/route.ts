@@ -40,10 +40,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Update the recording with the transcription
+    // Update the recording with the transcription and status
     const { error: updateError } = await supabase
       .from('diffuse_recordings')
-      .update({ transcription: transcript.text })
+      .update({ 
+        transcription: transcript.text,
+        status: 'transcribed'
+      })
       .eq('id', recordingId)
 
     if (updateError) {
