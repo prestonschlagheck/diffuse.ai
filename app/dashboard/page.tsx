@@ -185,14 +185,6 @@ export default function DashboardPage() {
           }
           title="No Projects Yet"
           description="Create your first project to start processing inputs and generating outputs with Diffuse workflows."
-          action={
-            !hasReachedLimit
-              ? {
-                  label: 'Create Project',
-                  onClick: () => setShowCreateModal(true),
-                }
-              : undefined
-          }
         />
       ) : (
         <div className="glass-container overflow-hidden">
