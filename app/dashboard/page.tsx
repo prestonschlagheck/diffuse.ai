@@ -155,7 +155,7 @@ export default function DashboardPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 715.636 5.636m12.728 12.728L5.636 5.636" />
           </svg>
           <p className="text-body-sm text-red-400">
-            You've reached your project limit ({projectLimit} projects).{' '}
+            You&apos;ve reached your project limit ({projectLimit} projects).{' '}
             <Link href="/dashboard/settings" className="underline font-medium">
               Upgrade your plan to create more projects.
             </Link>
