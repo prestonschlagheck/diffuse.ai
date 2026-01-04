@@ -98,12 +98,17 @@ export default function UseCases() {
                   </button>
 
                   {/* Visit Button - Below Image */}
-                  <button className="overflow-hidden rounded-b-glass bg-[#3391af]/90 hover:bg-[#57959f] px-4 py-3 flex items-center justify-center gap-2 transition-all duration-300 hover:scale-105 w-full">
+                  <a 
+                    href="https://springford.press" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="overflow-hidden rounded-b-glass bg-[#3391af]/90 hover:bg-[#57959f] px-4 py-3 flex items-center justify-center gap-2 transition-all duration-300 hover:scale-105 w-full"
+                  >
                     <span className="text-sm sm:text-base md:text-body-md font-bold text-white">Visit springford.press</span>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white">
                       <path d="M5 12h14M12 5l7 7-7 7" />
                     </svg>
-                  </button>
+                  </a>
                 </div>
               </div>
             </motion.div>

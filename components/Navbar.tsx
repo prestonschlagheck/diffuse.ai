@@ -54,12 +54,9 @@ export default function Navbar() {
                     {link.name}
                   </button>
                 ))}
-                <Link href="/login" className="btn-secondary px-5 py-2.5 text-sm md:text-body-sm whitespace-nowrap">
+                <Link href="/login" className="btn-primary px-5 py-2.5 text-sm md:text-body-sm whitespace-nowrap">
                   Login
                 </Link>
-                <button className="btn-primary px-5 py-2.5 text-sm md:text-body-sm whitespace-nowrap">
-                  Schedule a Demo
-                </button>
               </div>
 
               {/* Mobile Menu Button */}
@@ -119,12 +116,9 @@ export default function Navbar() {
                   {link.name}
                 </button>
               ))}
-              <Link href="/login" className="btn-secondary w-full py-3 text-sm md:text-body-sm text-center">
+              <Link href="/login" className="btn-primary w-full py-3 text-sm md:text-body-sm text-center">
                 Login
               </Link>
-              <button className="btn-primary w-full py-3 text-sm md:text-body-sm mt-2">
-                Schedule a Demo
-              </button>
             </div>
           </div>
         </div>
