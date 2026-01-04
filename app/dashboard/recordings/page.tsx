@@ -253,8 +253,6 @@ export default function RecordingsPage() {
   }
 
   const deleteRecording = async (id: string, filePath: string) => {
-    if (!confirm('Are you sure you want to delete this recording?')) return
-
     try {
       // Delete from storage
       await supabase.storage.from('recordings').remove([filePath])
@@ -351,26 +349,26 @@ export default function RecordingsPage() {
                 <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">DURATION</th>
                 <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">CREATED</th>
                 <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">STATUS</th>
-                <th className="text-right py-4 px-6 text-caption text-medium-gray font-medium">ACTIONS</th>
               </tr>
             </thead>
             <tbody>
-              {recordings.map((recording) => (
+              {recordings.map((rec) => (
                 <tr
-                  key={recording.id}
-                  className="border-b border-white/10 hover:bg-white/5 transition-colors"
+                  key={rec.id}
+                  onClick={() => setSelectedRecording(rec)}
+                  className="border-b border-white/10 hover:bg-white/5 transition-colors cursor-pointer"
                 >
                   <td className="py-4 px-6">
-                    <p className="text-body-md text-secondary-white font-medium">{recording.title}</p>
+                    <p className="text-body-md text-secondary-white font-medium">{rec.title}</p>
                   </td>
                   <td className="py-4 px-6 text-body-sm text-medium-gray">
-                    {formatDuration(recording.duration)}
+                    {formatDuration(rec.duration)}
                   </td>
                   <td className="py-4 px-6 text-body-sm text-medium-gray">
-                    {formatRelativeTime(recording.created_at)}
+                    {formatRelativeTime(rec.created_at)}
                   </td>
                   <td className="py-4 px-6">
-                    {recording.transcription ? (
+                    {rec.transcription ? (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 text-caption font-medium rounded-full border bg-cosmic-orange/20 text-cosmic-orange border-cosmic-orange/30">
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -385,35 +383,6 @@ export default function RecordingsPage() {
                         Pending
                       </span>
                     )}
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="flex gap-2 justify-end">
-                      {!recording.transcription ? (
-                        <button
-                          onClick={() => transcribeRecording(recording)}
-                          disabled={transcribing}
-                          className="text-body-sm text-cosmic-orange hover:text-rich-orange transition-colors disabled:opacity-50"
-                        >
-                          {transcribing && selectedRecording?.id === recording.id
-                            ? 'Transcribing...'
-                            : 'Transcribe'}
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setSelectedRecording(recording)}
-                          className="text-body-sm text-cosmic-orange hover:text-rich-orange transition-colors"
-                        >
-                          View
-                        </button>
-                      )}
-                      <span className="text-medium-gray">|</span>
-                      <button
-                        onClick={() => deleteRecording(recording.id, recording.file_path)}
-                        className="text-body-sm text-red-400 hover:text-red-300 transition-colors"
-                      >
-                        Delete
-                      </button>
-                    </div>
                   </td>
                 </tr>
               ))}
@@ -465,8 +434,8 @@ export default function RecordingsPage() {
         </div>
       )}
 
-      {/* Transcription Modal */}
-      {selectedRecording && selectedRecording.transcription && !transcribing && (
+      {/* Recording Detail Modal */}
+      {selectedRecording && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="glass-container p-8 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
             <div className="flex items-start justify-between mb-6">
@@ -482,15 +451,67 @@ export default function RecordingsPage() {
                 </svg>
               </button>
             </div>
-            <div className="mb-4">
+            
+            <div className="mb-6">
               <p className="text-body-sm text-medium-gray">
                 {formatDuration(selectedRecording.duration)} • {formatRelativeTime(selectedRecording.created_at)}
               </p>
             </div>
-            <div className="p-4 bg-white/5 rounded-glass">
-              <p className="text-body-md text-secondary-white whitespace-pre-wrap leading-relaxed">
-                {selectedRecording.transcription}
-              </p>
+
+            {/* Audio Player */}
+            <div className="mb-6">
+              <h3 className="text-body-sm text-medium-gray mb-3">Audio Playback</h3>
+              <audio
+                controls
+                className="w-full"
+                src={supabase.storage.from('recordings').getPublicUrl(selectedRecording.file_path).data.publicUrl}
+              >
+                Your browser does not support the audio element.
+              </audio>
+            </div>
+
+            {/* Transcription Section */}
+            <div className="mb-6">
+              <h3 className="text-body-sm text-medium-gray mb-3">Transcription</h3>
+              {selectedRecording.transcription ? (
+                <div className="p-4 bg-white/5 rounded-glass">
+                  <p className="text-body-md text-secondary-white whitespace-pre-wrap leading-relaxed">
+                    {selectedRecording.transcription}
+                  </p>
+                </div>
+              ) : (
+                <div className="p-4 bg-white/5 rounded-glass text-center">
+                  <p className="text-body-sm text-medium-gray mb-4">No transcription yet</p>
+                  <button
+                    onClick={() => transcribeRecording(selectedRecording)}
+                    disabled={transcribing}
+                    className="btn-primary px-6 py-3 disabled:opacity-50"
+                  >
+                    {transcribing ? 'Generating...' : 'Generate Transcription'}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-4 border-t border-white/10">
+              <button
+                onClick={() => setSelectedRecording(null)}
+                className="btn-secondary flex-1 py-3"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  if (confirm('Are you sure you want to delete this recording?')) {
+                    deleteRecording(selectedRecording.id, selectedRecording.file_path)
+                    setSelectedRecording(null)
+                  }
+                }}
+                className="btn-secondary py-3 px-6 text-red-400 hover:text-red-300"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>
