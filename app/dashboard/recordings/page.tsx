@@ -94,22 +94,34 @@ export default function RecordingsPage() {
       return
     }
 
+    // Check if we're in a secure context (HTTPS or localhost)
+    if (!window.isSecureContext) {
+      alert('Microphone access requires a secure connection (HTTPS). Please access this site via HTTPS.')
+      return
+    }
+
     try {
-      // Request microphone permission
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: 44100
-        } 
-      })
+      console.log('Requesting microphone access...')
       
-      // Check for supported MIME type
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm') 
-        ? 'audio/webm' 
-        : MediaRecorder.isTypeSupported('audio/mp4')
-          ? 'audio/mp4'
-          : 'audio/ogg'
+      // Simple getUserMedia call - this should trigger the browser permission prompt
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      
+      console.log('Microphone access granted!')
+      setMicPermission('granted')
+      
+      // Determine best supported format
+      let mimeType = 'audio/webm'
+      if (typeof MediaRecorder !== 'undefined') {
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          mimeType = 'audio/webm;codecs=opus'
+        } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+          mimeType = 'audio/webm'
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          mimeType = 'audio/mp4'
+        } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+          mimeType = 'audio/ogg'
+        }
+      }
       
       const mediaRecorder = new MediaRecorder(stream, { mimeType })
       mediaRecorderRef.current = mediaRecorder
@@ -125,10 +137,20 @@ export default function RecordingsPage() {
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType })
         setPendingRecording(audioBlob)
         setShowTitleModal(true)
+        // Stop all tracks to release the microphone
         stream.getTracks().forEach(track => track.stop())
       }
 
-      mediaRecorder.start(1000) // Collect data every second
+      mediaRecorder.onerror = (event) => {
+        console.error('MediaRecorder error:', event)
+        alert('An error occurred during recording. Please try again.')
+        setRecording(false)
+        if (timerRef.current) clearInterval(timerRef.current)
+        stream.getTracks().forEach(track => track.stop())
+      }
+
+      // Start recording
+      mediaRecorder.start(1000)
       setRecording(true)
       setRecordingTime(0)
 
@@ -136,42 +158,21 @@ export default function RecordingsPage() {
       timerRef.current = setInterval(() => {
         setRecordingTime((prev) => prev + 1)
       }, 1000)
-    } catch (error: any) {
-      console.error('Error starting recording:', error)
       
-      // Provide specific error messages
+    } catch (error: any) {
+      console.error('Error starting recording:', error.name, error.message)
+      
       if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-        alert('Microphone access was denied. Please allow microphone access in your browser settings and try again.\n\nIn Chrome: Click the lock icon in the address bar → Site settings → Microphone → Allow')
+        setMicPermission('denied')
+        alert('Microphone access was denied.\n\nTo enable:\n1. Click the lock/info icon in your browser address bar\n2. Find "Microphone" in the permissions\n3. Change it to "Allow"\n4. Refresh the page and try again')
       } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
         alert('No microphone found. Please connect a microphone and try again.')
       } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
-        alert('Your microphone is busy or unavailable. Please close other apps using the microphone and try again.')
-      } else if (error.name === 'OverconstrainedError') {
-        alert('Could not satisfy audio constraints. Trying with default settings...')
-        // Retry with basic settings
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-          const mediaRecorder = new MediaRecorder(stream)
-          mediaRecorderRef.current = mediaRecorder
-          audioChunksRef.current = []
-          mediaRecorder.ondataavailable = (event) => {
-            if (event.data.size > 0) audioChunksRef.current.push(event.data)
-          }
-          mediaRecorder.onstop = () => {
-            const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
-            setPendingRecording(audioBlob)
-            setShowTitleModal(true)
-            stream.getTracks().forEach(track => track.stop())
-          }
-          mediaRecorder.start(1000)
-          setRecording(true)
-          setRecordingTime(0)
-          timerRef.current = setInterval(() => setRecordingTime((prev) => prev + 1), 1000)
-        } catch (retryError) {
-          alert('Failed to access microphone. Please check your browser permissions.')
-        }
+        alert('Your microphone is busy or unavailable. Please close other apps that might be using the microphone and try again.')
+      } else if (error.name === 'AbortError') {
+        alert('Microphone access was aborted. Please try again.')
       } else {
-        alert(`Failed to access microphone: ${error.message || 'Unknown error'}. Please check your browser permissions.`)
+        alert(`Could not access microphone: ${error.message || error.name || 'Unknown error'}`)
       }
     }
   }
