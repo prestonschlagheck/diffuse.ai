@@ -14,8 +14,7 @@ const subscriptionNames: Record<string, string> = {
 export default function DashboardNav() {
   const pathname = usePathname()
   const router = useRouter()
-  const { user, userProfile, workspaces, currentWorkspace, setCurrentWorkspace, signOut } = useAuth()
-  const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false)
+  const { user, userProfile, signOut } = useAuth()
   const [showUserMenu, setShowUserMenu] = useState(false)
 
   // Get display name - use full_name if available, otherwise email prefix
@@ -85,37 +84,6 @@ export default function DashboardNav() {
           diffuse<span className="text-cosmic-orange">.ai</span>
         </Link>
       </div>
-
-      {/* Organization Selector - Only show if user has workspaces */}
-      {workspaces.length > 0 && (
-        <div className="p-4 border-b border-white/10 relative">
-          <button
-            onClick={() => setShowWorkspaceMenu(!showWorkspaceMenu)}
-            className="w-full px-4 py-3 bg-white/5 rounded-glass text-left text-body-sm text-secondary-white hover:bg-white/10 transition-colors flex items-center justify-between"
-          >
-            <span className="truncate">{currentWorkspace?.name || 'Select Organization'}</span>
-            <span className="text-cosmic-orange">▼</span>
-          </button>
-
-          {showWorkspaceMenu && (
-            <div className="absolute top-full left-4 right-4 mt-2 glass-container border border-white/10 z-50">
-              {workspaces.map(({ workspace, role }) => (
-                <button
-                  key={workspace.id}
-                  onClick={() => {
-                    setCurrentWorkspace(workspace)
-                    setShowWorkspaceMenu(false)
-                  }}
-                  className="w-full px-4 py-3 text-left text-body-sm text-secondary-white hover:bg-white/10 transition-colors border-b border-white/10 last:border-0"
-                >
-                  <div className="font-medium">{workspace.name}</div>
-                  <div className="text-caption text-medium-gray capitalize">{role}</div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Navigation Items */}
       <div className="flex-1 p-4 space-y-2">
