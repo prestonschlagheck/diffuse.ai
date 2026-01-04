@@ -23,9 +23,9 @@ export default function SubscriptionPage() {
   const supabase = createClient()
 
   const subscriptionDetails = {
-    free: { name: 'Free', projects: 3, price: '$0/mo', features: ['3 Projects', 'Basic Support', 'Core Features'] },
-    pro: { name: 'Pro', projects: 15, price: '$29/mo', features: ['15 Projects', 'Priority Support', 'Advanced Features', 'Team Collaboration'] },
-    pro_max: { name: 'Pro Max', projects: 'Unlimited', price: '$99/mo', features: ['Unlimited Projects', 'Premium Support', 'All Features', 'Advanced Analytics', 'Custom Integrations'] },
+    free: { name: 'Free', projects: 3, price: '$0/mo' },
+    pro: { name: 'Pro', projects: 15, price: '$29/mo' },
+    pro_max: { name: 'Pro Max', projects: 'Unlimited', price: '$99/mo' },
   }
 
   const fetchProfile = useCallback(async () => {
@@ -112,6 +112,8 @@ export default function SubscriptionPage() {
 
   const currentSub = subscriptionDetails[profile.subscription_tier] || subscriptionDetails.free
 
+  console.log('Profile subscription_tier:', profile.subscription_tier, 'Current sub:', currentSub.name)
+
   return (
     <div>
       {/* Header */}
@@ -139,7 +141,7 @@ export default function SubscriptionPage() {
 
       {/* Current Plan */}
       <div className="glass-container p-8 mb-8">
-        <div className="flex items-start justify-between mb-6">
+        <div className="flex items-start justify-between">
           <div>
             <h2 className="text-heading-lg text-secondary-white mb-2">Current Plan</h2>
             <div className="flex items-baseline gap-3 mb-3">
@@ -154,17 +156,6 @@ export default function SubscriptionPage() {
             Active
           </span>
         </div>
-
-        <div className="pt-6 border-t border-white/10">
-          <h3 className="text-body-md text-secondary-white mb-3 font-medium">Plan Features</h3>
-          <ul className="space-y-2">
-            {currentSub.features.map((feature, index) => (
-              <li key={index} className="text-body-sm text-medium-gray">
-                {feature}
-              </li>
-            ))}
-          </ul>
-        </div>
       </div>
 
       {/* Available Plans */}
@@ -172,9 +163,13 @@ export default function SubscriptionPage() {
         <h2 className="text-heading-lg text-secondary-white mb-6">Available Plans</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {(Object.keys(subscriptionDetails) as SubscriptionTier[])
-            .filter((tier) => tier !== profile.subscription_tier)
+            .filter((tier) => {
+              console.log('Comparing tier:', tier, 'with current:', profile.subscription_tier)
+              return tier !== profile.subscription_tier
+            })
             .map((tier) => {
               const sub = subscriptionDetails[tier]
+              const isDowngrade = tier === 'free' || (tier === 'pro' && profile.subscription_tier === 'pro_max')
               
               return (
                 <div
@@ -190,20 +185,12 @@ export default function SubscriptionPage() {
                     {sub.projects} {typeof sub.projects === 'number' ? 'projects' : ''}
                   </p>
 
-                  <ul className="space-y-2 mb-6">
-                    {sub.features.map((feature, index) => (
-                      <li key={index} className="text-body-sm text-medium-gray">
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-
                   <button
                     onClick={() => handleChangeSubscription(tier)}
                     disabled={saving}
                     className="btn-secondary w-full py-3 text-body-md disabled:opacity-50"
                   >
-                    {tier === 'free' ? 'Downgrade' : 'Upgrade'}
+                    {isDowngrade ? 'Downgrade' : 'Upgrade'}
                   </button>
                 </div>
               )
