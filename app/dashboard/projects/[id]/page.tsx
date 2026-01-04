@@ -3,24 +3,26 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useAuth } from '@/contexts/AuthContext'
 import { formatDateWithTime, truncateText } from '@/lib/utils/format'
 import LoadingSpinner from '@/components/dashboard/LoadingSpinner'
 import EmptyState from '@/components/dashboard/EmptyState'
 import InputDetailModal from '@/components/dashboard/InputDetailModal'
 import OutputDetailModal from '@/components/dashboard/OutputDetailModal'
 import SelectRecordingModal from '@/components/dashboard/SelectRecordingModal'
-import type { DiffuseProject, DiffuseProjectInput, DiffuseProjectOutput } from '@/types/database'
+import type { DiffuseProject, DiffuseProjectInput, DiffuseProjectOutput, ProjectVisibility } from '@/types/database'
 
 export default function ProjectDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const { workspaces } = useAuth()
   const projectId = params.id as string
 
   const [project, setProject] = useState<DiffuseProject | null>(null)
   const [inputs, setInputs] = useState<DiffuseProjectInput[]>([])
   const [trashedInputs, setTrashedInputs] = useState<DiffuseProjectInput[]>([])
   const [outputs, setOutputs] = useState<DiffuseProjectOutput[]>([])
-  const [activeTab, setActiveTab] = useState<'inputs' | 'outputs' | 'trash'>('inputs')
+  const [activeTab, setActiveTab] = useState<'inputs' | 'outputs' | 'visibility' | 'trash'>('inputs')
   const [loading, setLoading] = useState(true)
   const [selectedInput, setSelectedInput] = useState<DiffuseProjectInput | null>(null)
   const [selectedOutput, setSelectedOutput] = useState<DiffuseProjectOutput | null>(null)
@@ -35,6 +37,9 @@ export default function ProjectDetailPage() {
   const [editingProject, setEditingProject] = useState(false)
   const [editProjectName, setEditProjectName] = useState('')
   const [editProjectDescription, setEditProjectDescription] = useState('')
+  const [visibility, setVisibility] = useState<ProjectVisibility>('private')
+  const [selectedOrgs, setSelectedOrgs] = useState<string[]>([])
+  const [savingVisibility, setSavingVisibility] = useState(false)
   const supabase = createClient()
 
   const fetchProjectData = useCallback(async () => {
@@ -49,6 +54,8 @@ export default function ProjectDetailPage() {
 
       if (projectError) throw projectError
       setProject(projectData)
+      setVisibility(projectData.visibility || 'private')
+      setSelectedOrgs(projectData.visible_to_orgs || [])
 
       // Fetch active inputs (not deleted)
       const { data: inputsData, error: inputsError } = await supabase
@@ -215,6 +222,36 @@ export default function ProjectDetailPage() {
     }
   }
 
+  const handleSaveVisibility = async () => {
+    if (!project) return
+    setSavingVisibility(true)
+    try {
+      const { error } = await supabase
+        .from('diffuse_projects')
+        .update({ 
+          visibility: visibility,
+          visible_to_orgs: visibility === 'public' ? selectedOrgs : []
+        })
+        .eq('id', project.id)
+
+      if (error) throw error
+      fetchProjectData()
+    } catch (error) {
+      console.error('Error saving visibility:', error)
+      alert('Failed to save visibility settings')
+    } finally {
+      setSavingVisibility(false)
+    }
+  }
+
+  const toggleOrgSelection = (orgId: string) => {
+    setSelectedOrgs(prev => 
+      prev.includes(orgId) 
+        ? prev.filter(id => id !== orgId)
+        : [...prev, orgId]
+    )
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -326,6 +363,19 @@ export default function ProjectDetailPage() {
         >
           Outputs ({outputs.length})
           {activeTab === 'outputs' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-cosmic-orange" />
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('visibility')}
+          className={`pb-3 px-4 text-body-md font-medium transition-colors relative ${
+            activeTab === 'visibility'
+              ? 'text-cosmic-orange'
+              : 'text-secondary-white hover:text-white'
+          }`}
+        >
+          Visibility
+          {activeTab === 'visibility' && (
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-cosmic-orange" />
           )}
         </button>
@@ -510,6 +560,104 @@ export default function ProjectDetailPage() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Visibility Tab */}
+      {activeTab === 'visibility' && (
+        <div className="max-w-2xl">
+          <div className="glass-container p-6 mb-6">
+            <h3 className="text-heading-md text-secondary-white mb-4">Project Visibility</h3>
+            <div className="space-y-4">
+              <label className="flex items-center gap-3 p-4 bg-white/5 rounded-glass cursor-pointer hover:bg-white/10 transition-colors">
+                <input
+                  type="radio"
+                  name="visibility"
+                  value="private"
+                  checked={visibility === 'private'}
+                  onChange={() => setVisibility('private')}
+                  className="w-4 h-4 text-cosmic-orange focus:ring-cosmic-orange"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-medium-gray" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <p className="text-body-md text-secondary-white font-medium">Private</p>
+                  </div>
+                  <p className="text-body-sm text-medium-gray mt-1">Only you can view this project</p>
+                </div>
+              </label>
+              
+              <label className="flex items-center gap-3 p-4 bg-white/5 rounded-glass cursor-pointer hover:bg-white/10 transition-colors">
+                <input
+                  type="radio"
+                  name="visibility"
+                  value="public"
+                  checked={visibility === 'public'}
+                  onChange={() => setVisibility('public')}
+                  className="w-4 h-4 text-cosmic-orange focus:ring-cosmic-orange"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-medium-gray" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <p className="text-body-md text-secondary-white font-medium">Public</p>
+                  </div>
+                  <p className="text-body-sm text-medium-gray mt-1">Visible to selected organizations</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          {/* Organization Selection */}
+          {visibility === 'public' && (
+            <div className="glass-container p-6 mb-6">
+              <h3 className="text-heading-md text-secondary-white mb-4">Visible to Organizations</h3>
+              {workspaces.length === 0 ? (
+                <p className="text-body-sm text-medium-gray">
+                  You&apos;re not a member of any organizations. Join or create an organization to share projects.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {workspaces.map(({ workspace }) => (
+                    <label 
+                      key={workspace.id} 
+                      className="flex items-center gap-3 p-4 bg-white/5 rounded-glass cursor-pointer hover:bg-white/10 transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedOrgs.includes(workspace.id)}
+                        onChange={() => toggleOrgSelection(workspace.id)}
+                        className="w-4 h-4 text-cosmic-orange focus:ring-cosmic-orange rounded"
+                      />
+                      <div className="flex-1">
+                        <p className="text-body-md text-secondary-white font-medium">{workspace.name}</p>
+                        {workspace.description && (
+                          <p className="text-body-sm text-medium-gray">{workspace.description}</p>
+                        )}
+                      </div>
+                      {selectedOrgs.includes(workspace.id) && (
+                        <svg className="w-5 h-5 text-cosmic-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Save Button */}
+          <button
+            onClick={handleSaveVisibility}
+            disabled={savingVisibility}
+            className="btn-primary px-6 py-3 disabled:opacity-50"
+          >
+            {savingVisibility ? 'Saving...' : 'Save Visibility Settings'}
+          </button>
         </div>
       )}
 

@@ -534,10 +534,10 @@ export default function RecordingsPage() {
           <table className="w-full table-fixed">
             <thead>
               <tr className="border-b border-white/10">
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium w-1/2">TITLE</th>
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium w-24">DURATION</th>
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium w-32">CREATED</th>
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium w-32">STATUS</th>
+                <th className="text-left py-4 px-4 text-caption text-medium-gray font-medium" style={{ width: '45%' }}>TITLE</th>
+                <th className="text-left py-4 px-4 text-caption text-medium-gray font-medium" style={{ width: '12%' }}>DURATION</th>
+                <th className="text-left py-4 px-4 text-caption text-medium-gray font-medium" style={{ width: '18%' }}>CREATED</th>
+                <th className="text-left py-4 px-4 text-caption text-medium-gray font-medium" style={{ width: '25%' }}>STATUS</th>
               </tr>
             </thead>
             <tbody>
@@ -547,16 +547,16 @@ export default function RecordingsPage() {
                   onClick={() => openRecording(rec)}
                   className="border-b border-white/10 hover:bg-white/5 transition-colors cursor-pointer"
                 >
-                  <td className="py-4 px-6">
+                  <td className="py-4 px-4">
                     <p className="text-body-md text-secondary-white font-medium break-words">{rec.title}</p>
                   </td>
-                  <td className="py-4 px-6 text-body-sm text-medium-gray whitespace-nowrap">
+                  <td className="py-4 px-4 text-body-sm text-medium-gray whitespace-nowrap">
                     {formatDuration(rec.duration)}
                   </td>
-                  <td className="py-4 px-6 text-body-sm text-medium-gray whitespace-nowrap">
+                  <td className="py-4 px-4 text-body-sm text-medium-gray whitespace-nowrap">
                     {formatRelativeTime(rec.created_at)}
                   </td>
-                  <td className="py-4 px-6">
+                  <td className="py-4 px-4">
                     {rec.status === 'transcribed' ? (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 text-caption font-medium rounded-full border bg-cosmic-orange/20 text-cosmic-orange border-cosmic-orange/30">
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

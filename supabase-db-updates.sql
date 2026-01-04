@@ -22,9 +22,19 @@ FOR UPDATE
 USING (created_by = auth.uid())
 WITH CHECK (created_by = auth.uid());
 
--- Verify the schema
+-- Add visible_to_orgs column to diffuse_projects for organization-based visibility
+ALTER TABLE diffuse_projects
+ADD COLUMN IF NOT EXISTS visible_to_orgs TEXT[] DEFAULT '{}';
+
+-- Verify the schema for inputs
 SELECT column_name, data_type, is_nullable 
 FROM information_schema.columns 
 WHERE table_name = 'diffuse_project_inputs'
+ORDER BY ordinal_position;
+
+-- Verify the schema for projects
+SELECT column_name, data_type, is_nullable 
+FROM information_schema.columns 
+WHERE table_name = 'diffuse_projects'
 ORDER BY ordinal_position;
 

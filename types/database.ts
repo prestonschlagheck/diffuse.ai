@@ -38,6 +38,7 @@ export interface DiffuseProject {
   name: string
   description?: string
   visibility: ProjectVisibility
+  visible_to_orgs?: string[]
   status: ProjectStatus
   created_at: string
   updated_at: string
