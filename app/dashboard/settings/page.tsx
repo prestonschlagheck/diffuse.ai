@@ -7,17 +7,15 @@ import { formatDate } from '@/lib/utils/format'
 import LoadingSpinner from '@/components/dashboard/LoadingSpinner'
 
 type SubscriptionTier = 'free' | 'pro' | 'pro_max'
-type UserLevel = 'individual' | 'contractor' | 'admin' | 'enterprise_admin'
 
 interface UserProfile {
   id: string
   full_name: string | null
   subscription_tier: SubscriptionTier
-  user_level: UserLevel
 }
 
 export default function SettingsPage() {
-  const { user, currentWorkspace, workspaces } = useAuth()
+  const { user, workspaces } = useAuth()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [fullName, setFullName] = useState('')
@@ -43,7 +41,6 @@ export default function SettingsPage() {
           id: user.id,
           full_name: null,
           subscription_tier: 'free' as SubscriptionTier,
-          user_level: 'individual' as UserLevel,
         }
         setProfile(defaultProfile)
         setLoading(false)
@@ -59,7 +56,6 @@ export default function SettingsPage() {
           id: user.id,
           full_name: null,
           subscription_tier: 'free' as SubscriptionTier,
-          user_level: 'individual' as UserLevel,
         }
         
         const { error: insertError } = await supabase
@@ -80,7 +76,6 @@ export default function SettingsPage() {
         id: user.id,
         full_name: null,
         subscription_tier: 'free' as SubscriptionTier,
-        user_level: 'individual' as UserLevel,
       })
     } finally {
       setLoading(false)
@@ -137,17 +132,6 @@ export default function SettingsPage() {
     }
   }
 
-  const userRole = currentWorkspace 
-    ? workspaces.find(w => w.workspace.id === currentWorkspace.id)?.role 
-    : null
-
-  const userLevelLabels: Record<UserLevel, string> = {
-    individual: 'Individual',
-    contractor: 'Contractor',
-    admin: 'Admin',
-    enterprise_admin: 'Enterprise Admin',
-  }
-
   if (loading || !profile) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -182,33 +166,19 @@ export default function SettingsPage() {
       )}
 
       <div className="max-w-4xl">
-        {/* Organization Info */}
-        {currentWorkspace && (
+        {/* Organizations */}
+        {workspaces.length > 0 && (
         <div className="glass-container p-6 mb-6">
-          <h2 className="text-heading-lg text-secondary-white mb-4">Organization</h2>
+          <h2 className="text-heading-lg text-secondary-white mb-4">Organizations</h2>
           <div className="space-y-3">
-            <div>
-              <label className="block text-caption text-medium-gray mb-1">Name</label>
-              <p className="text-body-md text-secondary-white">{currentWorkspace.name}</p>
-            </div>
-            {currentWorkspace.description && (
-              <div>
-                <label className="block text-caption text-medium-gray mb-1">Description</label>
-                <p className="text-body-md text-secondary-white">{currentWorkspace.description}</p>
+            {workspaces.map(({ workspace, role }) => (
+              <div key={workspace.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-b-0">
+                <p className="text-body-md text-secondary-white">{workspace.name}</p>
+                <span className="px-3 py-1 text-caption font-medium rounded-full border bg-cosmic-orange/20 text-cosmic-orange border-cosmic-orange/30 capitalize">
+                  {role}
+                </span>
               </div>
-            )}
-            <div>
-              <label className="block text-caption text-medium-gray mb-1">Your Role</label>
-              <p className="text-body-md text-secondary-white capitalize">
-                {userRole || 'member'}
-              </p>
-            </div>
-            <div>
-              <label className="block text-caption text-medium-gray mb-1">User Level</label>
-              <p className="text-body-md text-cosmic-orange font-medium">
-                {userLevelLabels[profile.user_level]}
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       )}

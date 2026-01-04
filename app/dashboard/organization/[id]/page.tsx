@@ -8,7 +8,12 @@ import { createClient } from '@/lib/supabase/client'
 import LoadingSpinner from '@/components/dashboard/LoadingSpinner'
 import EmptyState from '@/components/dashboard/EmptyState'
 import { formatRelativeTime } from '@/lib/utils/format'
-import type { DiffuseWorkspace, DiffuseProject } from '@/types/database'
+import type { DiffuseWorkspace, DiffuseProject, OrganizationPlan } from '@/types/database'
+
+const planDetails = {
+  enterprise_pro: { name: 'Enterprise Pro', projects: 50, price: '$100/mo' },
+  enterprise_pro_max: { name: 'Enterprise Pro Max', projects: 'Unlimited', price: '$500/mo' },
+}
 
 interface ProjectWithCreator extends DiffuseProject {
   creator_name?: string
@@ -23,7 +28,9 @@ export default function OrganizationDetailPage() {
   const [workspace, setWorkspace] = useState<DiffuseWorkspace | null>(null)
   const [projects, setProjects] = useState<ProjectWithCreator[]>([])
   const [members, setMembers] = useState<{ user_id: string; role: string; email?: string; name?: string }[]>([])
+  const [userRole, setUserRole] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [savingPlan, setSavingPlan] = useState(false)
   const supabase = createClient()
 
   const statusColors: Record<string, string> = {
@@ -57,6 +64,10 @@ export default function OrganizationDetailPage() {
       
       const memberIds = membersData?.map(m => m.user_id) || []
       setMembers(membersData || [])
+      
+      // Find current user's role
+      const currentUserMember = membersData?.find(m => m.user_id === user.id)
+      setUserRole(currentUserMember?.role || null)
 
       // Fetch public projects from all members of this workspace
       if (memberIds.length > 0) {
@@ -97,6 +108,27 @@ export default function OrganizationDetailPage() {
   useEffect(() => {
     fetchOrganizationData()
   }, [fetchOrganizationData])
+
+  const handleChangePlan = async (newPlan: OrganizationPlan) => {
+    if (!workspace || userRole !== 'admin') return
+    
+    setSavingPlan(true)
+    try {
+      const { error } = await supabase
+        .from('diffuse_workspaces')
+        .update({ plan: newPlan })
+        .eq('id', workspace.id)
+
+      if (error) throw error
+      
+      setWorkspace({ ...workspace, plan: newPlan })
+    } catch (error) {
+      console.error('Error updating plan:', error)
+      alert('Failed to update plan')
+    } finally {
+      setSavingPlan(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -224,6 +256,70 @@ export default function OrganizationDetailPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Organization Settings */}
+      {userRole === 'admin' && (
+        <div className="mt-12">
+          <h2 className="text-heading-lg text-secondary-white mb-4">Organization Settings</h2>
+          
+          {/* Current Plan */}
+          <div className="glass-container p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-body-md text-medium-gray mb-1">Current Plan</h3>
+                <p className="text-heading-md text-secondary-white">
+                  {workspace.plan && planDetails[workspace.plan as keyof typeof planDetails]
+                    ? planDetails[workspace.plan as keyof typeof planDetails].name
+                    : 'No plan selected'}
+                </p>
+              </div>
+              {workspace.plan && planDetails[workspace.plan as keyof typeof planDetails] && (
+                <div className="text-right">
+                  <p className="text-heading-md text-cosmic-orange">
+                    {planDetails[workspace.plan as keyof typeof planDetails].price}
+                  </p>
+                  <p className="text-body-sm text-medium-gray">
+                    {planDetails[workspace.plan as keyof typeof planDetails].projects} projects
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Change Plan */}
+          <div className="glass-container p-6">
+            <h3 className="text-body-md text-secondary-white mb-4">Change Plan</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {(Object.entries(planDetails) as [OrganizationPlan, typeof planDetails[keyof typeof planDetails]][]).map(([key, plan]) => {
+                const isCurrentPlan = workspace.plan === key
+                return (
+                  <button
+                    key={key}
+                    onClick={() => handleChangePlan(key)}
+                    disabled={savingPlan || isCurrentPlan}
+                    className={`p-4 rounded-glass border text-left transition-colors ${
+                      isCurrentPlan
+                        ? 'border-cosmic-orange/50 bg-cosmic-orange/10'
+                        : 'border-white/10 bg-white/5 hover:bg-white/10'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-body-md text-secondary-white font-medium">{plan.name}</p>
+                      {isCurrentPlan && (
+                        <span className="px-2 py-0.5 text-caption font-medium rounded bg-cosmic-orange/20 text-cosmic-orange">
+                          Current
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-heading-md text-cosmic-orange mb-1">{plan.price}</p>
+                    <p className="text-body-sm text-medium-gray">{plan.projects} projects</p>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
         </div>
       )}
     </div>

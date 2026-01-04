@@ -21,10 +21,10 @@ const individualPlans = {
   pro_max: { name: 'Pro Max', projects: 'Unlimited', price: '$60/mo', isEnterprise: false },
 }
 
-// Enterprise plans (for organizations)
+// Enterprise plans (for organizations) - based on projects
 const enterprisePlans = {
-  enterprise_pro: { name: 'Enterprise Pro', users: 6, price: '$100/mo', perUser: '~$17/user' },
-  enterprise_pro_max: { name: 'Enterprise Pro Max', users: 12, price: '$500/mo', perUser: '~$42/user' },
+  enterprise_pro: { name: 'Enterprise Pro', projects: 50, price: '$100/mo' },
+  enterprise_pro_max: { name: 'Enterprise Pro Max', projects: 'Unlimited', price: '$500/mo' },
 }
 
 export default function SubscriptionPage() {
@@ -208,33 +208,20 @@ export default function SubscriptionPage() {
 
       {/* Enterprise Plans */}
       <div>
-        <h2 className="text-heading-lg text-secondary-white mb-2">Enterprise Plans</h2>
-        <p className="text-body-md text-medium-gray mb-6">
-          For teams and organizations. Create an organization to upgrade.
-        </p>
+        <h2 className="text-heading-lg text-secondary-white mb-6">Enterprise Plans</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {Object.entries(enterprisePlans).map(([key, plan]) => (
             <div
               key={key}
-              className="glass-container p-6 border border-white/10 relative overflow-hidden"
+              className="glass-container p-6 border border-white/10"
             >
-              {/* Enterprise badge */}
-              <div className="absolute top-4 right-4">
-                <span className="px-3 py-1 text-caption font-medium rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/30">
-                  Enterprise
-                </span>
-              </div>
-              
               <h3 className="text-heading-md text-secondary-white mb-2">{plan.name}</h3>
-              <div className="mb-2">
+              <div className="mb-4">
                 <span className="text-3xl font-bold text-cosmic-orange">{plan.price.split('/')[0]}</span>
                 <span className="text-body-md text-medium-gray">/{plan.price.split('/')[1]}</span>
               </div>
-              <p className="text-body-sm text-medium-gray mb-1">
-                Up to {plan.users} team members
-              </p>
-              <p className="text-caption text-medium-gray mb-6">
-                {plan.perUser}
+              <p className="text-body-sm text-medium-gray mb-6">
+                {plan.projects} {typeof plan.projects === 'number' ? 'projects' : 'projects'}
               </p>
 
               <button

@@ -10,8 +10,8 @@ import EmptyState from '@/components/dashboard/EmptyState'
 import type { OrganizationPlan } from '@/types/database'
 
 const planDetails = {
-  enterprise_pro: { name: 'Enterprise Pro', users: 6, price: '$100/mo' },
-  enterprise_pro_max: { name: 'Enterprise Pro Max', users: 12, price: '$500/mo' },
+  enterprise_pro: { name: 'Enterprise Pro', projects: 50, price: '$100/mo' },
+  enterprise_pro_max: { name: 'Enterprise Pro Max', projects: 'Unlimited', price: '$500/mo' },
 }
 
 export default function OrganizationPage() {
@@ -394,7 +394,7 @@ export default function OrganizationPage() {
                         />
                         <div>
                           <p className="text-body-md text-secondary-white font-medium">{plan.name}</p>
-                          <p className="text-caption text-medium-gray">Up to {plan.users} team members</p>
+                          <p className="text-caption text-medium-gray">{plan.projects} projects</p>
                         </div>
                       </div>
                       <span className="text-body-md text-purple-400 font-medium">{plan.price}</span>
