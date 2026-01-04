@@ -34,29 +34,19 @@ export async function POST(request: NextRequest) {
 
     if (transcript.status === 'error') {
       console.error('AssemblyAI transcription error:', transcript.error)
+      // Reset status back to 'recorded' on failure
+      await supabase
+        .from('diffuse_recordings')
+        .update({ status: 'recorded' })
+        .eq('id', recordingId)
       return NextResponse.json(
         { error: transcript.error || 'Transcription failed' },
         { status: 500 }
       )
     }
 
-    // Update the recording with the transcription and status
-    const { error: updateError } = await supabase
-      .from('diffuse_recordings')
-      .update({ 
-        transcription: transcript.text,
-        status: 'transcribed'
-      })
-      .eq('id', recordingId)
-
-    if (updateError) {
-      console.error('Error updating recording:', updateError)
-      return NextResponse.json(
-        { error: 'Failed to save transcription' },
-        { status: 500 }
-      )
-    }
-
+    // Don't save transcription yet - just return it for preview
+    // User must click "Save" to permanently store it
     return NextResponse.json({
       success: true,
       transcription: transcript.text,

@@ -32,6 +32,7 @@ export default function RecordingsPage() {
   const [pendingRecording, setPendingRecording] = useState<Blob | null>(null)
   const [selectedRecording, setSelectedRecording] = useState<Recording | null>(null)
   const [transcribing, setTranscribing] = useState(false)
+  const [pendingTranscription, setPendingTranscription] = useState<string | null>(null) // Holds unsaved transcription
   const [micPermission, setMicPermission] = useState<'granted' | 'denied' | 'prompt' | 'unknown'>('unknown')
   const [hasAttemptedRecording, setHasAttemptedRecording] = useState(false)
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
@@ -282,15 +283,46 @@ export default function RecordingsPage() {
         throw new Error(data.error || 'Transcription failed')
       }
 
-      // Transcription successful - status is already set to 'transcribed' by API
-      fetchRecordings()
-      setSelectedRecording({ ...recording, status: 'transcribed', transcription: data.transcription })
+      // Transcription successful - store as pending (not saved yet)
+      // User must click "Save" to permanently store it
+      setPendingTranscription(data.transcription)
+      // Keep status as 'generating' until user saves - but update local state to show preview
+      setSelectedRecording({ ...recording, status: 'generating' })
     } catch (error) {
       console.error('Error transcribing:', error)
       alert(error instanceof Error ? error.message : 'Failed to transcribe recording')
       fetchRecordings() // Refresh to get correct status
     } finally {
       setTranscribing(false)
+    }
+  }
+
+  // Save the transcription permanently to the database
+  const saveTranscription = async () => {
+    if (!selectedRecording || !pendingTranscription) return
+
+    try {
+      const { error } = await supabase
+        .from('diffuse_recordings')
+        .update({ 
+          transcription: pendingTranscription,
+          status: 'transcribed'
+        })
+        .eq('id', selectedRecording.id)
+
+      if (error) throw error
+
+      // Update local state
+      setSelectedRecording({ 
+        ...selectedRecording, 
+        transcription: pendingTranscription, 
+        status: 'transcribed' 
+      })
+      setPendingTranscription(null)
+      fetchRecordings()
+    } catch (error) {
+      console.error('Error saving transcription:', error)
+      alert('Failed to save transcription')
     }
   }
 
@@ -378,6 +410,7 @@ export default function RecordingsPage() {
         setSelectedRecording({ ...selectedRecording, status: 'recorded' })
       }
       setTranscribing(false)
+      setPendingTranscription(null)
       fetchRecordings()
     } catch (error) {
       console.error('Error cancelling transcription:', error)
@@ -387,6 +420,9 @@ export default function RecordingsPage() {
 
   // Open a recording - fetch fresh data from DB
   const openRecording = async (rec: Recording) => {
+    // Clear any pending transcription from previous recording
+    setPendingTranscription(null)
+    
     // Fetch fresh data to ensure we have the latest status/transcription
     const { data, error } = await supabase
       .from('diffuse_recordings')
@@ -638,15 +674,25 @@ export default function RecordingsPage() {
             {/* Transcription Section */}
             <div className="mb-6">
               <h3 className="text-body-sm text-medium-gray mb-3">Transcription</h3>
-              {selectedRecording.status === 'transcribed' || selectedRecording.transcription ? (
-                // Show transcription if status is transcribed OR has transcription text
+              {selectedRecording.status === 'transcribed' && selectedRecording.transcription ? (
+                // Permanently saved transcription
                 <div className="p-4 bg-white/5 rounded-glass">
                   <p className="text-body-md text-secondary-white whitespace-pre-wrap leading-relaxed">
-                    {selectedRecording.transcription || 'Transcription completed.'}
+                    {selectedRecording.transcription}
                   </p>
                 </div>
-              ) : selectedRecording.status === 'generating' || transcribing ? (
-                // Show generating state - either from DB status or active transcription
+              ) : pendingTranscription ? (
+                // Preview of unsaved transcription - needs to be saved
+                <div className="p-4 bg-white/5 rounded-glass">
+                  <p className="text-body-md text-secondary-white whitespace-pre-wrap leading-relaxed">
+                    {pendingTranscription}
+                  </p>
+                  <p className="text-body-sm text-cosmic-orange mt-3">
+                    ⚠️ Transcription preview - click Save to keep it
+                  </p>
+                </div>
+              ) : transcribing ? (
+                // Actively generating
                 <div className="p-4 bg-white/5 rounded-glass text-center">
                   <div className="flex items-center justify-center gap-3">
                     <svg className="w-5 h-5 text-cosmic-orange animate-spin" fill="none" viewBox="0 0 24 24">
@@ -660,7 +706,7 @@ export default function RecordingsPage() {
                   </p>
                 </div>
               ) : (
-                // Show generate button only for 'recorded' status
+                // No transcription - show generate button
                 <div className="p-4 bg-white/5 rounded-glass text-center">
                   <p className="text-body-sm text-medium-gray mb-4">No transcription yet</p>
                   <button
@@ -676,19 +722,31 @@ export default function RecordingsPage() {
             {/* Actions */}
             <div className="flex gap-3 pt-4 border-t border-white/10">
               <button
-                onClick={() => setSelectedRecording(null)}
+                onClick={() => {
+                  setSelectedRecording(null)
+                  setPendingTranscription(null)
+                }}
                 className="btn-secondary flex-1 py-3"
               >
                 Close
               </button>
-              {(selectedRecording.status === 'generating' || transcribing) && (
+              {pendingTranscription ? (
+                // Show Save button when there's unsaved transcription
+                <button
+                  onClick={saveTranscription}
+                  className="btn-primary py-3 px-6"
+                >
+                  Save
+                </button>
+              ) : transcribing ? (
+                // Show Cancel button while actively generating
                 <button
                   onClick={() => cancelTranscription(selectedRecording.id)}
                   className="btn-secondary py-3 px-6 text-yellow-400 hover:text-yellow-300"
                 >
                   Cancel
                 </button>
-              )}
+              ) : null}
               <button
                 onClick={() => {
                   if (confirm('Are you sure you want to delete this recording?')) {
