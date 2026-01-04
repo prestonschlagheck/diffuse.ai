@@ -33,6 +33,7 @@ export default function RecordingsPage() {
   const [selectedRecording, setSelectedRecording] = useState<Recording | null>(null)
   const [transcribing, setTranscribing] = useState(false)
   const [micPermission, setMicPermission] = useState<'granted' | 'denied' | 'prompt' | 'unknown'>('unknown')
+  const [hasAttemptedRecording, setHasAttemptedRecording] = useState(false)
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const [loadingAudio, setLoadingAudio] = useState(false)
   
@@ -107,6 +108,7 @@ export default function RecordingsPage() {
     }
 
     try {
+      setHasAttemptedRecording(true)
       console.log('Requesting microphone access...')
       
       // Simple getUserMedia call - this should trigger the browser permission prompt
@@ -367,9 +369,10 @@ export default function RecordingsPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-display-sm text-secondary-white">Recordings</h1>
-          {micPermission === 'denied' && (
+{/* Mic permission warning - only show after user attempted and was denied */}
+          {hasAttemptedRecording && micPermission === 'denied' && (
             <p className="text-body-sm text-red-400 mt-1">
-              Microphone access denied. Please enable it in your browser settings.
+              Microphone access denied. Please enable it in your browser settings and try again.
             </p>
           )}
         </div>
