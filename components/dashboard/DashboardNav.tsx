@@ -110,13 +110,12 @@ export default function DashboardNav() {
       <div className="p-4 border-t border-white/10 relative">
         <button
           onClick={() => setShowUserMenu(!showUserMenu)}
-          className="w-full px-4 py-3 bg-white/5 rounded-glass text-left text-body-sm text-secondary-white hover:bg-white/10 transition-colors flex items-center justify-between"
+          className="w-full px-4 py-3 bg-white/5 rounded-glass text-left text-body-sm text-secondary-white hover:bg-white/10 transition-colors"
         >
           <div className="truncate">
             <div className="font-medium truncate">{displayName}</div>
             <div className="text-caption text-cosmic-orange">{subscriptionLabel}</div>
           </div>
-          <span className="text-cosmic-orange">▼</span>
         </button>
 
         {showUserMenu && (
