@@ -184,7 +184,7 @@ export default function SettingsPage() {
     )
   }
 
-  const currentSub = subscriptionDetails[profile.subscription_tier]
+  const currentSub = subscriptionDetails[profile.subscription_tier] || subscriptionDetails.free
 
   return (
     <div className="max-w-4xl">
