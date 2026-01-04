@@ -83,6 +83,7 @@ export default function OrganizationPage() {
           name: orgName,
           description: orgDescription,
           invite_code: inviteCode,
+          owner_id: user?.id,
         })
         .select()
         .single()
