@@ -45,10 +45,17 @@ export default function RecordingsPage() {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (error) {
+        // Table doesn't exist yet - show empty state
+        console.warn('diffuse_recordings table not found')
+        setRecordings([])
+        setLoading(false)
+        return
+      }
       setRecordings(data || [])
     } catch (error) {
       console.error('Error fetching recordings:', error)
+      setRecordings([])
     } finally {
       setLoading(false)
     }

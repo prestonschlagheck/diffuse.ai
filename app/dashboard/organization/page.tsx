@@ -35,7 +35,14 @@ export default function OrganizationPage() {
         .eq('invite_code', joinCode.toUpperCase())
         .single()
 
-      if (orgError || !org) {
+      if (orgError) {
+        if (orgError.code === '42703') {
+          throw new Error('Organization invite codes not yet configured in database')
+        }
+        throw new Error('Invalid organization code')
+      }
+
+      if (!org) {
         throw new Error('Invalid organization code')
       }
 
@@ -80,7 +87,12 @@ export default function OrganizationPage() {
         .select()
         .single()
 
-      if (orgError) throw orgError
+      if (orgError) {
+        if (orgError.code === '42703') {
+          throw new Error('Organization invite codes not yet configured in database. Please contact support.')
+        }
+        throw orgError
+      }
 
       // Add creator as admin
       const { error: memberError } = await supabase
@@ -118,15 +130,19 @@ export default function OrganizationPage() {
       // For now, just show the code
       if (!currentWorkspace) throw new Error('No organization selected')
 
-      const { data: org } = await supabase
+      const { data: org, error: orgError } = await supabase
         .from('diffuse_workspaces')
         .select('invite_code')
         .eq('id', currentWorkspace.id)
         .single()
 
+      if (orgError || !org?.invite_code) {
+        throw new Error('Organization invite codes not yet configured. Please contact support.')
+      }
+
       setMessage({ 
         type: 'success', 
-        text: `Share this code with ${inviteEmail}: ${org?.invite_code}` 
+        text: `Share this code with ${inviteEmail}: ${org.invite_code}` 
       })
       setInviteEmail('')
     } catch (error: any) {

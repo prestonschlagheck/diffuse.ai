@@ -62,13 +62,18 @@ export default function DashboardPage() {
         .eq('id', user.id)
         .single()
 
-      if (error && error.code !== 'PGRST116') throw error
+      if (error && error.code !== 'PGRST116') {
+        // Table doesn't exist - use default
+        console.warn('user_profiles table not found, using default tier')
+        return
+      }
 
       if (data) {
         setSubscriptionTier(data.subscription_tier)
       }
     } catch (error) {
       console.error('Error fetching user profile:', error)
+      // Use default 'free' tier on error
     }
   }, [user, supabase])
 

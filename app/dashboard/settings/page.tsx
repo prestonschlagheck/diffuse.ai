@@ -36,7 +36,19 @@ export default function SettingsPage() {
         .eq('id', user.id)
         .single()
 
-      if (error && error.code !== 'PGRST116') throw error
+      if (error && error.code !== 'PGRST116') {
+        // Table doesn't exist or other error - use default profile
+        console.warn('user_profiles table not found, using default profile')
+        const defaultProfile = {
+          id: user.id,
+          full_name: null,
+          subscription_tier: 'free' as SubscriptionTier,
+          user_level: 'individual' as UserLevel,
+        }
+        setProfile(defaultProfile)
+        setLoading(false)
+        return
+      }
 
       if (data) {
         setProfile(data)
@@ -54,12 +66,22 @@ export default function SettingsPage() {
           .from('user_profiles')
           .insert(newProfile)
 
-        if (!insertError) {
+        if (insertError) {
+          console.warn('Could not insert profile, using default')
+          setProfile(newProfile)
+        } else {
           setProfile(newProfile)
         }
       }
     } catch (error) {
       console.error('Error fetching profile:', error)
+      // Use default profile on error
+      setProfile({
+        id: user.id,
+        full_name: null,
+        subscription_tier: 'free' as SubscriptionTier,
+        user_level: 'individual' as UserLevel,
+      })
     } finally {
       setLoading(false)
     }
