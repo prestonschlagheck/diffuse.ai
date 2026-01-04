@@ -24,6 +24,10 @@ export default function ProjectDetailPage() {
   const [selectedInput, setSelectedInput] = useState<DiffuseProjectInput | null>(null)
   const [selectedOutput, setSelectedOutput] = useState<DiffuseProjectOutput | null>(null)
   const [showRecordingModal, setShowRecordingModal] = useState(false)
+  const [showTextInputModal, setShowTextInputModal] = useState(false)
+  const [textInputContent, setTextInputContent] = useState('')
+  const [textInputTitle, setTextInputTitle] = useState('')
+  const [savingTextInput, setSavingTextInput] = useState(false)
   const supabase = createClient()
 
   const fetchProjectData = useCallback(async () => {
@@ -68,6 +72,42 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     fetchProjectData()
   }, [fetchProjectData])
+
+  const handleSaveTextInput = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!textInputContent.trim()) return
+
+    setSavingTextInput(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+
+      const { error } = await supabase
+        .from('diffuse_project_inputs')
+        .insert({
+          project_id: projectId,
+          type: 'text',
+          content: textInputContent,
+          file_name: textInputTitle || 'Text Input',
+          metadata: {
+            source: 'manual',
+          },
+          created_by: user.id,
+        })
+
+      if (error) throw error
+
+      setTextInputContent('')
+      setTextInputTitle('')
+      setShowTextInputModal(false)
+      fetchProjectData()
+    } catch (error) {
+      console.error('Error saving text input:', error)
+      alert('Failed to save text input')
+    } finally {
+      setSavingTextInput(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -163,8 +203,17 @@ export default function ProjectDetailPage() {
       {/* Inputs Tab */}
       {activeTab === 'inputs' && (
         <div>
-          {/* Add Recording Button */}
-          <div className="flex justify-end mb-4">
+          {/* Add Input Buttons */}
+          <div className="flex justify-end gap-3 mb-4">
+            <button
+              onClick={() => setShowTextInputModal(true)}
+              className="btn-secondary px-4 py-2 flex items-center gap-2 text-body-sm"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Add Text Input
+            </button>
             <button
               onClick={() => setShowRecordingModal(true)}
               className="btn-primary px-4 py-2 flex items-center gap-2 text-body-sm"
@@ -305,6 +354,83 @@ export default function ProjectDetailPage() {
           onClose={() => setShowRecordingModal(false)}
           onSuccess={fetchProjectData}
         />
+      )}
+
+      {/* Text Input Modal */}
+      {showTextInputModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="glass-container p-8 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <h2 className="text-heading-lg text-secondary-white">Add Text Input</h2>
+                <p className="text-body-sm text-medium-gray mt-1">
+                  Paste or type text to use as input for this project
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowTextInputModal(false)
+                  setTextInputContent('')
+                  setTextInputTitle('')
+                }}
+                className="text-medium-gray hover:text-secondary-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveTextInput} className="flex-1 flex flex-col">
+              <div className="mb-4">
+                <label className="block text-body-sm text-secondary-white mb-2">
+                  Title (optional)
+                </label>
+                <input
+                  type="text"
+                  value={textInputTitle}
+                  onChange={(e) => setTextInputTitle(e.target.value)}
+                  placeholder="Meeting Notes - Jan 2026"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md focus:outline-none focus:border-cosmic-orange transition-colors"
+                />
+              </div>
+              
+              <div className="flex-1 mb-6">
+                <label className="block text-body-sm text-secondary-white mb-2">
+                  Content
+                </label>
+                <textarea
+                  value={textInputContent}
+                  onChange={(e) => setTextInputContent(e.target.value)}
+                  placeholder="Paste or type your text here..."
+                  required
+                  className="w-full h-64 px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md focus:outline-none focus:border-cosmic-orange transition-colors resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowTextInputModal(false)
+                    setTextInputContent('')
+                    setTextInputTitle('')
+                  }}
+                  className="btn-secondary flex-1 py-3"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingTextInput || !textInputContent.trim()}
+                  className="btn-primary flex-1 py-3 disabled:opacity-50"
+                >
+                  {savingTextInput ? 'Saving...' : 'Add Input'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   )

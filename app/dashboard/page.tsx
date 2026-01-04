@@ -22,10 +22,10 @@ export default function DashboardPage() {
   const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier>('free')
   const supabase = createClient()
 
-  const subscriptionLimits: Record<SubscriptionTier, number | null> = {
+  const subscriptionLimits: Record<SubscriptionTier, number> = {
     free: 3,
     pro: 15,
-    pro_max: null, // unlimited
+    pro_max: 40,
   }
 
   const subscriptionNames: Record<SubscriptionTier, string> = {
@@ -102,8 +102,8 @@ export default function DashboardPage() {
 
   const projectLimit = subscriptionLimits[subscriptionTier]
   const projectCount = projects.length
-  const hasReachedLimit = projectLimit !== null && projectCount >= projectLimit
-  const remainingProjects = projectLimit !== null ? projectLimit - projectCount : null
+  const hasReachedLimit = projectCount >= projectLimit
+  const remainingProjects = projectLimit - projectCount
 
   return (
     <div>
@@ -112,7 +112,7 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-display-sm text-secondary-white mb-2">Projects</h1>
           <p className="text-body-md text-medium-gray">
-            {projectCount} of {projectLimit === null ? 'Unlimited' : projectLimit} projects • {subscriptionNames[subscriptionTier]} Plan
+            {projectCount} of {projectLimit} projects • {subscriptionNames[subscriptionTier]} Plan
             {currentWorkspace && ` • ${currentWorkspace.name}`}
           </p>
         </div>
@@ -135,7 +135,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Alerts */}
-      {remainingProjects !== null && remainingProjects <= 2 && remainingProjects > 0 && (
+      {remainingProjects <= 2 && remainingProjects > 0 && (
         <div className="mb-6 p-4 rounded-glass border border-cosmic-orange/30 bg-cosmic-orange/10 flex gap-3">
           <svg className="w-5 h-5 text-cosmic-orange flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
