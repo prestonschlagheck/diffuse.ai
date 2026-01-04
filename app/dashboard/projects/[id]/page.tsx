@@ -8,6 +8,7 @@ import LoadingSpinner from '@/components/dashboard/LoadingSpinner'
 import EmptyState from '@/components/dashboard/EmptyState'
 import InputDetailModal from '@/components/dashboard/InputDetailModal'
 import OutputDetailModal from '@/components/dashboard/OutputDetailModal'
+import SelectRecordingModal from '@/components/dashboard/SelectRecordingModal'
 import type { DiffuseProject, DiffuseProjectInput, DiffuseProjectOutput } from '@/types/database'
 
 export default function ProjectDetailPage() {
@@ -22,6 +23,7 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true)
   const [selectedInput, setSelectedInput] = useState<DiffuseProjectInput | null>(null)
   const [selectedOutput, setSelectedOutput] = useState<DiffuseProjectOutput | null>(null)
+  const [showRecordingModal, setShowRecordingModal] = useState(false)
   const supabase = createClient()
 
   const fetchProjectData = useCallback(async () => {
@@ -161,6 +163,19 @@ export default function ProjectDetailPage() {
       {/* Inputs Tab */}
       {activeTab === 'inputs' && (
         <div>
+          {/* Add Recording Button */}
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={() => setShowRecordingModal(true)}
+              className="btn-primary px-4 py-2 flex items-center gap-2 text-body-sm"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              </svg>
+              Add from Recordings
+            </button>
+          </div>
+
           {inputs.length === 0 ? (
             <EmptyState
               icon={
@@ -174,7 +189,7 @@ export default function ProjectDetailPage() {
                 </svg>
               }
               title="No Inputs Yet"
-              description="Inputs will appear here when they are submitted to this project via the workflow API."
+              description="Add recordings as inputs or submit inputs via the workflow API."
             />
           ) : (
             <div className="space-y-4">
@@ -282,6 +297,13 @@ export default function ProjectDetailPage() {
           output={selectedOutput}
           onClose={() => setSelectedOutput(null)}
           onUpdate={fetchProjectData}
+        />
+      )}
+      {showRecordingModal && (
+        <SelectRecordingModal
+          projectId={projectId}
+          onClose={() => setShowRecordingModal(false)}
+          onSuccess={fetchProjectData}
         />
       )}
     </div>
