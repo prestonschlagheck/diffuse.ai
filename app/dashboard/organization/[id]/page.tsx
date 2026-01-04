@@ -84,12 +84,13 @@ export default function OrganizationDetailPage() {
           .eq('id', member.user_id)
           .single()
 
-        // Get public project count for this member
+        // Get project count for this member that are visible to this org
         const { count: projectCount } = await supabase
           .from('diffuse_projects')
           .select('*', { count: 'exact', head: true })
           .eq('created_by', member.user_id)
           .eq('visibility', 'public')
+          .contains('visible_to_orgs', [orgId])
 
         membersWithDetails.push({
           user_id: member.user_id,
@@ -100,13 +101,13 @@ export default function OrganizationDetailPage() {
       }
       setMembers(membersWithDetails)
 
-      // Fetch public projects from all members of this workspace
+      // Fetch projects that are visible to this organization
       if (memberIds.length > 0) {
         const { data: projectsData, error: projectsError } = await supabase
           .from('diffuse_projects')
           .select('*')
-          .in('created_by', memberIds)
           .eq('visibility', 'public')
+          .contains('visible_to_orgs', [orgId])
           .order('created_at', { ascending: false })
 
         if (projectsError) throw projectsError
@@ -329,8 +330,8 @@ export default function OrganizationDetailPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
             </svg>
           }
-          title="No Public Projects"
-          description="Members of this organization haven't shared any public projects yet."
+          title="No Shared Projects"
+          description="No projects have been shared with this organization yet."
         />
       ) : (
         <div className="glass-container overflow-hidden mb-12">
