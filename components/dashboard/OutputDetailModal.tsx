@@ -1,14 +1,24 @@
 'use client'
 
+import { useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { formatDateTime } from '@/lib/utils/format'
+import RichTextEditor from './RichTextEditor'
 import type { DiffuseProjectOutput } from '@/types/database'
 
 interface OutputDetailModalProps {
   output: DiffuseProjectOutput
   onClose: () => void
+  onUpdate?: () => void
 }
 
-export default function OutputDetailModal({ output, onClose }: OutputDetailModalProps) {
+export default function OutputDetailModal({ output, onClose, onUpdate }: OutputDetailModalProps) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [editedContent, setEditedContent] = useState(output.content)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const supabase = createClient()
+
   const statusColors = {
     pending: 'bg-pale-blue/20 text-pale-blue border-pale-blue/30',
     processing: 'bg-cosmic-orange/20 text-cosmic-orange border-cosmic-orange/30',
@@ -16,12 +26,36 @@ export default function OutputDetailModal({ output, onClose }: OutputDetailModal
     failed: 'bg-red-500/20 text-red-400 border-red-500/30',
   }
 
+  const handleSave = async () => {
+    setLoading(true)
+    setError('')
+
+    try {
+      const { error: updateError } = await supabase
+        .from('diffuse_project_outputs')
+        .update({
+          content: editedContent,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', output.id)
+
+      if (updateError) throw updateError
+
+      setIsEditing(false)
+      if (onUpdate) onUpdate()
+    } catch (err: any) {
+      setError(err.message || 'Failed to update output')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleDownload = () => {
-    const blob = new Blob([output.content], { type: 'text/plain' })
+    const blob = new Blob([output.content], { type: 'text/html' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `output-${output.id}.txt`
+    a.download = `output-${output.id}.html`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -31,7 +65,9 @@ export default function OutputDetailModal({ output, onClose }: OutputDetailModal
       <div className="glass-container p-8 max-w-3xl w-full max-h-[80vh] overflow-y-auto custom-scrollbar">
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h2 className="text-heading-lg text-secondary-white mb-2">Output Details</h2>
+            <h2 className="text-heading-lg text-secondary-white mb-2">
+              {isEditing ? 'Edit Output' : 'Output Details'}
+            </h2>
             <span
               className={`inline-block px-3 py-1 text-caption font-medium rounded-full border ${
                 statusColors[output.workflow_status]
@@ -48,6 +84,12 @@ export default function OutputDetailModal({ output, onClose }: OutputDetailModal
           </button>
         </div>
 
+        {error && (
+          <div className="mb-6 p-4 rounded-glass border border-red-500/30 bg-red-500/10 text-red-400 text-body-sm">
+            {error}
+          </div>
+        )}
+
         <div className="space-y-6">
           {/* Metadata */}
           <div className="grid grid-cols-2 gap-4">
@@ -63,10 +105,32 @@ export default function OutputDetailModal({ output, onClose }: OutputDetailModal
 
           {/* Content */}
           <div>
-            <label className="block text-caption text-medium-gray mb-2">Content</label>
-            <div className="p-4 bg-white/5 border border-white/10 rounded-glass max-h-96 overflow-y-auto custom-scrollbar">
-              <p className="text-body-sm text-secondary-white whitespace-pre-wrap">{output.content}</p>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-caption text-medium-gray">Content</label>
+              {!isEditing && (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="text-body-sm text-cosmic-orange hover:text-rich-orange transition-colors"
+                >
+                  ✏️ Edit
+                </button>
+              )}
             </div>
+
+            {isEditing ? (
+              <RichTextEditor
+                value={editedContent}
+                onChange={setEditedContent}
+                placeholder="Edit your output content..."
+              />
+            ) : (
+              <div className="p-4 bg-white/5 border border-white/10 rounded-glass max-h-96 overflow-y-auto custom-scrollbar">
+                <div
+                  className="text-body-sm text-secondary-white"
+                  dangerouslySetInnerHTML={{ __html: output.content }}
+                />
+              </div>
+            )}
           </div>
 
           {/* Structured Data */}
@@ -95,12 +159,37 @@ export default function OutputDetailModal({ output, onClose }: OutputDetailModal
         </div>
 
         <div className="mt-8 flex gap-4">
-          <button onClick={handleDownload} className="btn-secondary flex-1 py-3">
-            Download
-          </button>
-          <button onClick={onClose} className="btn-primary flex-1 py-3">
-            Close
-          </button>
+          {isEditing ? (
+            <>
+              <button
+                onClick={() => {
+                  setIsEditing(false)
+                  setEditedContent(output.content)
+                  setError('')
+                }}
+                className="btn-secondary flex-1 py-3"
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                className="btn-primary flex-1 py-3"
+                disabled={loading}
+              >
+                {loading ? 'Saving...' : 'Save Changes'}
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={handleDownload} className="btn-secondary flex-1 py-3">
+                Download
+              </button>
+              <button onClick={onClose} className="btn-primary flex-1 py-3">
+                Close
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

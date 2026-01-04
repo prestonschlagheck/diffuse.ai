@@ -272,7 +272,11 @@ export default function ProjectDetailPage() {
         <InputDetailModal input={selectedInput} onClose={() => setSelectedInput(null)} />
       )}
       {selectedOutput && (
-        <OutputDetailModal output={selectedOutput} onClose={() => setSelectedOutput(null)} />
+        <OutputDetailModal
+          output={selectedOutput}
+          onClose={() => setSelectedOutput(null)}
+          onUpdate={fetchProjectData}
+        />
       )}
     </div>
   )

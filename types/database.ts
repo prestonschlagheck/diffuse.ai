@@ -2,7 +2,7 @@ export type UserRole = 'admin' | 'member'
 
 export type ProjectStatus = 'active' | 'archived' | 'draft'
 
-export type ProjectVisibility = 'private' | 'shared'
+export type ProjectVisibility = 'private' | 'public'
 
 export type InputType = 'text' | 'audio'
 

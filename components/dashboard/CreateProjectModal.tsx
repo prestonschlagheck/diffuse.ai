@@ -12,7 +12,7 @@ interface CreateProjectModalProps {
 export default function CreateProjectModal({ workspaceId, onClose, onSuccess }: CreateProjectModalProps) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [visibility, setVisibility] = useState<'private' | 'shared'>('private')
+  const [visibility, setVisibility] = useState<'private' | 'public'>('private')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const supabase = createClient()
@@ -88,27 +88,30 @@ export default function CreateProjectModal({ workspaceId, onClose, onSuccess }: 
           </div>
 
           <div>
-            <label className="block text-body-sm text-secondary-white mb-3">Visibility</label>
+            <label className="block text-body-sm text-secondary-white mb-2">Visibility</label>
+            <p className="text-caption text-medium-gray mb-3">
+              Public projects are visible to all organization members. Private projects are only visible to you.
+            </p>
             <div className="flex gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
                   value="private"
                   checked={visibility === 'private'}
-                  onChange={(e) => setVisibility(e.target.value as 'private' | 'shared')}
+                  onChange={(e) => setVisibility(e.target.value as 'private' | 'public')}
                   className="accent-cosmic-orange"
                 />
-                <span className="text-body-sm text-secondary-white">Private</span>
+                <span className="text-body-sm text-secondary-white">🔒 Private</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
-                  value="shared"
-                  checked={visibility === 'shared'}
-                  onChange={(e) => setVisibility(e.target.value as 'private' | 'shared')}
+                  value="public"
+                  checked={visibility === 'public'}
+                  onChange={(e) => setVisibility(e.target.value as 'private' | 'public')}
                   className="accent-cosmic-orange"
                 />
-                <span className="text-body-sm text-secondary-white">Shared</span>
+                <span className="text-body-sm text-secondary-white">👥 Public</span>
               </label>
             </div>
           </div>

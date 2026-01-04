@@ -38,7 +38,10 @@ export default function ProjectCard({ project }: ProjectCardProps) {
         <div className="flex items-center gap-4 text-caption text-medium-gray">
           <span>Created {formatRelativeTime(project.created_at)}</span>
           <span>•</span>
-          <span className="capitalize">{project.visibility}</span>
+          <span className="flex items-center gap-1">
+            {project.visibility === 'private' ? '🔒' : '👥'}
+            <span className="capitalize">{project.visibility}</span>
+          </span>
         </div>
       </div>
     </Link>
