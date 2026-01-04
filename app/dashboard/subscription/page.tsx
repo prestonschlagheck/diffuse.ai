@@ -14,6 +14,19 @@ interface UserProfile {
   user_level: string
 }
 
+// Individual plans
+const individualPlans = {
+  free: { name: 'Free', projects: 3, price: '$0/mo', isEnterprise: false },
+  pro: { name: 'Pro', projects: 15, price: '$20/mo', isEnterprise: false },
+  pro_max: { name: 'Pro Max', projects: 'Unlimited', price: '$60/mo', isEnterprise: false },
+}
+
+// Enterprise plans (for organizations)
+const enterprisePlans = {
+  enterprise_pro: { name: 'Enterprise Pro', users: 6, price: '$100/mo', perUser: '~$17/user' },
+  enterprise_pro_max: { name: 'Enterprise Pro Max', users: 12, price: '$500/mo', perUser: '~$42/user' },
+}
+
 export default function SubscriptionPage() {
   const { user } = useAuth()
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -22,11 +35,7 @@ export default function SubscriptionPage() {
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
   const supabase = createClient()
 
-  const subscriptionDetails = {
-    free: { name: 'Free', projects: 3, price: '$0/mo' },
-    pro: { name: 'Pro', projects: 15, price: '$20/mo' },
-    pro_max: { name: 'Pro Max', projects: 'Unlimited', price: '$60/mo' },
-  }
+  const subscriptionDetails = individualPlans
 
   const fetchProfile = useCallback(async () => {
     if (!user) return
@@ -160,9 +169,9 @@ export default function SubscriptionPage() {
         </div>
       </div>
 
-      {/* Available Plans */}
-      <div>
-        <h2 className="text-heading-lg text-secondary-white mb-6">Available Plans</h2>
+      {/* Available Individual Plans */}
+      <div className="mb-12">
+        <h2 className="text-heading-lg text-secondary-white mb-6">Individual Plans</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {(Object.keys(subscriptionDetails) as SubscriptionTier[])
             .filter((tier) => tier !== currentTier)
@@ -194,6 +203,48 @@ export default function SubscriptionPage() {
                 </div>
               )
             })}
+        </div>
+      </div>
+
+      {/* Enterprise Plans */}
+      <div>
+        <h2 className="text-heading-lg text-secondary-white mb-2">Enterprise Plans</h2>
+        <p className="text-body-md text-medium-gray mb-6">
+          For teams and organizations. Create an organization to upgrade.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {Object.entries(enterprisePlans).map(([key, plan]) => (
+            <div
+              key={key}
+              className="glass-container p-6 border border-white/10 relative overflow-hidden"
+            >
+              {/* Enterprise badge */}
+              <div className="absolute top-4 right-4">
+                <span className="px-3 py-1 text-caption font-medium rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                  Enterprise
+                </span>
+              </div>
+              
+              <h3 className="text-heading-md text-secondary-white mb-2">{plan.name}</h3>
+              <div className="mb-2">
+                <span className="text-3xl font-bold text-cosmic-orange">{plan.price.split('/')[0]}</span>
+                <span className="text-body-md text-medium-gray">/{plan.price.split('/')[1]}</span>
+              </div>
+              <p className="text-body-sm text-medium-gray mb-1">
+                Up to {plan.users} team members
+              </p>
+              <p className="text-caption text-medium-gray mb-6">
+                {plan.perUser}
+              </p>
+
+              <button
+                onClick={() => window.location.href = '/dashboard/organization'}
+                className="btn-secondary w-full py-3 text-body-md"
+              >
+                Manage Organizations
+              </button>
+            </div>
+          ))}
         </div>
       </div>
     </div>

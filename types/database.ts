@@ -10,11 +10,14 @@ export type WorkflowStatus = 'pending' | 'processing' | 'completed' | 'failed'
 
 export type RecordingStatus = 'recorded' | 'generating' | 'transcribed'
 
+export type OrganizationPlan = 'enterprise_pro' | 'enterprise_pro_max'
+
 export interface DiffuseWorkspace {
   id: string
   name: string
   description?: string
   invite_code?: string
+  plan?: OrganizationPlan
   created_at: string
   updated_at: string
   owner_id: string

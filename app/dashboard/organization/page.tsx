@@ -7,6 +7,12 @@ import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import LoadingSpinner from '@/components/dashboard/LoadingSpinner'
 import EmptyState from '@/components/dashboard/EmptyState'
+import type { OrganizationPlan } from '@/types/database'
+
+const planDetails = {
+  enterprise_pro: { name: 'Enterprise Pro', users: 6, price: '$100/mo' },
+  enterprise_pro_max: { name: 'Enterprise Pro Max', users: 12, price: '$500/mo' },
+}
 
 export default function OrganizationPage() {
   const router = useRouter()
@@ -17,6 +23,7 @@ export default function OrganizationPage() {
   const [joinCode, setJoinCode] = useState('')
   const [orgName, setOrgName] = useState('')
   const [orgDescription, setOrgDescription] = useState('')
+  const [orgPlan, setOrgPlan] = useState<OrganizationPlan>('enterprise_pro')
   const [inviteEmail, setInviteEmail] = useState('')
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
@@ -87,13 +94,14 @@ export default function OrganizationPage() {
     try {
       const inviteCode = generateOrgCode()
 
-      // Create organization
+      // Create organization with plan
       const { data: newOrg, error: orgError } = await supabase
         .from('diffuse_workspaces')
         .insert({
           name: orgName,
           description: orgDescription,
           invite_code: inviteCode,
+          plan: orgPlan,
           owner_id: user?.id,
         })
         .select()
@@ -101,7 +109,7 @@ export default function OrganizationPage() {
 
       if (orgError) {
         if (orgError.code === '42703') {
-          throw new Error('Organization invite codes not yet configured in database. Please contact support.')
+          throw new Error('Organization fields not yet configured in database. Please contact support.')
         }
         throw orgError
       }
@@ -123,6 +131,7 @@ export default function OrganizationPage() {
       })
       setOrgName('')
       setOrgDescription('')
+      setOrgPlan('enterprise_pro')
       setShowCreateModal(false)
       window.location.reload()
     } catch (error: any) {
@@ -221,43 +230,56 @@ export default function OrganizationPage() {
             <thead>
               <tr className="border-b border-white/10">
                 <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">NAME</th>
+                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">PLAN</th>
                 <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">ROLE</th>
                 <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">INVITE CODE</th>
               </tr>
             </thead>
             <tbody>
-              {workspaces.map(({ workspace, role }) => (
-                <tr
-                  key={workspace.id}
-                  onClick={() => router.push(`/dashboard/organization/${workspace.id}`)}
-                  className="border-b border-white/10 hover:bg-white/5 transition-colors cursor-pointer"
-                >
-                  <td className="py-4 px-6">
-                    <p className="text-body-md text-secondary-white font-medium">{workspace.name}</p>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className="inline-block px-3 py-1 text-caption font-medium rounded-full border bg-cosmic-orange/20 text-cosmic-orange border-cosmic-orange/30 capitalize">
-                      {role}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    {workspace.invite_code ? (
-                      <button
-                        onClick={(e) => copyInviteCode(workspace.invite_code!, e)}
-                        className="text-body-sm text-secondary-white bg-white/5 px-3 py-1 rounded hover:bg-white/10 transition-colors"
-                      >
-                        {copiedCode === workspace.invite_code ? (
-                          <span className="text-cosmic-orange">Copied!</span>
-                        ) : (
-                          <code>{workspace.invite_code}</code>
-                        )}
-                      </button>
-                    ) : (
-                      <span className="text-body-sm text-medium-gray">—</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {workspaces.map(({ workspace, role }) => {
+                const plan = workspace.plan && planDetails[workspace.plan as keyof typeof planDetails]
+                return (
+                  <tr
+                    key={workspace.id}
+                    onClick={() => router.push(`/dashboard/organization/${workspace.id}`)}
+                    className="border-b border-white/10 hover:bg-white/5 transition-colors cursor-pointer"
+                  >
+                    <td className="py-4 px-6">
+                      <p className="text-body-md text-secondary-white font-medium">{workspace.name}</p>
+                    </td>
+                    <td className="py-4 px-6">
+                      {plan ? (
+                        <span className="inline-block px-3 py-1 text-caption font-medium rounded-full border bg-purple-500/20 text-purple-400 border-purple-500/30">
+                          {plan.name}
+                        </span>
+                      ) : (
+                        <span className="text-body-sm text-medium-gray">—</span>
+                      )}
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className="inline-block px-3 py-1 text-caption font-medium rounded-full border bg-cosmic-orange/20 text-cosmic-orange border-cosmic-orange/30 capitalize">
+                        {role}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6">
+                      {workspace.invite_code ? (
+                        <button
+                          onClick={(e) => copyInviteCode(workspace.invite_code!, e)}
+                          className="text-body-sm text-secondary-white bg-white/5 px-3 py-1 rounded hover:bg-white/10 transition-colors"
+                        >
+                          {copiedCode === workspace.invite_code ? (
+                            <span className="text-cosmic-orange">Copied!</span>
+                          ) : (
+                            <code>{workspace.invite_code}</code>
+                          )}
+                        </button>
+                      ) : (
+                        <span className="text-body-sm text-medium-gray">—</span>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
@@ -347,7 +369,40 @@ export default function OrganizationPage() {
                   className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md focus:outline-none focus:border-cosmic-orange transition-colors"
                 />
               </div>
-              <div className="flex gap-3">
+              <div>
+                <label className="block text-body-sm text-secondary-white mb-3">
+                  Enterprise Plan
+                </label>
+                <div className="space-y-3">
+                  {Object.entries(planDetails).map(([key, plan]) => (
+                    <label
+                      key={key}
+                      className={`flex items-center justify-between p-4 rounded-glass border cursor-pointer transition-colors ${
+                        orgPlan === key
+                          ? 'border-purple-500/50 bg-purple-500/10'
+                          : 'border-white/10 bg-white/5 hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          name="plan"
+                          value={key}
+                          checked={orgPlan === key}
+                          onChange={() => setOrgPlan(key as OrganizationPlan)}
+                          className="w-4 h-4 accent-purple-500"
+                        />
+                        <div>
+                          <p className="text-body-md text-secondary-white font-medium">{plan.name}</p>
+                          <p className="text-caption text-medium-gray">Up to {plan.users} team members</p>
+                        </div>
+                      </div>
+                      <span className="text-body-md text-purple-400 font-medium">{plan.price}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}

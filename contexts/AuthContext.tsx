@@ -117,6 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name,
           description,
           invite_code,
+          plan,
           created_at,
           updated_at,
           owner_id
