@@ -159,10 +159,7 @@ export default function SubscriptionPage() {
           <h3 className="text-body-md text-secondary-white mb-3 font-medium">Plan Features</h3>
           <ul className="space-y-2">
             {currentSub.features.map((feature, index) => (
-              <li key={index} className="flex items-center gap-2 text-body-sm text-medium-gray">
-                <svg className="w-5 h-5 text-cosmic-orange flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+              <li key={index} className="text-body-sm text-medium-gray">
                 {feature}
               </li>
             ))}
@@ -173,41 +170,34 @@ export default function SubscriptionPage() {
       {/* Available Plans */}
       <div>
         <h2 className="text-heading-lg text-secondary-white mb-6">Available Plans</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {(Object.keys(subscriptionDetails) as SubscriptionTier[]).map((tier) => {
-            const sub = subscriptionDetails[tier]
-            const isCurrent = profile.subscription_tier === tier
-            
-            return (
-              <div
-                key={tier}
-                className={`glass-container p-6 ${
-                  isCurrent
-                    ? 'border-2 border-cosmic-orange bg-cosmic-orange/5'
-                    : 'border border-white/10'
-                }`}
-              >
-                <h3 className="text-heading-md text-secondary-white mb-2">{sub.name}</h3>
-                <div className="mb-4">
-                  <span className="text-3xl font-bold text-cosmic-orange">{sub.price.split('/')[0]}</span>
-                  <span className="text-body-md text-medium-gray">/{sub.price.split('/')[1]}</span>
-                </div>
-                <p className="text-body-sm text-medium-gray mb-6">
-                  {sub.projects} {typeof sub.projects === 'number' ? 'projects' : ''}
-                </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {(Object.keys(subscriptionDetails) as SubscriptionTier[])
+            .filter((tier) => tier !== profile.subscription_tier)
+            .map((tier) => {
+              const sub = subscriptionDetails[tier]
+              
+              return (
+                <div
+                  key={tier}
+                  className="glass-container p-6 border border-white/10"
+                >
+                  <h3 className="text-heading-md text-secondary-white mb-2">{sub.name}</h3>
+                  <div className="mb-4">
+                    <span className="text-3xl font-bold text-cosmic-orange">{sub.price.split('/')[0]}</span>
+                    <span className="text-body-md text-medium-gray">/{sub.price.split('/')[1]}</span>
+                  </div>
+                  <p className="text-body-sm text-medium-gray mb-6">
+                    {sub.projects} {typeof sub.projects === 'number' ? 'projects' : ''}
+                  </p>
 
-                <ul className="space-y-2 mb-6">
-                  {sub.features.map((feature, index) => (
-                    <li key={index} className="flex items-start gap-2 text-body-sm text-medium-gray">
-                      <svg className="w-4 h-4 text-cosmic-orange flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
+                  <ul className="space-y-2 mb-6">
+                    {sub.features.map((feature, index) => (
+                      <li key={index} className="text-body-sm text-medium-gray">
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
 
-                {!isCurrent ? (
                   <button
                     onClick={() => handleChangeSubscription(tier)}
                     disabled={saving}
@@ -215,14 +205,9 @@ export default function SubscriptionPage() {
                   >
                     {tier === 'free' ? 'Downgrade' : 'Upgrade'}
                   </button>
-                ) : (
-                  <button className="btn-primary w-full py-3 text-body-md cursor-default">
-                    Current Plan
-                  </button>
-                )}
-              </div>
-            )
-          })}
+                </div>
+              )
+            })}
         </div>
       </div>
     </div>
