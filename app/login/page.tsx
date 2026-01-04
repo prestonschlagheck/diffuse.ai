@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login')
   const [email, setEmail] = useState('')
+  const [fullName, setFullName] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -78,6 +79,9 @@ export default function LoginPage() {
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+          data: {
+            full_name: fullName,
+          },
         },
       })
 
@@ -87,6 +91,7 @@ export default function LoginPage() {
         type: 'success',
         text: 'Account created! Please check your email to verify your account.',
       })
+      setFullName('')
       setEmail('')
       setPassword('')
       setConfirmPassword('')
@@ -226,6 +231,21 @@ export default function LoginPage() {
           {/* Signup Form */}
           {activeTab === 'signup' && (
             <form onSubmit={handleSignup} className="space-y-6">
+              <div>
+                <label htmlFor="full-name" className="block text-body-sm text-secondary-white mb-2">
+                  Full Name
+                </label>
+                <input
+                  id="full-name"
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md focus:outline-none focus:border-cosmic-orange transition-colors"
+                  placeholder="John Doe"
+                />
+              </div>
+
               <div>
                 <label htmlFor="signup-email" className="block text-body-sm text-secondary-white mb-2">
                   Email
