@@ -184,24 +184,30 @@ export default function ProjectDetailPage() {
                   onClick={() => setSelectedInput(input)}
                   className="glass-container-hover p-6 cursor-pointer"
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">
-                        {input.type === 'text' ? '📝' : '🎤'}
-                      </span>
-                      <div>
-                        <p className="text-body-md text-secondary-white font-medium capitalize">
-                          {input.type} Input
-                        </p>
-                        <p className="text-caption text-medium-gray">
-                          {formatRelativeTime(input.created_at)}
-                        </p>
-                      </div>
-                    </div>
-                    {input.file_name && (
-                      <span className="text-body-sm text-medium-gray">{input.file_name}</span>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    {input.type === 'text' ? (
+                      <svg className="w-6 h-6 text-cosmic-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-6 h-6 text-cosmic-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                      </svg>
                     )}
+                    <div>
+                      <p className="text-body-md text-secondary-white font-medium capitalize">
+                        {input.type} Input
+                      </p>
+                      <p className="text-caption text-medium-gray">
+                        {formatRelativeTime(input.created_at)}
+                      </p>
+                    </div>
                   </div>
+                  {input.file_name && (
+                    <span className="text-body-sm text-medium-gray">{input.file_name}</span>
+                  )}
+                </div>
                   {input.content && (
                     <p className="text-body-sm text-medium-gray">
                       {truncateText(input.content, 200)}
