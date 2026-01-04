@@ -336,6 +336,33 @@ export default function RecordingsPage() {
     }
   }, [selectedRecording])
 
+  // Poll for transcription completion when a recording is generating
+  useEffect(() => {
+    if (!selectedRecording || selectedRecording.status !== 'generating') return
+
+    const pollInterval = setInterval(async () => {
+      const { data, error } = await supabase
+        .from('diffuse_recordings')
+        .select('*')
+        .eq('id', selectedRecording.id)
+        .single()
+
+      if (error) {
+        console.error('Error polling recording:', error)
+        return
+      }
+
+      if (data && data.status !== 'generating') {
+        // Transcription completed or failed - update local state
+        setSelectedRecording(data)
+        fetchRecordings() // Refresh the list too
+        clearInterval(pollInterval)
+      }
+    }, 3000) // Check every 3 seconds
+
+    return () => clearInterval(pollInterval)
+  }, [selectedRecording?.id, selectedRecording?.status, supabase])
+
   const deleteRecording = async (id: string, filePath: string) => {
     try {
       // Delete from storage
@@ -570,21 +597,36 @@ export default function RecordingsPage() {
             {/* Transcription Section */}
             <div className="mb-6">
               <h3 className="text-body-sm text-medium-gray mb-3">Transcription</h3>
-              {selectedRecording.transcription ? (
+              {selectedRecording.status === 'transcribed' || selectedRecording.transcription ? (
+                // Show transcription if status is transcribed OR has transcription text
                 <div className="p-4 bg-white/5 rounded-glass">
                   <p className="text-body-md text-secondary-white whitespace-pre-wrap leading-relaxed">
-                    {selectedRecording.transcription}
+                    {selectedRecording.transcription || 'Transcription completed.'}
+                  </p>
+                </div>
+              ) : selectedRecording.status === 'generating' || transcribing ? (
+                // Show generating state - either from DB status or active transcription
+                <div className="p-4 bg-white/5 rounded-glass text-center">
+                  <div className="flex items-center justify-center gap-3">
+                    <svg className="w-5 h-5 text-cosmic-orange animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    <span className="text-body-md text-secondary-white">Generating transcription...</span>
+                  </div>
+                  <p className="text-body-sm text-medium-gray mt-3">
+                    This may take a minute. You can close this and check back later.
                   </p>
                 </div>
               ) : (
+                // Show generate button only for 'recorded' status
                 <div className="p-4 bg-white/5 rounded-glass text-center">
                   <p className="text-body-sm text-medium-gray mb-4">No transcription yet</p>
                   <button
                     onClick={() => transcribeRecording(selectedRecording)}
-                    disabled={transcribing}
-                    className="btn-primary px-6 py-3 disabled:opacity-50"
+                    className="btn-primary px-6 py-3"
                   >
-                    {transcribing ? 'Generating...' : 'Generate Transcription'}
+                    Generate Transcription
                   </button>
                 </div>
               )}
