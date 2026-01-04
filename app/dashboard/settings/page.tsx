@@ -243,16 +243,15 @@ export default function SettingsPage() {
         </form>
       </div>
 
-      {/* Danger Zone */}
-      <div className="glass-container p-6 border-2 border-red-500/30">
-        <h2 className="text-heading-lg text-red-400 mb-4">Danger Zone</h2>
-        <p className="text-body-sm text-medium-gray mb-4">
-          Once you delete your account, there is no going back. Please be certain.
+      {/* Delete Account */}
+      <div className="glass-container p-6 flex items-center justify-between">
+        <p className="text-body-sm text-medium-gray">
+          Once you delete your account, there is no going back.
         </p>
         <button
           onClick={handleDeleteAccount}
           disabled={saving}
-          className="btn-secondary px-6 py-3 text-red-400 hover:text-red-300 disabled:opacity-50"
+          className="btn-secondary px-6 py-3 text-red-400 hover:text-red-300 disabled:opacity-50 whitespace-nowrap"
         >
           Delete Account
         </button>
