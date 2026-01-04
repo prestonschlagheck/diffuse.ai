@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
@@ -13,6 +14,7 @@ import type { DiffuseProject } from '@/types/database'
 type SubscriptionTier = 'free' | 'pro' | 'pro_max'
 
 export default function DashboardPage() {
+  const router = useRouter()
   const { user, currentWorkspace, loading: authLoading, fetchWorkspaces } = useAuth()
   const [projects, setProjects] = useState<DiffuseProject[]>([])
   const [loading, setLoading] = useState(true)
@@ -195,7 +197,6 @@ export default function DashboardPage() {
                 <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">STATUS</th>
                 <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">VISIBILITY</th>
                 <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">CREATED</th>
-                <th className="text-right py-4 px-6 text-caption text-medium-gray font-medium">ACTIONS</th>
               </tr>
             </thead>
             <tbody>
@@ -209,7 +210,8 @@ export default function DashboardPage() {
                 return (
                   <tr
                     key={project.id}
-                    className="border-b border-white/10 hover:bg-white/5 transition-colors"
+                    onClick={() => router.push(`/dashboard/projects/${project.id}`)}
+                    className="border-b border-white/10 hover:bg-white/5 transition-colors cursor-pointer"
                   >
                     <td className="py-4 px-6">
                       <div>
@@ -244,14 +246,6 @@ export default function DashboardPage() {
                     </td>
                     <td className="py-4 px-6 text-body-sm text-medium-gray">
                       {formatRelativeTime(project.created_at)}
-                    </td>
-                    <td className="py-4 px-6 text-right">
-                      <Link
-                        href={`/dashboard/projects/${project.id}`}
-                        className="text-body-sm text-cosmic-orange hover:text-rich-orange transition-colors"
-                      >
-                        View
-                      </Link>
                     </td>
                   </tr>
                 )

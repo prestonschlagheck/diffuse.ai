@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import LoadingSpinner from '@/components/dashboard/LoadingSpinner'
 import EmptyState from '@/components/dashboard/EmptyState'
 
 export default function OrganizationPage() {
+  const router = useRouter()
   const { user, currentWorkspace, workspaces } = useAuth()
   const [loading, setLoading] = useState(false)
   const [showJoinModal, setShowJoinModal] = useState(false)
@@ -213,22 +215,22 @@ export default function OrganizationPage() {
                 <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">NAME</th>
                 <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">ROLE</th>
                 <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">INVITE CODE</th>
-                <th className="text-right py-4 px-6 text-caption text-medium-gray font-medium">ACTIONS</th>
               </tr>
             </thead>
             <tbody>
               {workspaces.map(({ workspace, role }) => (
                 <tr
                   key={workspace.id}
-                  className="border-b border-white/10 hover:bg-white/5 transition-colors"
+                  onClick={() => router.push(`/dashboard/organization/${workspace.id}`)}
+                  className="border-b border-white/10 hover:bg-white/5 transition-colors cursor-pointer"
                 >
                   <td className="py-4 px-6">
-                    <Link href={`/dashboard/organization/${workspace.id}`} className="block">
-                      <p className="text-body-md text-secondary-white font-medium hover:text-cosmic-orange transition-colors">{workspace.name}</p>
+                    <div>
+                      <p className="text-body-md text-secondary-white font-medium">{workspace.name}</p>
                       {workspace.description && (
                         <p className="text-body-sm text-medium-gray truncate max-w-md">{workspace.description}</p>
                       )}
-                    </Link>
+                    </div>
                   </td>
                   <td className="py-4 px-6">
                     <span className="inline-block px-3 py-1 text-caption font-medium rounded-full border bg-cosmic-orange/20 text-cosmic-orange border-cosmic-orange/30 capitalize">
@@ -243,16 +245,6 @@ export default function OrganizationPage() {
                     ) : (
                       <span className="text-body-sm text-medium-gray">—</span>
                     )}
-                  </td>
-                  <td className="py-4 px-6 text-right">
-                    <button
-                      onClick={() => {
-                        setCurrentWorkspace(workspace)
-                      }}
-                      className="text-body-sm text-cosmic-orange hover:text-rich-orange transition-colors"
-                    >
-                      {currentWorkspace?.id === workspace.id ? 'Active' : 'Switch'}
-                    </button>
                   </td>
                 </tr>
               ))}

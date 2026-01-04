@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
@@ -17,6 +17,7 @@ interface ProjectWithCreator extends DiffuseProject {
 
 export default function OrganizationDetailPage() {
   const params = useParams()
+  const router = useRouter()
   const orgId = params.id as string
   const { user } = useAuth()
   const [workspace, setWorkspace] = useState<DiffuseWorkspace | null>(null)
@@ -194,22 +195,22 @@ export default function OrganizationDetailPage() {
                 <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">CREATED BY</th>
                 <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">STATUS</th>
                 <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">CREATED</th>
-                <th className="text-right py-4 px-6 text-caption text-medium-gray font-medium">ACTIONS</th>
               </tr>
             </thead>
             <tbody>
               {projects.map((project) => (
                 <tr
                   key={project.id}
-                  className="border-b border-white/5 last:border-b-0 hover:bg-white/5 transition-colors"
+                  onClick={() => router.push(`/dashboard/projects/${project.id}`)}
+                  className="border-b border-white/5 last:border-b-0 hover:bg-white/5 transition-colors cursor-pointer"
                 >
                   <td className="py-4 px-6">
-                    <Link href={`/dashboard/projects/${project.id}`} className="block">
+                    <div>
                       <p className="text-body-md text-secondary-white font-medium">{project.name}</p>
                       {project.description && (
                         <p className="text-body-sm text-medium-gray line-clamp-1">{project.description}</p>
                       )}
-                    </Link>
+                    </div>
                   </td>
                   <td className="py-4 px-6">
                     <p className="text-body-sm text-secondary-white">
@@ -223,14 +224,6 @@ export default function OrganizationDetailPage() {
                   </td>
                   <td className="py-4 px-6 text-body-sm text-medium-gray">
                     {formatRelativeTime(project.created_at)}
-                  </td>
-                  <td className="py-4 px-6 text-right">
-                    <Link
-                      href={`/dashboard/projects/${project.id}`}
-                      className="btn-secondary px-4 py-2 text-body-sm"
-                    >
-                      View
-                    </Link>
                   </td>
                 </tr>
               ))}
