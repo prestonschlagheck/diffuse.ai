@@ -162,95 +162,102 @@ export default function OrganizationPage() {
 
   return (
     <div>
-      <h1 className="text-display-sm text-secondary-white mb-8">Organization</h1>
-
-      {/* Current Organization */}
-      {currentWorkspace ? (
-        <div className="glass-container p-6 mb-8">
-          <h2 className="text-heading-lg text-secondary-white mb-4">Current Organization</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-caption text-medium-gray mb-1">Name</label>
-              <p className="text-body-md text-secondary-white">{currentWorkspace.name}</p>
-            </div>
-            {currentWorkspace.description && (
-              <div>
-                <label className="block text-caption text-medium-gray mb-1">Description</label>
-                <p className="text-body-md text-secondary-white">{currentWorkspace.description}</p>
-              </div>
-            )}
-            <div>
-              <label className="block text-caption text-medium-gray mb-1">Your Role</label>
-              <p className="text-body-md text-secondary-white capitalize">
-                {workspaces.find(w => w.workspace.id === currentWorkspace.id)?.role || 'member'}
-              </p>
-            </div>
-          </div>
-
-          {/* Invite Members */}
-          <div className="mt-6 pt-6 border-t border-white/10">
-            <h3 className="text-heading-md text-secondary-white mb-4">Invite Members</h3>
-            <form onSubmit={handleInviteMember} className="flex gap-3">
-              <input
-                type="email"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                placeholder="colleague@email.com"
-                required
-                className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md focus:outline-none focus:border-cosmic-orange transition-colors"
-              />
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn-primary px-6 py-3 disabled:opacity-50"
-              >
-                {loading ? 'Inviting...' : 'Get Invite Code'}
-              </button>
-            </form>
-          </div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-display-sm text-secondary-white mb-2">Organization</h1>
+          <p className="text-body-md text-medium-gray">
+            {workspaces.length > 0 ? `Member of ${workspaces.length} organization${workspaces.length !== 1 ? 's' : ''}` : 'Collaborate with your team'}
+          </p>
         </div>
-      ) : (
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowJoinModal(true)}
+            className="btn-secondary px-6 py-3 flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+            </svg>
+            Join Organization
+          </button>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="btn-primary px-6 py-3 flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Create Organization
+          </button>
+        </div>
+      </div>
+
+      {/* Organizations Table */}
+      {workspaces.length === 0 ? (
         <EmptyState
           icon={
             <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
           }
-          title="No Organization"
-          description="Join an existing organization or create your own to collaborate with your team."
+          title="No Organizations Yet"
+          description="Join an existing organization with an invite code or create your own to collaborate with your team."
         />
+      ) : (
+        <div className="glass-container overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-white/10">
+                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">NAME</th>
+                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">ROLE</th>
+                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">INVITE CODE</th>
+                <th className="text-right py-4 px-6 text-caption text-medium-gray font-medium">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {workspaces.map(({ workspace, role }) => (
+                <tr
+                  key={workspace.id}
+                  className="border-b border-white/10 hover:bg-white/5 transition-colors"
+                >
+                  <td className="py-4 px-6">
+                    <div>
+                      <p className="text-body-md text-secondary-white font-medium">{workspace.name}</p>
+                      {workspace.description && (
+                        <p className="text-body-sm text-medium-gray truncate max-w-md">{workspace.description}</p>
+                      )}
+                    </div>
+                  </td>
+                  <td className="py-4 px-6">
+                    <span className="inline-block px-3 py-1 text-caption font-medium rounded-full border bg-cosmic-orange/20 text-cosmic-orange border-cosmic-orange/30 capitalize">
+                      {role}
+                    </span>
+                  </td>
+                  <td className="py-4 px-6">
+                    {workspace.invite_code ? (
+                      <code className="text-body-sm text-secondary-white bg-white/5 px-3 py-1 rounded">
+                        {workspace.invite_code}
+                      </code>
+                    ) : (
+                      <span className="text-body-sm text-medium-gray">—</span>
+                    )}
+                  </td>
+                  <td className="py-4 px-6 text-right">
+                    <button
+                      onClick={() => {
+                        setCurrentWorkspace(workspace)
+                      }}
+                      className="text-body-sm text-cosmic-orange hover:text-rich-orange transition-colors"
+                    >
+                      {currentWorkspace?.id === workspace.id ? 'Active' : 'Switch'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
-
-      {/* Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Join Organization */}
-        <div className="glass-container p-6">
-          <h3 className="text-heading-md text-secondary-white mb-3">Join Organization</h3>
-          <p className="text-body-sm text-medium-gray mb-4">
-            Have an invite code? Join an existing organization.
-          </p>
-          <button
-            onClick={() => setShowJoinModal(true)}
-            className="btn-secondary w-full py-3"
-          >
-            Join with Code
-          </button>
-        </div>
-
-        {/* Create Organization */}
-        <div className="glass-container p-6">
-          <h3 className="text-heading-md text-secondary-white mb-3">Create Organization</h3>
-          <p className="text-body-sm text-medium-gray mb-4">
-            Start a new organization and invite your team members.
-          </p>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="btn-primary w-full py-3"
-          >
-            Create Organization
-          </button>
-        </div>
-      </div>
 
       {/* Message */}
       {message && (

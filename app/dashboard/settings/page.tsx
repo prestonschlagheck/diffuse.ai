@@ -187,8 +187,16 @@ export default function SettingsPage() {
   const currentSub = subscriptionDetails[profile.subscription_tier] || subscriptionDetails.free
 
   return (
-    <div className="max-w-4xl">
-      <h1 className="text-display-sm text-secondary-white mb-8">Settings</h1>
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-display-sm text-secondary-white mb-2">Settings</h1>
+          <p className="text-body-md text-medium-gray">
+            Manage your account and preferences
+          </p>
+        </div>
+      </div>
 
       {/* Message */}
       {message && (
@@ -203,8 +211,9 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* Organization Info */}
-      {currentWorkspace && (
+      <div className="max-w-4xl">
+        {/* Organization Info */}
+        {currentWorkspace && (
         <div className="glass-container p-6 mb-6">
           <h2 className="text-heading-lg text-secondary-white mb-4">Organization</h2>
           <div className="space-y-3">
@@ -329,6 +338,7 @@ export default function SettingsPage() {
         >
           Delete Account
         </button>
+      </div>
       </div>
     </div>
   )
