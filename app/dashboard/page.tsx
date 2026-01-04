@@ -13,7 +13,7 @@ import type { DiffuseProject } from '@/types/database'
 type SubscriptionTier = 'free' | 'pro' | 'pro_max'
 
 export default function DashboardPage() {
-  const { user, currentWorkspace, loading: authLoading } = useAuth()
+  const { user, currentWorkspace, loading: authLoading, fetchWorkspaces } = useAuth()
   const [projects, setProjects] = useState<DiffuseProject[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -96,8 +96,20 @@ export default function DashboardPage() {
 
   if (!currentWorkspace) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <LoadingSpinner size="lg" />
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <EmptyState
+          icon={
+            <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+          }
+          title="Setting up your workspace..."
+          description="If this takes too long, try refreshing the page or click the button below."
+          action={{
+            label: 'Retry',
+            onClick: fetchWorkspaces,
+          }}
+        />
       </div>
     )
   }

@@ -12,6 +12,7 @@ interface AuthContextType {
   currentWorkspace: DiffuseWorkspace | null
   setCurrentWorkspace: (workspace: DiffuseWorkspace) => void
   signOut: () => Promise<void>
+  fetchWorkspaces: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -69,6 +70,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // If user has no workspaces, create a default personal workspace
     if (!memberships || memberships.length === 0) {
       try {
+        console.log('Creating personal workspace for user:', userId)
+        
         // Create personal workspace
         const { data: newWorkspace, error: workspaceError } = await supabase
           .from('diffuse_workspaces')
@@ -80,7 +83,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .select()
           .single()
 
-        if (workspaceError) throw workspaceError
+        if (workspaceError) {
+          console.error('Workspace creation error:', workspaceError)
+          throw workspaceError
+        }
+
+        console.log('Workspace created:', newWorkspace)
 
         // Add user as admin of the workspace
         const { error: memberError } = await supabase
@@ -91,13 +99,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role: 'admin',
           })
 
-        if (memberError) throw memberError
+        if (memberError) {
+          console.error('Member insertion error:', memberError)
+          throw memberError
+        }
+
+        console.log('User added as admin to workspace')
 
         // Set the new workspace as current
         setWorkspaces([{ workspace: newWorkspace, role: 'admin' }])
         setCurrentWorkspace(newWorkspace)
+        console.log('Workspace set as current')
       } catch (error) {
         console.error('Error creating default workspace:', error)
+        alert('Failed to create workspace. Please check the browser console for details.')
       }
     } else {
       const workspaceData = memberships.map((m: any) => ({
@@ -129,6 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         currentWorkspace,
         setCurrentWorkspace,
         signOut,
+        fetchWorkspaces: () => fetchWorkspaces(user?.id || ''),
       }}
     >
       {children}
