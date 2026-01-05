@@ -66,7 +66,7 @@ export default function WhyDiffuse() {
                   </div>
                   <h3 className="text-lg md:text-xl font-bold text-secondary-white">Using Generic LLMs</h3>
                 </div>
-                <ul className="space-y-3">
+                <ul className="space-y-3 ml-[10px]">
                   {[
                     'Manually transcribe recordings',
                     'Copy-paste into ChatGPT repeatedly',
@@ -94,7 +94,7 @@ export default function WhyDiffuse() {
                   </div>
                   <h3 className="text-lg md:text-xl font-bold text-secondary-white">Using Diffuse.AI</h3>
                 </div>
-                <ul className="space-y-3">
+                <ul className="space-y-3 ml-[10px]">
                   {[
                     'Drop in a recording, walk away',
                     'Automatic transcription & analysis',
