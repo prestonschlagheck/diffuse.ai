@@ -123,7 +123,6 @@ export default function SubscriptionPage() {
   const currentTier: SubscriptionTier = profile.subscription_tier && subscriptionDetails[profile.subscription_tier] 
     ? profile.subscription_tier 
     : 'free'
-  const currentSub = subscriptionDetails[currentTier]
 
   return (
     <div>
@@ -150,59 +149,47 @@ export default function SubscriptionPage() {
         </div>
       )}
 
-      {/* Current Plan */}
-      <div className="glass-container p-8 mb-8">
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-heading-lg text-secondary-white mb-2">Current Plan</h2>
-            <div className="flex items-baseline gap-3 mb-3">
-              <span className="text-3xl font-bold text-cosmic-orange">{currentSub.name}</span>
-              <span className="text-heading-md text-medium-gray">{currentSub.price}</span>
-            </div>
-            <p className="text-body-md text-medium-gray">
-              {currentSub.projects} {typeof currentSub.projects === 'number' ? 'projects allowed' : 'projects'}
-            </p>
-          </div>
-          <span className="px-4 py-2 bg-cosmic-orange/20 text-cosmic-orange border border-cosmic-orange/30 rounded-full text-body-sm font-medium">
-            Active
-          </span>
-        </div>
-      </div>
-
-      {/* Available Individual Plans */}
+      {/* Individual Plans */}
       <div className="mb-12">
         <h2 className="text-heading-lg text-secondary-white mb-6">Individual Plans</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {(Object.keys(subscriptionDetails) as SubscriptionTier[])
-            .filter((tier) => tier !== currentTier)
-            .map((tier) => {
-              const sub = subscriptionDetails[tier]
-              const isDowngrade = tier === 'free' || (tier === 'pro' && currentTier === 'pro_max')
-              
-              return (
-                <div
-                  key={tier}
-                  className="glass-container p-6 border border-white/10"
-                >
-                  <h3 className="text-heading-md text-secondary-white mb-2">{sub.name}</h3>
-                  <div className="mb-4">
-                    <span className="text-3xl font-bold text-cosmic-orange">{sub.price.split('/')[0]}</span>
-                    <span className="text-body-md text-medium-gray">/{sub.price.split('/')[1]}</span>
-                  </div>
-                  <p className="text-body-sm text-medium-gray mb-6">
-                    {sub.projects} {typeof sub.projects === 'number' ? 'projects' : ''}
-                  </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {(Object.keys(subscriptionDetails) as SubscriptionTier[]).map((tier) => {
+            const sub = subscriptionDetails[tier]
+            const isCurrentPlan = tier === currentTier
+            
+            return (
+              <div
+                key={tier}
+                className={`glass-container p-6 border ${isCurrentPlan ? 'border-cosmic-orange/50' : 'border-white/10'}`}
+              >
+                <h3 className="text-heading-md text-secondary-white mb-2">{sub.name}</h3>
+                <div className="mb-4">
+                  <span className="text-3xl font-bold text-cosmic-orange">{sub.price.split('/')[0]}</span>
+                  <span className="text-body-md text-medium-gray">/{sub.price.split('/')[1]}</span>
+                </div>
+                <p className="text-body-sm text-medium-gray mb-6">
+                  {sub.projects} {typeof sub.projects === 'number' ? 'projects' : ''}
+                </p>
 
+                {isCurrentPlan ? (
+                  <button
+                    disabled
+                    className="w-full py-3 text-body-md font-medium rounded-glass bg-cosmic-orange text-black cursor-default"
+                  >
+                    Active
+                  </button>
+                ) : (
                   <button
                     onClick={() => handleChangeSubscription(tier)}
                     disabled={saving}
                     className="btn-secondary w-full py-3 text-body-md disabled:opacity-50"
                   >
-                    {isDowngrade ? 'Downgrade' : 'Upgrade'}
+                    Upgrade
                   </button>
-                </div>
-              )
-            })}
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
 
