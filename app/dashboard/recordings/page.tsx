@@ -473,7 +473,10 @@ export default function RecordingsPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-display-sm text-secondary-white">Recordings</h1>
-{/* Mic permission warning - only show after user attempted and was denied */}
+          <p className="text-body-md text-medium-gray mt-1">
+            {recordings.length} recording{recordings.length !== 1 ? 's' : ''}
+          </p>
+          {/* Mic permission warning - only show after user attempted and was denied */}
           {hasAttemptedRecording && micPermission === 'denied' && (
             <p className="text-body-sm text-red-400 mt-1">
               Microphone access denied. Please enable it in your browser settings and try again.
