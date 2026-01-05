@@ -262,45 +262,33 @@ export default function OrganizationPage() {
                 </h3>
                 
                 {/* Details */}
-                <div className="space-y-3">
-                  {/* Plan */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-caption text-medium-gray uppercase tracking-wider">Plan</span>
-                    {plan ? (
-                      <span className="inline-block px-3 py-1 text-caption font-medium rounded-full border bg-purple-500/20 text-purple-400 border-purple-500/30">
+                <div className="space-y-2">
+                  {/* Plan & Role */}
+                  <div className="flex items-center gap-2">
+                    {plan && (
+                      <span className="text-caption text-medium-gray uppercase tracking-wider">
                         {plan.name}
                       </span>
-                    ) : (
-                      <span className="text-body-sm text-medium-gray">—</span>
                     )}
-                  </div>
-                  
-                  {/* Role */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-caption text-medium-gray uppercase tracking-wider">Role</span>
-                    <span className="inline-block px-3 py-1 text-caption font-medium rounded-full border bg-cosmic-orange/20 text-cosmic-orange border-cosmic-orange/30 capitalize">
+                    {plan && <span className="text-caption text-medium-gray">•</span>}
+                    <span className="text-caption text-medium-gray uppercase tracking-wider">
                       {role}
                     </span>
                   </div>
                   
                   {/* Invite Code */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-caption text-medium-gray uppercase tracking-wider">Invite Code</span>
-                    {workspace.invite_code ? (
-                      <button
-                        onClick={(e) => copyInviteCode(workspace.invite_code!, e)}
-                        className="text-body-sm text-secondary-white bg-white/5 px-3 py-1 rounded-glass hover:bg-white/10 transition-colors"
-                      >
-                        {copiedCode === workspace.invite_code ? (
-                          <span className="text-cosmic-orange">Copied!</span>
-                        ) : (
-                          <code>{workspace.invite_code}</code>
-                        )}
-                      </button>
-                    ) : (
-                      <span className="text-body-sm text-medium-gray">—</span>
-                    )}
-                  </div>
+                  {workspace.invite_code && (
+                    <button
+                      onClick={(e) => copyInviteCode(workspace.invite_code!, e)}
+                      className="text-caption text-medium-gray uppercase tracking-wider hover:text-secondary-white transition-colors"
+                    >
+                      {copiedCode === workspace.invite_code ? (
+                        <span className="text-cosmic-orange">COPIED!</span>
+                      ) : (
+                        workspace.invite_code
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             )
