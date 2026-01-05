@@ -235,7 +235,7 @@ export default function OrganizationPage() {
         </div>
       </div>
 
-      {/* Organizations Table */}
+      {/* Organizations Grid */}
       {workspaces.length === 0 ? (
         <EmptyState
           icon={
@@ -247,63 +247,64 @@ export default function OrganizationPage() {
           description="Join an existing organization with an invite code or create your own to collaborate with your team."
         />
       ) : (
-        <div className="glass-container overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-white/10">
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">NAME</th>
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">PLAN</th>
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">ROLE</th>
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">INVITE CODE</th>
-              </tr>
-            </thead>
-            <tbody>
-              {workspaces.map(({ workspace, role }) => {
-                const plan = workspace.plan && planDetails[workspace.plan as keyof typeof planDetails]
-                return (
-                  <tr
-                    key={workspace.id}
-                    onClick={() => router.push(`/dashboard/organization/${workspace.id}`)}
-                    className="border-b border-white/10 hover:bg-white/5 transition-colors cursor-pointer"
-                  >
-                    <td className="py-4 px-6">
-                      <p className="text-body-md text-secondary-white font-medium">{workspace.name}</p>
-                    </td>
-                    <td className="py-4 px-6">
-                      {plan ? (
-                        <span className="inline-block px-3 py-1 text-caption font-medium rounded-full border bg-purple-500/20 text-purple-400 border-purple-500/30">
-                          {plan.name}
-                        </span>
-                      ) : (
-                        <span className="text-body-sm text-medium-gray">—</span>
-                      )}
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className="inline-block px-3 py-1 text-caption font-medium rounded-full border bg-cosmic-orange/20 text-cosmic-orange border-cosmic-orange/30 capitalize">
-                        {role}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {workspaces.map(({ workspace, role }) => {
+            const plan = workspace.plan && planDetails[workspace.plan as keyof typeof planDetails]
+            return (
+              <div
+                key={workspace.id}
+                onClick={() => router.push(`/dashboard/organization/${workspace.id}`)}
+                className="glass-container p-6 hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                {/* Organization Name */}
+                <h3 className="text-heading-md text-secondary-white font-medium mb-4">
+                  {workspace.name}
+                </h3>
+                
+                {/* Details */}
+                <div className="space-y-3">
+                  {/* Plan */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-caption text-medium-gray uppercase tracking-wider">Plan</span>
+                    {plan ? (
+                      <span className="inline-block px-3 py-1 text-caption font-medium rounded-full border bg-purple-500/20 text-purple-400 border-purple-500/30">
+                        {plan.name}
                       </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      {workspace.invite_code ? (
-                        <button
-                          onClick={(e) => copyInviteCode(workspace.invite_code!, e)}
-                          className="text-body-sm text-secondary-white bg-white/5 px-3 py-1 rounded hover:bg-white/10 transition-colors"
-                        >
-                          {copiedCode === workspace.invite_code ? (
-                            <span className="text-cosmic-orange">Copied!</span>
-                          ) : (
-                            <code>{workspace.invite_code}</code>
-                          )}
-                        </button>
-                      ) : (
-                        <span className="text-body-sm text-medium-gray">—</span>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                    ) : (
+                      <span className="text-body-sm text-medium-gray">—</span>
+                    )}
+                  </div>
+                  
+                  {/* Role */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-caption text-medium-gray uppercase tracking-wider">Role</span>
+                    <span className="inline-block px-3 py-1 text-caption font-medium rounded-full border bg-cosmic-orange/20 text-cosmic-orange border-cosmic-orange/30 capitalize">
+                      {role}
+                    </span>
+                  </div>
+                  
+                  {/* Invite Code */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-caption text-medium-gray uppercase tracking-wider">Invite Code</span>
+                    {workspace.invite_code ? (
+                      <button
+                        onClick={(e) => copyInviteCode(workspace.invite_code!, e)}
+                        className="text-body-sm text-secondary-white bg-white/5 px-3 py-1 rounded-glass hover:bg-white/10 transition-colors"
+                      >
+                        {copiedCode === workspace.invite_code ? (
+                          <span className="text-cosmic-orange">Copied!</span>
+                        ) : (
+                          <code>{workspace.invite_code}</code>
+                        )}
+                      </button>
+                    ) : (
+                      <span className="text-body-sm text-medium-gray">—</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
 
