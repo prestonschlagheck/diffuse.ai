@@ -147,7 +147,7 @@ export default function DashboardNav() {
       </div>
 
       {/* Navigation Items */}
-      <div className="px-4">
+      <div className="px-4 space-y-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href
           return (
@@ -165,35 +165,35 @@ export default function DashboardNav() {
             </Link>
           )
         })}
-
-        {/* Recent Projects */}
-        {recentProjects.length > 0 && (
-          <div className="mt-4">
-            <div className="text-caption text-medium-gray uppercase tracking-wider mb-1 px-4">
-              Recent
-            </div>
-            {recentProjects.map((project) => {
-              const isActive = pathname === `/dashboard/projects/${project.id}`
-              return (
-                <Link
-                  key={project.id}
-                  href={`/dashboard/projects/${project.id}`}
-                  className={`flex items-center gap-3 px-4 py-2 rounded-glass text-body-sm transition-colors ${
-                    isActive
-                      ? 'bg-cosmic-orange/20 text-cosmic-orange'
-                      : 'text-medium-gray hover:bg-white/10 hover:text-secondary-white'
-                  }`}
-                >
-                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <span className="truncate">{project.name}</span>
-                </Link>
-              )
-            })}
-          </div>
-        )}
       </div>
+
+      {/* Recent Projects */}
+      {recentProjects.length > 0 && (
+        <div className="px-4 mt-4 space-y-1">
+          <div className="text-caption text-medium-gray uppercase tracking-wider mb-1 px-4">
+            Recent
+          </div>
+          {recentProjects.map((project) => {
+            const isActive = pathname === `/dashboard/projects/${project.id}`
+            return (
+              <Link
+                key={project.id}
+                href={`/dashboard/projects/${project.id}`}
+                className={`flex items-center gap-3 px-4 py-2 rounded-glass text-body-sm transition-colors ${
+                  isActive
+                    ? 'bg-cosmic-orange/20 text-cosmic-orange'
+                    : 'text-medium-gray hover:bg-white/10 hover:text-secondary-white'
+                }`}
+              >
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span className="truncate">{project.name}</span>
+              </Link>
+            )
+          })}
+        </div>
+      )}
 
       {/* Spacer */}
       <div className="flex-1" />
