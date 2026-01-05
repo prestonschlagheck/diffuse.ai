@@ -575,88 +575,82 @@ export default function ProjectDetailPage() {
       {activeTab === 'visibility' && (
         <div className="max-w-2xl">
           <div className="glass-container p-6 mb-6">
-            <h3 className="text-heading-md text-secondary-white mb-4">Project Visibility</h3>
-            <div className="space-y-4">
-              <label className="flex items-center gap-3 p-4 bg-white/5 rounded-glass cursor-pointer hover:bg-white/10 transition-colors">
-                <input
-                  type="radio"
-                  name="visibility"
-                  value="private"
-                  checked={visibility === 'private'}
-                  onChange={() => setVisibility('private')}
-                  className="w-4 h-4 text-cosmic-orange focus:ring-cosmic-orange"
-                />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-medium-gray" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                    <p className="text-body-md text-secondary-white font-medium">Private</p>
-                  </div>
-                  <p className="text-body-sm text-medium-gray mt-1">Only you can view this project</p>
-                </div>
-              </label>
-              
-              <label className="flex items-center gap-3 p-4 bg-white/5 rounded-glass cursor-pointer hover:bg-white/10 transition-colors">
-                <input
-                  type="radio"
-                  name="visibility"
-                  value="public"
-                  checked={visibility === 'public'}
-                  onChange={() => setVisibility('public')}
-                  className="w-4 h-4 text-cosmic-orange focus:ring-cosmic-orange"
-                />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-medium-gray" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    <p className="text-body-md text-secondary-white font-medium">Public</p>
-                  </div>
-                  <p className="text-body-sm text-medium-gray mt-1">Visible to selected organizations</p>
-                </div>
-              </label>
-            </div>
-          </div>
+            <h3 className="text-heading-md text-secondary-white mb-4">Who can see this project?</h3>
+            <div className="space-y-3">
+              {/* Private Option */}
+              <button
+                onClick={() => {
+                  setVisibility('private')
+                  setSelectedOrgs([])
+                }}
+                className={`w-full flex items-center gap-3 p-4 rounded-glass transition-colors ${
+                  visibility === 'private' 
+                    ? 'bg-cosmic-orange/20 border border-cosmic-orange/30' 
+                    : 'bg-white/5 hover:bg-white/10 border border-transparent'
+                }`}
+              >
+                <svg className={`w-5 h-5 ${visibility === 'private' ? 'text-cosmic-orange' : 'text-medium-gray'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <span className={`text-body-md font-medium ${visibility === 'private' ? 'text-cosmic-orange' : 'text-secondary-white'}`}>
+                  Private
+                </span>
+                {visibility === 'private' && (
+                  <svg className="w-5 h-5 text-cosmic-orange ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </button>
 
-          {/* Organization Selection */}
-          {visibility === 'public' && (
-            <div className="glass-container p-6 mb-6">
-              <h3 className="text-heading-md text-secondary-white mb-4">Visible to Organizations</h3>
-              {workspaces.length === 0 ? (
-                <p className="text-body-sm text-medium-gray">
-                  You&apos;re not a member of any organizations. Join or create an organization to share projects.
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {workspaces.map(({ workspace }) => (
-                    <label 
-                      key={workspace.id} 
-                      className="flex items-center gap-3 p-4 bg-white/5 rounded-glass cursor-pointer hover:bg-white/10 transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedOrgs.includes(workspace.id)}
-                        onChange={() => toggleOrgSelection(workspace.id)}
-                        className="w-4 h-4 text-cosmic-orange focus:ring-cosmic-orange rounded"
-                      />
-                      <div className="flex-1">
-                        <p className="text-body-md text-secondary-white font-medium">{workspace.name}</p>
-                        {workspace.description && (
-                          <p className="text-body-sm text-medium-gray">{workspace.description}</p>
-                        )}
-                      </div>
-                      {selectedOrgs.includes(workspace.id) && (
-                        <svg className="w-5 h-5 text-cosmic-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              {/* Organization Options */}
+              {workspaces.length > 0 && (
+                <>
+                  <div className="border-t border-white/10 my-4" />
+                  <p className="text-caption text-medium-gray uppercase tracking-wider mb-3">Organizations</p>
+                  {workspaces.map(({ workspace }) => {
+                    const isSelected = selectedOrgs.includes(workspace.id)
+                    return (
+                      <button
+                        key={workspace.id}
+                        onClick={() => {
+                          if (isSelected) {
+                            // Deselect this org
+                            const newOrgs = selectedOrgs.filter(id => id !== workspace.id)
+                            setSelectedOrgs(newOrgs)
+                            // If no orgs selected, switch to private
+                            if (newOrgs.length === 0) {
+                              setVisibility('private')
+                            }
+                          } else {
+                            // Select this org and switch to public
+                            setVisibility('public')
+                            setSelectedOrgs([...selectedOrgs, workspace.id])
+                          }
+                        }}
+                        className={`w-full flex items-center gap-3 p-4 rounded-glass transition-colors ${
+                          isSelected 
+                            ? 'bg-cosmic-orange/20 border border-cosmic-orange/30' 
+                            : 'bg-white/5 hover:bg-white/10 border border-transparent'
+                        }`}
+                      >
+                        <svg className={`w-5 h-5 ${isSelected ? 'text-cosmic-orange' : 'text-medium-gray'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
-                      )}
-                    </label>
-                  ))}
-                </div>
+                        <span className={`text-body-md font-medium ${isSelected ? 'text-cosmic-orange' : 'text-secondary-white'}`}>
+                          {workspace.name}
+                        </span>
+                        {isSelected && (
+                          <svg className="w-5 h-5 text-cosmic-orange ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </button>
+                    )
+                  })}
+                </>
               )}
             </div>
-          )}
+          </div>
 
           {/* Save Button */}
           <button

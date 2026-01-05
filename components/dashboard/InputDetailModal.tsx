@@ -1,6 +1,6 @@
 'use client'
 
-import { formatDateTime, formatFileSize } from '@/lib/utils/format'
+import { formatDateTime } from '@/lib/utils/format'
 import type { DiffuseProjectInput } from '@/types/database'
 
 interface InputDetailModalProps {
@@ -25,30 +25,17 @@ export default function InputDetailModal({ input, onClose }: InputDetailModalPro
         </div>
 
         <div className="space-y-6">
-          {/* Metadata */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-caption text-medium-gray mb-1">Type</label>
-              <p className="text-body-md text-secondary-white capitalize">{input.type}</p>
-            </div>
-            <div>
-              <label className="block text-caption text-medium-gray mb-1">Created</label>
-              <p className="text-body-md text-secondary-white">{formatDateTime(input.created_at)}</p>
-            </div>
+          {/* Type, File Name, Created - all in one row */}
+          <div className="flex items-center gap-2 text-body-sm text-medium-gray">
+            <span className="capitalize text-secondary-white">{input.type}</span>
             {input.file_name && (
               <>
-                <div>
-                  <label className="block text-caption text-medium-gray mb-1">File Name</label>
-                  <p className="text-body-md text-secondary-white">{input.file_name}</p>
-                </div>
-                <div>
-                  <label className="block text-caption text-medium-gray mb-1">File Size</label>
-                  <p className="text-body-md text-secondary-white">
-                    {input.file_size ? formatFileSize(input.file_size) : 'N/A'}
-                  </p>
-                </div>
+                <span>•</span>
+                <span className="text-secondary-white">{input.file_name}</span>
               </>
             )}
+            <span>•</span>
+            <span>{formatDateTime(input.created_at)}</span>
           </div>
 
           {/* Content */}
@@ -57,18 +44,6 @@ export default function InputDetailModal({ input, onClose }: InputDetailModalPro
               <label className="block text-caption text-medium-gray mb-2">Content</label>
               <div className="p-4 bg-white/5 border border-white/10 rounded-glass">
                 <p className="text-body-sm text-secondary-white whitespace-pre-wrap">{input.content}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Metadata */}
-          {input.metadata && Object.keys(input.metadata).length > 0 && (
-            <div>
-              <label className="block text-caption text-medium-gray mb-2">Additional Metadata</label>
-              <div className="p-4 bg-white/5 border border-white/10 rounded-glass">
-                <pre className="text-body-sm text-secondary-white overflow-x-auto">
-                  {JSON.stringify(input.metadata, null, 2)}
-                </pre>
               </div>
             </div>
           )}

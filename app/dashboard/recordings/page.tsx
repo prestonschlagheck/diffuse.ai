@@ -473,9 +473,6 @@ export default function RecordingsPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-display-sm text-secondary-white">Recordings</h1>
-          <p className="text-body-md text-medium-gray mt-1">
-            {recordings.length} recording{recordings.length !== 1 ? 's' : ''}
-          </p>
           {/* Mic permission warning - only show after user attempted and was denied */}
           {hasAttemptedRecording && micPermission === 'denied' && (
             <p className="text-body-sm text-red-400 mt-1">
@@ -488,9 +485,9 @@ export default function RecordingsPage() {
         {!recording ? (
           <button
             onClick={startRecording}
-            className="btn-primary px-6 py-3 flex items-center gap-2"
+            className="btn-primary px-4 py-2 flex items-center gap-2 text-body-sm"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
             </svg>
             Start Recording
@@ -505,7 +502,7 @@ export default function RecordingsPage() {
             </div>
             <button
               onClick={stopRecording}
-              className="btn-primary px-6 py-3 bg-red-500 hover:bg-red-600"
+              className="btn-primary px-4 py-2 bg-red-500 hover:bg-red-600 text-body-sm"
             >
               Stop Recording
             </button>
@@ -513,7 +510,7 @@ export default function RecordingsPage() {
         )}
       </div>
 
-      {/* Recordings List */}
+      {/* Recordings Grid */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
           <LoadingSpinner size="lg" />
@@ -533,60 +530,45 @@ export default function RecordingsPage() {
           }}
         />
       ) : (
-        <div className="glass-container overflow-hidden">
-          <table className="w-full table-fixed">
-            <thead>
-              <tr className="border-b border-white/10">
-                <th className="text-left py-4 px-4 text-caption text-medium-gray font-medium" style={{ width: '45%' }}>TITLE</th>
-                <th className="text-left py-4 px-4 text-caption text-medium-gray font-medium" style={{ width: '12%' }}>DURATION</th>
-                <th className="text-left py-4 px-4 text-caption text-medium-gray font-medium" style={{ width: '18%' }}>CREATED</th>
-                <th className="text-left py-4 px-4 text-caption text-medium-gray font-medium" style={{ width: '25%' }}>STATUS</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recordings.map((rec) => (
-                <tr
-                  key={rec.id}
-                  onClick={() => openRecording(rec)}
-                  className="border-b border-white/10 hover:bg-white/5 transition-colors cursor-pointer"
-                >
-                  <td className="py-4 px-4">
-                    <p className="text-body-md text-secondary-white font-medium break-words">{rec.title}</p>
-                  </td>
-                  <td className="py-4 px-4 text-body-sm text-medium-gray whitespace-nowrap">
-                    {formatDuration(rec.duration)}
-                  </td>
-                  <td className="py-4 px-4 text-body-sm text-medium-gray whitespace-nowrap">
-                    {formatRelativeTime(rec.created_at)}
-                  </td>
-                  <td className="py-4 px-4">
-                    {rec.status === 'transcribed' ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 text-caption font-medium rounded-full border bg-cosmic-orange/20 text-cosmic-orange border-cosmic-orange/30">
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        Transcribed
-                      </span>
-                    ) : rec.status === 'generating' ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 text-caption font-medium rounded-full border bg-pale-blue/20 text-pale-blue border-pale-blue/30">
-                        <svg className="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        Generating
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 text-caption font-medium rounded-full border bg-medium-gray/20 text-medium-gray border-medium-gray/30">
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                        </svg>
-                        Recorded
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {recordings.map((rec) => (
+            <div
+              key={rec.id}
+              onClick={() => openRecording(rec)}
+              className="glass-container p-6 hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              {/* Recording Title */}
+              <h3 className="text-heading-md text-secondary-white font-medium mb-4">
+                {rec.title}
+              </h3>
+              
+              {/* Details */}
+              <div className="space-y-2">
+                {/* Duration & Status */}
+                <div className="flex items-center gap-2 text-caption uppercase tracking-wider">
+                  <span className="text-purple-400">{formatDuration(rec.duration)}</span>
+                  <span className="text-medium-gray">•</span>
+                  {rec.status === 'transcribed' ? (
+                    <span className="text-cosmic-orange">TRANSCRIBED</span>
+                  ) : rec.status === 'generating' ? (
+                    <span className="text-pale-blue flex items-center gap-1.5">
+                      <svg className="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      GENERATING
+                    </span>
+                  ) : (
+                    <span className="text-medium-gray">RECORDED</span>
+                  )}
+                </div>
+                
+                {/* Created Date */}
+                <div className="text-caption text-medium-gray uppercase tracking-wider">
+                  {new Date(rec.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

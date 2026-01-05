@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
-import { formatDateWithTime } from '@/lib/utils/format'
 import LoadingSpinner from '@/components/dashboard/LoadingSpinner'
 import type { DiffuseProject } from '@/types/database'
 
@@ -12,7 +11,7 @@ interface SharedProject extends DiffuseProject {
   input_count: number
   output_count: number
   author_name: string
-  organization_name: string
+  org_names: string[]
 }
 
 export default function SharedWithMePage() {
@@ -54,19 +53,13 @@ export default function SharedWithMePage() {
       // Fetch additional info for each project
       const sharedProjectsWithDetails: SharedProject[] = []
       for (const project of filteredProjects) {
-        // Get author name
-        const { data: authorProfile } = await supabase
-          .from('user_profiles')
-          .select('full_name')
-          .eq('id', project.created_by)
-          .single()
-
-        // Find which org(s) this is shared through
-        const visibleOrgs = project.visible_to_orgs || []
-        const matchingWorkspace = workspaces.find(w => visibleOrgs.includes(w.workspace.id))
-
-        // Get input/output counts
-        const [{ count: inputCount }, { count: outputCount }] = await Promise.all([
+        // Get author name, input/output counts, and org names
+        const [authorResult, { count: inputCount }, { count: outputCount }, orgsResult] = await Promise.all([
+          supabase
+            .from('user_profiles')
+            .select('full_name')
+            .eq('id', project.created_by)
+            .single(),
           supabase
             .from('diffuse_project_inputs')
             .select('*', { count: 'exact', head: true })
@@ -76,14 +69,20 @@ export default function SharedWithMePage() {
             .from('diffuse_project_outputs')
             .select('*', { count: 'exact', head: true })
             .eq('project_id', project.id),
+          project.visible_to_orgs && project.visible_to_orgs.length > 0
+            ? supabase
+                .from('diffuse_workspaces')
+                .select('name')
+                .in('id', project.visible_to_orgs)
+            : Promise.resolve({ data: [] }),
         ])
 
         sharedProjectsWithDetails.push({
           ...project,
           input_count: inputCount || 0,
           output_count: outputCount || 0,
-          author_name: authorProfile?.full_name || 'Unknown',
-          organization_name: matchingWorkspace?.workspace.name || 'Unknown',
+          author_name: authorResult.data?.full_name || 'Unknown',
+          org_names: orgsResult.data?.map((org: { name: string }) => org.name) || [],
         })
       }
 
@@ -114,24 +113,19 @@ export default function SharedWithMePage() {
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-display-sm text-secondary-white">Shared With Me</h1>
-          <p className="text-body-md text-medium-gray mt-1">
-            {sharedProjects.length} project{sharedProjects.length !== 1 ? 's' : ''} • {workspaces.length} organization{workspaces.length !== 1 ? 's' : ''}
-          </p>
-        </div>
+        <h1 className="text-display-sm text-secondary-white">Shared With Me</h1>
         <a
           href="/dashboard/organization"
-          className="btn-primary px-6 py-3 flex items-center gap-2"
+          className="btn-primary px-4 py-2 flex items-center gap-2 text-body-sm"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
           </svg>
           View Organizations
         </a>
       </div>
 
-      {/* Shared Projects Table */}
+      {/* Shared Projects Grid */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
           <LoadingSpinner size="lg" />
@@ -175,75 +169,49 @@ export default function SharedWithMePage() {
           </p>
         </div>
       ) : (
-        <div className="glass-container overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-white/10">
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">NAME</th>
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">AUTHOR</th>
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">ORGANIZATION</th>
-                <th className="text-center py-4 px-6 text-caption text-medium-gray font-medium">INPUTS</th>
-                <th className="text-center py-4 px-6 text-caption text-medium-gray font-medium">OUTPUTS</th>
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">CREATED</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sharedProjects.map((project) => (
-                <tr
-                  key={project.id}
-                  onClick={() => router.push(`/dashboard/projects/${project.id}`)}
-                  className="border-b border-white/10 hover:bg-white/5 transition-colors cursor-pointer"
-                >
-                  <td className="py-4 px-6">
-                    <p className="text-body-md text-secondary-white font-medium">{project.name}</p>
-                  </td>
-                  <td className="py-4 px-6 text-body-sm text-medium-gray">
-                    {project.author_name}
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className="px-2 py-1 text-caption font-medium rounded bg-cosmic-orange/20 text-cosmic-orange">
-                      {project.organization_name}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className="flex items-center justify-center gap-1 text-body-sm text-medium-gray">
-                      {project.input_count > 0 ? (
-                        Array.from({ length: Math.min(project.input_count, 5) }).map((_, i) => (
-                          <svg key={i} className="w-4 h-4 text-cosmic-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        ))
-                      ) : (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      )}
-                      {project.input_count > 5 && <span className="text-caption">+{project.input_count - 5}</span>}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className="flex items-center justify-center gap-1 text-body-sm text-medium-gray">
-                      {project.output_count > 0 ? (
-                        Array.from({ length: Math.min(project.output_count, 5) }).map((_, i) => (
-                          <svg key={i} className="w-4 h-4 text-cosmic-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        ))
-                      ) : (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      )}
-                      {project.output_count > 5 && <span className="text-caption">+{project.output_count - 5}</span>}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6 text-body-sm text-medium-gray">
-                    {formatDateWithTime(project.created_at)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {sharedProjects.map((project) => (
+            <div
+              key={project.id}
+              onClick={() => router.push(`/dashboard/projects/${project.id}`)}
+              className="glass-container p-6 hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              {/* Project Name */}
+              <h3 className="text-heading-md text-secondary-white font-medium mb-4">
+                {project.name}
+              </h3>
+              
+              {/* Details */}
+              <div className="space-y-2">
+                {/* Inputs & Outputs */}
+                <div className="flex items-center gap-2">
+                  <span className="text-caption text-purple-400 uppercase tracking-wider">
+                    {project.input_count} INPUT{project.input_count !== 1 ? 'S' : ''}
+                  </span>
+                  <span className="text-caption text-medium-gray">•</span>
+                  <span className="text-caption text-cosmic-orange uppercase tracking-wider">
+                    {project.output_count} OUTPUT{project.output_count !== 1 ? 'S' : ''}
+                  </span>
+                </div>
+                
+                {/* Created By & Date */}
+                <div className="flex items-center gap-2 text-caption text-medium-gray uppercase tracking-wider">
+                  <span>CREATED BY: {project.author_name}</span>
+                  <span>•</span>
+                  <span>{new Date(project.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}</span>
+                </div>
+                
+                {/* Access */}
+                <div className="text-caption text-medium-gray uppercase tracking-wider">
+                  {project.org_names && project.org_names.length > 0 ? (
+                    <span>{project.org_names.join(', ')}</span>
+                  ) : (
+                    <span>PRIVATE</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
