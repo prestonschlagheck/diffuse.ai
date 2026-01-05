@@ -230,7 +230,7 @@ export default function DashboardNav() {
         </button>
 
         {showUserMenu && (
-          <div className="absolute bottom-full left-4 right-4 mb-2 bg-dark-gray border border-white/10 rounded-glass z-50 overflow-hidden">
+          <div className="absolute bottom-full left-4 right-4 mb-1 bg-dark-gray border border-white/10 rounded-glass z-50 overflow-hidden">
             <Link
               href="/dashboard/settings"
               onClick={() => setShowUserMenu(false)}
