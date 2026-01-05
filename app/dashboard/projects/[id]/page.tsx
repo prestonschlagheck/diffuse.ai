@@ -10,6 +10,7 @@ import EmptyState from '@/components/dashboard/EmptyState'
 import InputDetailModal from '@/components/dashboard/InputDetailModal'
 import OutputDetailModal from '@/components/dashboard/OutputDetailModal'
 import SelectRecordingModal from '@/components/dashboard/SelectRecordingModal'
+import { addRecentProject } from '@/components/dashboard/DashboardNav'
 import type { DiffuseProject, DiffuseProjectInput, DiffuseProjectOutput, ProjectVisibility } from '@/types/database'
 
 export default function ProjectDetailPage() {
@@ -99,6 +100,13 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     fetchProjectData()
   }, [fetchProjectData])
+
+  // Track recent project view
+  useEffect(() => {
+    if (project) {
+      addRecentProject({ id: project.id, name: project.name })
+    }
+  }, [project])
 
   const handleSaveTextInput = async (e: React.FormEvent) => {
     e.preventDefault()

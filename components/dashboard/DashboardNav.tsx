@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
@@ -11,11 +11,63 @@ const subscriptionNames: Record<string, string> = {
   pro_max: 'Pro Max',
 }
 
+interface RecentProject {
+  id: string
+  name: string
+  viewedAt: number
+}
+
+// Helper functions for recent projects in localStorage
+const RECENT_PROJECTS_KEY = 'diffuse_recent_projects'
+const MAX_RECENT_PROJECTS = 3
+
+export function addRecentProject(project: { id: string; name: string }) {
+  if (typeof window === 'undefined') return
+  
+  const stored = localStorage.getItem(RECENT_PROJECTS_KEY)
+  let recentProjects: RecentProject[] = stored ? JSON.parse(stored) : []
+  
+  // Remove if already exists
+  recentProjects = recentProjects.filter(p => p.id !== project.id)
+  
+  // Add to front
+  recentProjects.unshift({
+    id: project.id,
+    name: project.name,
+    viewedAt: Date.now()
+  })
+  
+  // Keep only max
+  recentProjects = recentProjects.slice(0, MAX_RECENT_PROJECTS)
+  
+  localStorage.setItem(RECENT_PROJECTS_KEY, JSON.stringify(recentProjects))
+  
+  // Dispatch event to notify other components
+  window.dispatchEvent(new Event('recentProjectsUpdated'))
+}
+
 export default function DashboardNav() {
   const pathname = usePathname()
   const router = useRouter()
   const { user, userProfile, signOut } = useAuth()
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [recentProjects, setRecentProjects] = useState<RecentProject[]>([])
+
+  // Load recent projects from localStorage
+  useEffect(() => {
+    const loadRecentProjects = () => {
+      const stored = localStorage.getItem(RECENT_PROJECTS_KEY)
+      if (stored) {
+        setRecentProjects(JSON.parse(stored))
+      }
+    }
+    
+    loadRecentProjects()
+    
+    // Listen for updates
+    window.addEventListener('recentProjectsUpdated', loadRecentProjects)
+    return () => window.removeEventListener('recentProjectsUpdated', loadRecentProjects)
+  }, [])
 
   // Get display name - use full_name if available, otherwise email prefix
   const displayName = userProfile?.full_name || user?.email?.split('@')[0] || 'User'
@@ -86,37 +138,82 @@ export default function DashboardNav() {
   }
 
   return (
-    <nav className="fixed top-0 left-0 bottom-0 w-64 glass-container border-r border-white/10 flex flex-col rounded-l-none">
+    <nav className="fixed top-0 left-0 bottom-0 w-64 bg-white/5 backdrop-blur-glass border-r border-white/10 flex flex-col">
       {/* Logo */}
-      <div className="p-6 border-b border-white/10">
+      <div className="p-6">
         <Link href="/dashboard" className="text-xl font-bold">
           diffuse<span className="text-cosmic-orange">.ai</span>
         </Link>
       </div>
 
       {/* Navigation Items */}
-      <div className="flex-1 p-4 space-y-2">
+      <div className="px-4 space-y-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href
           return (
             <Link
               key={item.href}
               href={item.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-glass text-body-sm transition-colors ${
-                    isActive
-                      ? 'bg-cosmic-orange/20 text-cosmic-orange'
-                      : 'text-secondary-white hover:bg-white/10'
-                  }`}
-                >
-                  {item.icon}
-                  <span>{item.name}</span>
-                </Link>
+              className={`flex items-center gap-3 px-4 py-3 rounded-glass text-body-sm transition-colors ${
+                isActive
+                  ? 'bg-cosmic-orange/20 text-cosmic-orange'
+                  : 'text-secondary-white hover:bg-white/10'
+              }`}
+            >
+              {item.icon}
+              <span>{item.name}</span>
+            </Link>
           )
         })}
       </div>
 
-      {/* User Menu */}
-      <div className="p-4 border-t border-white/10 relative">
+      {/* Recent Projects */}
+      {recentProjects.length > 0 && (
+        <div className="px-4 mt-6">
+          <div className="text-caption text-medium-gray uppercase tracking-wider mb-2 px-4">
+            Recent
+          </div>
+          <div className="space-y-1">
+            {recentProjects.map((project) => {
+              const isActive = pathname === `/dashboard/projects/${project.id}`
+              return (
+                <Link
+                  key={project.id}
+                  href={`/dashboard/projects/${project.id}`}
+                  className={`flex items-center gap-3 px-4 py-2 rounded-glass text-body-sm transition-colors ${
+                    isActive
+                      ? 'bg-cosmic-orange/20 text-cosmic-orange'
+                      : 'text-medium-gray hover:bg-white/10 hover:text-secondary-white'
+                  }`}
+                >
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span className="truncate">{project.name}</span>
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* Bottom Section */}
+      <div className="p-4 space-y-2 relative">
+        {/* Invite Team Members */}
+        <Link
+          href="/dashboard/organization"
+          className="flex items-center gap-3 px-4 py-3 rounded-glass text-body-sm text-medium-gray hover:bg-white/10 hover:text-secondary-white transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+          </svg>
+          <span>Invite team members</span>
+        </Link>
+
+        {/* User Menu Button */}
         <button
           onClick={() => setShowUserMenu(!showUserMenu)}
           className="w-full px-4 py-3 bg-white/5 rounded-glass text-left text-body-sm text-secondary-white hover:bg-white/10 transition-colors"
@@ -128,7 +225,7 @@ export default function DashboardNav() {
         </button>
 
         {showUserMenu && (
-          <div className="absolute bottom-full left-4 right-4 mb-2 glass-container border border-white/10 z-50">
+          <div className="absolute bottom-full left-4 right-4 mb-2 bg-dark-gray border border-white/10 rounded-glass z-50">
             <Link
               href="/dashboard/settings"
               onClick={() => setShowUserMenu(false)}
