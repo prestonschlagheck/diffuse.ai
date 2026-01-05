@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import { createClient } from '@/lib/supabase/client'
 
 const subscriptionNames: Record<string, string> = {
   free: 'Free',
@@ -14,36 +15,29 @@ const subscriptionNames: Record<string, string> = {
 interface RecentProject {
   id: string
   name: string
-  viewedAt: number
+  viewedAt: string
 }
 
-// Helper functions for recent projects in localStorage
-const RECENT_PROJECTS_KEY = 'diffuse_recent_projects'
-const MAX_RECENT_PROJECTS = 3
-
-export function addRecentProject(project: { id: string; name: string }) {
-  if (typeof window === 'undefined') return
+// Function to add a recent project to the database
+export async function addRecentProject(project: { id: string; name: string }) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
   
-  const stored = localStorage.getItem(RECENT_PROJECTS_KEY)
-  let recentProjects: RecentProject[] = stored ? JSON.parse(stored) : []
+  if (!user) return
   
-  // Remove if already exists
-  recentProjects = recentProjects.filter(p => p.id !== project.id)
-  
-  // Add to front
-  recentProjects.unshift({
-    id: project.id,
-    name: project.name,
-    viewedAt: Date.now()
-  })
-  
-  // Keep only max
-  recentProjects = recentProjects.slice(0, MAX_RECENT_PROJECTS)
-  
-  localStorage.setItem(RECENT_PROJECTS_KEY, JSON.stringify(recentProjects))
-  
-  // Dispatch event to notify other components
-  window.dispatchEvent(new Event('recentProjectsUpdated'))
+  try {
+    // Call the upsert function
+    await supabase.rpc('upsert_recent_project', {
+      p_user_id: user.id,
+      p_project_id: project.id,
+      p_project_name: project.name
+    })
+    
+    // Dispatch event to notify the sidebar to refresh
+    window.dispatchEvent(new Event('recentProjectsUpdated'))
+  } catch (error) {
+    console.error('Error saving recent project:', error)
+  }
 }
 
 export default function DashboardNav() {
@@ -52,22 +46,41 @@ export default function DashboardNav() {
   const { user, userProfile, signOut } = useAuth()
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([])
+  const supabase = createClient()
 
-  // Load recent projects from localStorage
-  useEffect(() => {
-    const loadRecentProjects = () => {
-      const stored = localStorage.getItem(RECENT_PROJECTS_KEY)
-      if (stored) {
-        setRecentProjects(JSON.parse(stored))
-      }
-    }
+  // Load recent projects from database
+  const loadRecentProjects = useCallback(async () => {
+    if (!user) return
     
+    try {
+      const { data, error } = await supabase
+        .from('user_recent_projects')
+        .select('project_id, project_name, viewed_at')
+        .eq('user_id', user.id)
+        .order('viewed_at', { ascending: false })
+        .limit(3)
+      
+      if (error) throw error
+      
+      setRecentProjects(
+        (data || []).map(item => ({
+          id: item.project_id,
+          name: item.project_name,
+          viewedAt: item.viewed_at
+        }))
+      )
+    } catch (error) {
+      console.error('Error loading recent projects:', error)
+    }
+  }, [user, supabase])
+
+  useEffect(() => {
     loadRecentProjects()
     
     // Listen for updates
     window.addEventListener('recentProjectsUpdated', loadRecentProjects)
     return () => window.removeEventListener('recentProjectsUpdated', loadRecentProjects)
-  }, [])
+  }, [loadRecentProjects])
 
   // Get display name - use full_name if available, otherwise email prefix
   const displayName = userProfile?.full_name || user?.email?.split('@')[0] || 'User'
