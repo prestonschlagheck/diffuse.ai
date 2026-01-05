@@ -3,8 +3,7 @@
 import Navbar from '@/components/Navbar'
 import Hero from '@/components/Hero'
 import About from '@/components/About'
-import HowItWorks from '@/components/HowItWorks'
-import Features from '@/components/Features'
+import WhyDiffuse from '@/components/WhyDiffuse'
 import UseCases from '@/components/UseCases'
 import Footer from '@/components/Footer'
 
@@ -34,8 +33,7 @@ export default function Home() {
       <main className="relative overflow-hidden">
         <Hero />
         <About />
-        <HowItWorks />
-        <Features />
+        <WhyDiffuse />
         <UseCases />
         <Footer />
       </main>

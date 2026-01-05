@@ -411,8 +411,8 @@ const SoundwaveToText = () => {
           <a href="#overview" className="btn-primary text-center text-sm sm:text-base py-3 md:py-4 px-6 md:px-8 w-full sm:w-auto">
             Learn More
           </a>
-          <a href="#process" className="btn-secondary text-center text-sm sm:text-base py-3 md:py-4 px-6 md:px-8 w-full sm:w-auto">
-            See How It Works
+          <a href="#why-diffuse" className="btn-secondary text-center text-sm sm:text-base py-3 md:py-4 px-6 md:px-8 w-full sm:w-auto">
+            Why Diffuse?
           </a>
         </motion.div>
       </div>

@@ -6,8 +6,7 @@ import Link from 'next/link'
 
 const navLinks = [
   { name: 'Overview', href: '#overview' },
-  { name: 'Process', href: '#process' },
-  { name: 'Features', href: '#features' },
+  { name: 'Why Diffuse', href: '#why-diffuse' },
   { name: 'Use Cases', href: '#use-cases' },
 ]
 
