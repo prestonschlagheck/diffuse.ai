@@ -207,27 +207,22 @@ export default function OrganizationPage() {
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-display-sm text-secondary-white">Organizations</h1>
-          <p className="text-body-md text-medium-gray mt-1">
-            {workspaces.length > 0 ? `Member of ${workspaces.length} organization${workspaces.length !== 1 ? 's' : ''}` : 'Collaborate with your team'}
-          </p>
-        </div>
-        <div className="flex gap-3">
+        <h1 className="text-display-sm text-secondary-white">Organizations</h1>
+        <div className="flex gap-2">
           <button
             onClick={() => setShowJoinModal(true)}
-            className="btn-secondary px-6 py-3 flex items-center gap-2"
+            className="btn-secondary px-4 py-2 flex items-center gap-2 text-body-sm"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
             </svg>
             Join Organization
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="btn-primary px-6 py-3 flex items-center gap-2"
+            className="btn-primary px-4 py-2 flex items-center gap-2 text-body-sm"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             Create Organization
@@ -266,12 +261,12 @@ export default function OrganizationPage() {
                   {/* Plan & Role */}
                   <div className="flex items-center gap-2">
                     {plan && (
-                      <span className="text-caption text-medium-gray uppercase tracking-wider">
+                      <span className="text-caption text-purple-400 uppercase tracking-wider">
                         {plan.name}
                       </span>
                     )}
                     {plan && <span className="text-caption text-medium-gray">•</span>}
-                    <span className="text-caption text-medium-gray uppercase tracking-wider">
+                    <span className="text-caption text-cosmic-orange uppercase tracking-wider">
                       {role}
                     </span>
                   </div>
@@ -285,7 +280,7 @@ export default function OrganizationPage() {
                       {copiedCode === workspace.invite_code ? (
                         <span className="text-cosmic-orange">COPIED!</span>
                       ) : (
-                        workspace.invite_code
+                        <>INVITE CODE: {workspace.invite_code}</>
                       )}
                     </button>
                   )}
