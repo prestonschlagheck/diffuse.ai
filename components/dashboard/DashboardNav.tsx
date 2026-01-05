@@ -186,7 +186,7 @@ export default function DashboardNav() {
         <div className="px-4 mt-4">
           <button
             onClick={() => setRecentExpanded(!recentExpanded)}
-            className="flex items-center justify-between w-full text-caption text-medium-gray uppercase tracking-wider mb-1 px-4 hover:text-secondary-white transition-colors"
+            className="flex items-center gap-2 text-caption text-medium-gray uppercase tracking-wider mb-1 px-4 hover:text-secondary-white transition-colors"
           >
             <span>Recent</span>
             <svg 
