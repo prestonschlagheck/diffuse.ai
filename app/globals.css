@@ -87,22 +87,42 @@
 }
 
 @layer utilities {
-  /* Custom scrollbar */
+  /* Custom scrollbar - dark gray theme */
   .custom-scrollbar::-webkit-scrollbar {
     width: 8px;
+    height: 8px;
   }
   
   .custom-scrollbar::-webkit-scrollbar-track {
-    @apply bg-dark-gray;
+    @apply bg-transparent;
   }
   
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-cosmic-orange rounded-full;
+    @apply bg-medium-gray/50 rounded-full;
   }
   
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    @apply bg-rich-orange;
+    @apply bg-medium-gray/70;
   }
+}
+
+/* Global scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(107, 114, 128, 0.5);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(107, 114, 128, 0.7);
 }
 
 /* Selection Color */

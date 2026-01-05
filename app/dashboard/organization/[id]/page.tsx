@@ -7,12 +7,27 @@ import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import LoadingSpinner from '@/components/dashboard/LoadingSpinner'
 import EmptyState from '@/components/dashboard/EmptyState'
-import { formatDateWithTime } from '@/lib/utils/format'
 import type { DiffuseWorkspace, DiffuseProject, OrganizationPlan } from '@/types/database'
 
 const planDetails = {
   enterprise_pro: { name: 'Enterprise Pro', projects: 50, price: '$100/mo' },
   enterprise_pro_max: { name: 'Enterprise Pro Max', projects: 'Unlimited', price: '$500/mo' },
+}
+
+// Role hierarchy: owner > admin > editor > viewer
+const roleHierarchy = ['viewer', 'editor', 'admin', 'owner'] as const
+const roleLabels: Record<string, string> = {
+  owner: 'Owner',
+  admin: 'Admin',
+  editor: 'Editor',
+  viewer: 'Viewer',
+}
+
+const getRoleLevel = (role: string) => roleHierarchy.indexOf(role as typeof roleHierarchy[number])
+const canEditRole = (currentUserRole: string, targetRole: string) => {
+  const currentLevel = getRoleLevel(currentUserRole)
+  const targetLevel = getRoleLevel(targetRole)
+  return currentLevel > targetLevel
 }
 
 interface ProjectWithCounts extends DiffuseProject {
@@ -43,6 +58,8 @@ export default function OrganizationDetailPage() {
   const [editOrgName, setEditOrgName] = useState('')
   const [editOrgDescription, setEditOrgDescription] = useState('')
   const [copiedCode, setCopiedCode] = useState(false)
+  const [editingMemberRole, setEditingMemberRole] = useState<string | null>(null)
+  const [savingRole, setSavingRole] = useState(false)
   const supabase = createClient()
 
   const fetchOrganizationData = useCallback(async () => {
@@ -70,9 +87,10 @@ export default function OrganizationDetailPage() {
       
       const memberIds = membersData?.map(m => m.user_id) || []
       
-      // Find current user's role
+      // Find current user's role (owner takes precedence)
+      const isOwner = workspaceData.owner_id === user.id
       const currentUserMember = membersData?.find(m => m.user_id === user.id)
-      setUserRole(currentUserMember?.role || null)
+      setUserRole(isOwner ? 'owner' : (currentUserMember?.role || null))
 
       // Fetch member details (name and project count)
       const membersWithDetails: MemberWithDetails[] = []
@@ -92,9 +110,12 @@ export default function OrganizationDetailPage() {
           .eq('visibility', 'public')
           .contains('visible_to_orgs', [orgId])
 
+        // Check if this member is the owner
+        const memberRole = workspaceData.owner_id === member.user_id ? 'owner' : member.role
+
         membersWithDetails.push({
           user_id: member.user_id,
-          role: member.role,
+          role: memberRole,
           name: profile?.full_name || 'Unknown',
           project_count: projectCount || 0,
         })
@@ -157,7 +178,7 @@ export default function OrganizationDetailPage() {
   }, [fetchOrganizationData])
 
   const handleChangePlan = async (newPlan: OrganizationPlan) => {
-    if (!workspace || userRole !== 'admin') return
+    if (!workspace || userRole !== 'owner') return
     
     setSavingPlan(true)
     try {
@@ -230,6 +251,114 @@ export default function OrganizationDetailPage() {
     }
   }
 
+  const handleChangeMemberRole = async (memberId: string, newRole: string) => {
+    if (!workspace || !userRole || (userRole !== 'admin' && userRole !== 'owner')) return
+    
+    setSavingRole(true)
+    try {
+      console.log('Updating role:', { memberId, newRole, workspaceId: workspace.id })
+      
+      const { data, error } = await supabase
+        .from('diffuse_workspace_members')
+        .update({ role: newRole as 'admin' | 'editor' | 'viewer' })
+        .eq('workspace_id', workspace.id)
+        .eq('user_id', memberId)
+        .select()
+
+      console.log('Update result:', { data, error })
+
+      if (error) {
+        console.error('Supabase error:', error)
+        throw error
+      }
+      
+      setEditingMemberRole(null)
+      fetchOrganizationData()
+    } catch (error: any) {
+      console.error('Error changing member role:', error)
+      alert(`Failed to change member role: ${error.message || 'Unknown error'}`)
+    } finally {
+      setSavingRole(false)
+    }
+  }
+
+  const handleRemoveMember = async (memberId: string, memberName: string) => {
+    if (!workspace || !userRole || (userRole !== 'admin' && userRole !== 'owner')) return
+    
+    const confirmRemove = window.confirm(
+      `Are you sure you want to remove ${memberName} from this organization?`
+    )
+    
+    if (!confirmRemove) return
+    
+    setSavingRole(true)
+    try {
+      const { error } = await supabase
+        .from('diffuse_workspace_members')
+        .delete()
+        .eq('workspace_id', workspace.id)
+        .eq('user_id', memberId)
+
+      if (error) throw error
+      
+      setEditingMemberRole(null)
+      fetchOrganizationData()
+    } catch (error) {
+      console.error('Error removing member:', error)
+      alert('Failed to remove member')
+    } finally {
+      setSavingRole(false)
+    }
+  }
+
+  const handleTransferOwnership = async (newOwnerId: string, newOwnerName: string) => {
+    if (!workspace || userRole !== 'owner' || !user) return
+    
+    const confirmTransfer = window.confirm(
+      `Are you sure you want to transfer ownership to ${newOwnerName}? You will be demoted to Admin.`
+    )
+    
+    if (!confirmTransfer) return
+    
+    setSavingRole(true)
+    try {
+      // Update the workspace owner_id
+      const { error: ownerError } = await supabase
+        .from('diffuse_workspaces')
+        .update({ owner_id: newOwnerId })
+        .eq('id', workspace.id)
+
+      if (ownerError) throw ownerError
+
+      // Demote current owner to admin in members table
+      const { error: demoteError } = await supabase
+        .from('diffuse_workspace_members')
+        .update({ role: 'admin' })
+        .eq('workspace_id', workspace.id)
+        .eq('user_id', user.id)
+
+      if (demoteError) throw demoteError
+
+      // Promote new owner to admin in members table (their actual role is determined by owner_id)
+      const { error: promoteError } = await supabase
+        .from('diffuse_workspace_members')
+        .update({ role: 'admin' })
+        .eq('workspace_id', workspace.id)
+        .eq('user_id', newOwnerId)
+
+      if (promoteError) throw promoteError
+      
+      setEditingMemberRole(null)
+      fetchOrganizationData()
+      alert(`Ownership transferred to ${newOwnerName}. You are now an Admin.`)
+    } catch (error) {
+      console.error('Error transferring ownership:', error)
+      alert('Failed to transfer ownership')
+    } finally {
+      setSavingRole(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -255,7 +384,7 @@ export default function OrganizationDetailPage() {
   }
 
   return (
-    <div>
+    <div className="overflow-x-hidden">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
@@ -295,7 +424,7 @@ export default function OrganizationDetailPage() {
             <div className="group flex-1">
               <div className="flex items-center gap-3">
                 <h1 className="text-display-sm text-secondary-white">{workspace.name}</h1>
-                {userRole === 'admin' && (
+                {userRole === 'owner' && (
                   <button
                     onClick={handleEditOrg}
                     className="opacity-0 group-hover:opacity-100 text-medium-gray hover:text-cosmic-orange transition-all"
@@ -359,72 +488,51 @@ export default function OrganizationDetailPage() {
           description="No projects have been shared with this organization yet."
         />
       ) : (
-        <div className="glass-container overflow-hidden mb-12">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-white/10">
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">NAME</th>
-                <th className="text-center py-4 px-6 text-caption text-medium-gray font-medium">INPUTS</th>
-                <th className="text-center py-4 px-6 text-caption text-medium-gray font-medium">OUTPUTS</th>
-                <th className="text-left py-4 px-6 text-caption text-medium-gray font-medium">CREATED</th>
-              </tr>
-            </thead>
-            <tbody>
-              {projects.map((project) => (
-                <tr
-                  key={project.id}
-                  onClick={() => router.push(`/dashboard/projects/${project.id}`)}
-                  className="border-b border-white/10 hover:bg-white/5 transition-colors cursor-pointer"
-                >
-                  <td className="py-4 px-6">
-                    <p className="text-body-md text-secondary-white font-medium">{project.name}</p>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className="flex items-center justify-center gap-1 text-body-sm text-medium-gray">
-                      {project.input_count > 0 ? (
-                        Array.from({ length: Math.min(project.input_count, 5) }).map((_, i) => (
-                          <svg key={i} className="w-4 h-4 text-cosmic-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        ))
-                      ) : (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      )}
-                      {project.input_count > 5 && <span className="text-caption">+{project.input_count - 5}</span>}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className="flex items-center justify-center gap-1 text-body-sm text-medium-gray">
-                      {project.output_count > 0 ? (
-                        Array.from({ length: Math.min(project.output_count, 5) }).map((_, i) => (
-                          <svg key={i} className="w-4 h-4 text-cosmic-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        ))
-                      ) : (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      )}
-                      {project.output_count > 5 && <span className="text-caption">+{project.output_count - 5}</span>}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6 text-body-sm text-medium-gray">
-                    {formatDateWithTime(project.created_at)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
+          {projects.map((project) => (
+            <div
+              key={project.id}
+              onClick={() => router.push(`/dashboard/projects/${project.id}`)}
+              className="glass-container p-6 hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              {/* Project Name */}
+              <h3 className="text-heading-md text-secondary-white font-medium mb-4">
+                {project.name}
+              </h3>
+              
+              {/* Details */}
+              <div className="space-y-2">
+                {/* Inputs & Outputs */}
+                <div className="flex items-center gap-2">
+                  <span className="text-caption text-purple-400 uppercase tracking-wider">
+                    {project.input_count} INPUT{project.input_count !== 1 ? 'S' : ''}
+                  </span>
+                  <span className="text-caption text-medium-gray">•</span>
+                  <span className="text-caption text-cosmic-orange uppercase tracking-wider">
+                    {project.output_count} OUTPUT{project.output_count !== 1 ? 'S' : ''}
+                  </span>
+                </div>
+                
+                {/* Created By & Date */}
+                <div className="flex items-center gap-2 text-caption text-medium-gray uppercase tracking-wider">
+                  {project.creator_name && (
+                    <>
+                      <span>CREATED BY: {project.creator_name}</span>
+                      <span>•</span>
+                    </>
+                  )}
+                  <span>{new Date(project.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}</span>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
       {/* Members */}
       <h2 className="text-heading-lg text-secondary-white mb-4">Members</h2>
       
-      <div className="glass-container overflow-hidden mb-12">
+      <div className="glass-container mb-12 relative z-10">
         <table className="w-full">
           <thead>
             <tr className="border-b border-white/10">
@@ -434,64 +542,142 @@ export default function OrganizationDetailPage() {
             </tr>
           </thead>
           <tbody>
-            {members.map((member) => (
-              <tr
-                key={member.user_id}
-                className="border-b border-white/10 last:border-b-0"
-              >
-                <td className="py-4 px-6">
-                  <p className="text-body-md text-secondary-white font-medium">{member.name}</p>
-                </td>
-                <td className="py-4 px-6 text-body-sm text-medium-gray">
-                  {member.project_count}
-                </td>
-                <td className="py-4 px-6">
-                  <span className={`px-3 py-1 text-caption font-medium rounded-full border capitalize ${
-                    member.role === 'admin' 
-                      ? 'bg-cosmic-orange/20 text-cosmic-orange border-cosmic-orange/30'
-                      : 'bg-medium-gray/20 text-medium-gray border-medium-gray/30'
-                  }`}>
-                    {member.role}
-                  </span>
-                </td>
-              </tr>
-            ))}
+            {members.map((member) => {
+              const isCurrentUser = member.user_id === user?.id
+              const isOwner = member.role === 'owner'
+              const userCanEdit = userRole && canEditRole(userRole, member.role) && !isCurrentUser && !isOwner
+              const isEditingThis = editingMemberRole === member.user_id
+              
+              // Determine role badge color
+              const getRoleBadgeClass = (role: string) => {
+                switch (role) {
+                  case 'owner':
+                    return 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+                  case 'admin':
+                    return 'bg-cosmic-orange/20 text-cosmic-orange border-cosmic-orange/30'
+                  case 'editor':
+                    return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                  default:
+                    return 'bg-medium-gray/20 text-medium-gray border-medium-gray/30'
+                }
+              }
+              
+              return (
+                <tr
+                  key={member.user_id}
+                  className="border-b border-white/10 last:border-b-0"
+                >
+                  <td className="py-4 px-6">
+                    <p className="text-body-md text-secondary-white font-medium">
+                      {member.name}
+                      {isCurrentUser && <span className="text-medium-gray ml-2">(you)</span>}
+                    </p>
+                  </td>
+                  <td className="py-4 px-6 text-body-sm text-medium-gray">
+                    {member.project_count}
+                  </td>
+                  <td className="py-4 px-6">
+                    {userCanEdit ? (
+                      <div className="relative inline-block">
+                        <button
+                          onClick={() => {
+                            if (isEditingThis) {
+                              setEditingMemberRole(null)
+                            } else {
+                              setEditingMemberRole(member.user_id)
+                            }
+                          }}
+                          className={`px-3 py-1 text-caption font-medium rounded-full border transition-colors hover:opacity-80 ${getRoleBadgeClass(member.role)}`}
+                        >
+                          {roleLabels[member.role] || member.role}
+                          <svg className="w-3 h-3 inline-block ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        
+                        {/* Dropdown */}
+                        {isEditingThis && (
+                          <>
+                            {/* Backdrop to close on click outside */}
+                            <div 
+                              className="fixed inset-0 z-[9998]" 
+                              onClick={() => setEditingMemberRole(null)}
+                            />
+                            <div 
+                              className="absolute top-full left-0 mt-1 z-[9999] bg-[#0d0d0d] border border-white/20 rounded-lg shadow-2xl w-[160px]"
+                            >
+                              {['admin', 'editor', 'viewer'].map((role) => {
+                                // Only show roles that the current user can assign (below their level)
+                                if (userRole && getRoleLevel(userRole) <= getRoleLevel(role) && role !== 'viewer') {
+                                  return null
+                                }
+                                return (
+                                  <button
+                                    key={role}
+                                    onClick={() => handleChangeMemberRole(member.user_id, role)}
+                                    disabled={savingRole || member.role === role}
+                                    className={`w-full px-4 py-2.5 text-left text-body-sm transition-colors ${
+                                      member.role === role
+                                        ? 'bg-white/10 text-secondary-white font-medium'
+                                        : 'text-secondary-white hover:bg-white/10'
+                                    } disabled:opacity-50`}
+                                  >
+                                    {roleLabels[role]}
+                                    {member.role === role && (
+                                      <svg className="w-4 h-4 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    )}
+                                  </button>
+                                )
+                              })}
+                              {/* Transfer Ownership option - only for owners */}
+                              {userRole === 'owner' && member.role !== 'owner' && (
+                                <div className="border-t border-white/10">
+                                  <button
+                                    onClick={() => handleTransferOwnership(member.user_id, member.name)}
+                                    disabled={savingRole}
+                                    className="w-full px-4 py-2.5 text-left text-body-sm text-purple-400 hover:bg-purple-500/10 transition-colors disabled:opacity-50"
+                                  >
+                                    Transfer Ownership
+                                  </button>
+                                </div>
+                              )}
+                              {/* Remove option */}
+                              <div className="border-t border-white/10">
+                                <button
+                                  onClick={() => handleRemoveMember(member.user_id, member.name)}
+                                  disabled={savingRole}
+                                  className="w-full px-4 py-2.5 text-left text-body-sm text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <span className={`px-3 py-1 text-caption font-medium rounded-full border ${getRoleBadgeClass(member.role)}`}>
+                        {roleLabels[member.role] || member.role}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
 
-      {/* Settings */}
-      {userRole === 'admin' && (
+      {/* Settings - Only visible to owner */}
+      {userRole === 'owner' && (
         <div>
           <h2 className="text-heading-lg text-secondary-white mb-4">Settings</h2>
           
-          {/* Current Plan */}
-          <div className="glass-container p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-body-md text-medium-gray mb-1">Current Plan</h3>
-                <p className="text-heading-md text-secondary-white">
-                  {workspace.plan && planDetails[workspace.plan as keyof typeof planDetails]
-                    ? planDetails[workspace.plan as keyof typeof planDetails].name
-                    : 'No plan selected'}
-                </p>
-              </div>
-              {workspace.plan && planDetails[workspace.plan as keyof typeof planDetails] && (
-                <div className="text-right">
-                  <p className="text-heading-md text-cosmic-orange">
-                    {planDetails[workspace.plan as keyof typeof planDetails].price}
-                  </p>
-                  <p className="text-body-sm text-medium-gray">
-                    {planDetails[workspace.plan as keyof typeof planDetails].projects} projects
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Change Plan */}
+          {/* Plan Selection */}
           <div className="glass-container p-6">
-            <h3 className="text-body-md text-secondary-white mb-4">Change Plan</h3>
+            <h3 className="text-body-md text-medium-gray mb-4">Organization Plan</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {(Object.entries(planDetails) as [OrganizationPlan, typeof planDetails[keyof typeof planDetails]][]).map(([key, plan]) => {
                 const isCurrentPlan = workspace.plan === key
@@ -499,22 +685,26 @@ export default function OrganizationDetailPage() {
                   <button
                     key={key}
                     onClick={() => handleChangePlan(key)}
-                    disabled={savingPlan || isCurrentPlan}
-                    className={`p-4 rounded-glass border text-left transition-colors ${
+                    disabled={savingPlan}
+                    className={`p-5 rounded-glass border text-left transition-all ${
                       isCurrentPlan
-                        ? 'border-cosmic-orange/50 bg-cosmic-orange/10'
-                        : 'border-white/10 bg-white/5 hover:bg-white/10'
-                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        ? 'border-cosmic-orange/30 bg-cosmic-orange/20'
+                        : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
+                    }`}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-body-md text-secondary-white font-medium">{plan.name}</p>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className={`text-body-lg font-medium ${isCurrentPlan ? 'text-cosmic-orange' : 'text-secondary-white'}`}>
+                        {plan.name}
+                      </p>
                       {isCurrentPlan && (
-                        <span className="px-2 py-0.5 text-caption font-medium rounded bg-cosmic-orange/20 text-cosmic-orange">
+                        <span className="px-2.5 py-1 text-caption font-medium rounded-full bg-cosmic-orange/20 text-cosmic-orange border border-cosmic-orange/30">
                           Current
                         </span>
                       )}
                     </div>
-                    <p className="text-heading-md text-cosmic-orange mb-1">{plan.price}</p>
+                    <p className={`text-heading-lg mb-1 ${isCurrentPlan ? 'text-cosmic-orange' : 'text-secondary-white'}`}>
+                      {plan.price}
+                    </p>
                     <p className="text-body-sm text-medium-gray">{plan.projects} projects</p>
                   </button>
                 )

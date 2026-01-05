@@ -82,13 +82,13 @@ export default function OrganizationPage() {
         throw new Error('You are already a member of this organization')
       }
 
-      // Add user as member
+      // Add user as viewer (pending approval)
       const { error: memberError } = await supabase
         .from('diffuse_workspace_members')
         .insert({
           workspace_id: org.id,
           user_id: user?.id,
-          role: 'member',
+          role: 'viewer',
         })
 
       if (memberError) {
@@ -278,7 +278,7 @@ export default function OrganizationPage() {
                       className="text-caption text-medium-gray uppercase tracking-wider hover:text-secondary-white transition-colors"
                     >
                       {copiedCode === workspace.invite_code ? (
-                        <span className="text-cosmic-orange">COPIED!</span>
+                        <span>COPIED!</span>
                       ) : (
                         <>INVITE CODE: {workspace.invite_code}</>
                       )}

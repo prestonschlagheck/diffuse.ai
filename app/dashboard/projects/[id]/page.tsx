@@ -3,20 +3,24 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { formatDuration } from '@/lib/utils/format'
 import { useAuth } from '@/contexts/AuthContext'
-import { formatDateWithTime, truncateText } from '@/lib/utils/format'
 import LoadingSpinner from '@/components/dashboard/LoadingSpinner'
 import EmptyState from '@/components/dashboard/EmptyState'
 import InputDetailModal from '@/components/dashboard/InputDetailModal'
 import OutputDetailModal from '@/components/dashboard/OutputDetailModal'
 import SelectRecordingModal from '@/components/dashboard/SelectRecordingModal'
 import { addRecentProject } from '@/components/dashboard/DashboardNav'
-import type { DiffuseProject, DiffuseProjectInput, DiffuseProjectOutput, ProjectVisibility } from '@/types/database'
+import type { DiffuseProject, DiffuseProjectInput, DiffuseProjectOutput, ProjectVisibility, UserRole } from '@/types/database'
+
+// Role hierarchy for permissions
+const roleHierarchy = ['viewer', 'editor', 'admin', 'owner'] as const
+const getRoleLevel = (role: string) => roleHierarchy.indexOf(role as typeof roleHierarchy[number])
 
 export default function ProjectDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { workspaces } = useAuth()
+  const { user, workspaces } = useAuth()
   const projectId = params.id as string
 
   const [project, setProject] = useState<DiffuseProject | null>(null)
@@ -32,16 +36,19 @@ export default function ProjectDetailPage() {
   const [textInputContent, setTextInputContent] = useState('')
   const [textInputTitle, setTextInputTitle] = useState('')
   const [savingTextInput, setSavingTextInput] = useState(false)
-  const [editingInput, setEditingInput] = useState<string | null>(null)
-  const [editInputContent, setEditInputContent] = useState('')
-  const [hoveredInput, setHoveredInput] = useState<string | null>(null)
   const [editingProject, setEditingProject] = useState(false)
   const [editProjectName, setEditProjectName] = useState('')
   const [editProjectDescription, setEditProjectDescription] = useState('')
   const [visibility, setVisibility] = useState<ProjectVisibility>('private')
   const [selectedOrgs, setSelectedOrgs] = useState<string[]>([])
   const [savingVisibility, setSavingVisibility] = useState(false)
+  const [userProjectRole, setUserProjectRole] = useState<string>('viewer')
   const supabase = createClient()
+
+  // Permission helpers
+  const isProjectOwner = project?.created_by === user?.id
+  const canEdit = isProjectOwner || getRoleLevel(userProjectRole) >= getRoleLevel('editor')
+  const canDelete = isProjectOwner || getRoleLevel(userProjectRole) >= getRoleLevel('admin')
 
   const fetchProjectData = useCallback(async () => {
     setLoading(true)
@@ -57,6 +64,47 @@ export default function ProjectDetailPage() {
       setProject(projectData)
       setVisibility(projectData.visibility || 'private')
       setSelectedOrgs(projectData.visible_to_orgs || [])
+
+      // Determine user's role for this project
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      if (currentUser) {
+        // If user created the project, they are the owner
+        if (projectData.created_by === currentUser.id) {
+          setUserProjectRole('owner')
+        } else if (projectData.visible_to_orgs && projectData.visible_to_orgs.length > 0) {
+          // Check user's role in the organizations this project is shared with
+          // Get the highest role the user has across all orgs the project is shared with
+          let highestRole = 'viewer'
+          for (const orgId of projectData.visible_to_orgs) {
+            // Check if user is the org owner
+            const { data: orgData } = await supabase
+              .from('diffuse_workspaces')
+              .select('owner_id')
+              .eq('id', orgId)
+              .single()
+            
+            if (orgData?.owner_id === currentUser.id) {
+              highestRole = 'owner'
+              break
+            }
+            
+            // Check user's member role
+            const { data: memberData } = await supabase
+              .from('diffuse_workspace_members')
+              .select('role')
+              .eq('workspace_id', orgId)
+              .eq('user_id', currentUser.id)
+              .single()
+            
+            if (memberData && getRoleLevel(memberData.role) > getRoleLevel(highestRole)) {
+              highestRole = memberData.role
+            }
+          }
+          setUserProjectRole(highestRole)
+        } else {
+          setUserProjectRole('viewer')
+        }
+      }
 
       // Fetch active inputs (not deleted)
       const { data: inputsData, error: inputsError } = await supabase
@@ -175,30 +223,40 @@ export default function ProjectDetailPage() {
     }
   }
 
-  const handleEditInput = async (inputId: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    const input = inputs.find(i => i.id === inputId)
-    if (input) {
-      setEditingInput(inputId)
-      setEditInputContent(input.content || '')
-    }
-  }
-
-  const handleSaveInputEdit = async () => {
-    if (!editingInput) return
+  const handleSaveInput = async (inputId: string, title: string, content: string) => {
     try {
       const { error } = await supabase
         .from('diffuse_project_inputs')
-        .update({ content: editInputContent })
-        .eq('id', editingInput)
+        .update({ 
+          file_name: title || null,
+          content: content 
+        })
+        .eq('id', inputId)
 
       if (error) throw error
-      setEditingInput(null)
-      setEditInputContent('')
+      
+      setSelectedInput(null)
       fetchProjectData()
     } catch (error) {
       console.error('Error saving input:', error)
       alert('Failed to save input')
+      throw error
+    }
+  }
+
+  const handleDeleteInputFromModal = async (inputId: string) => {
+    try {
+      const { error } = await supabase
+        .from('diffuse_project_inputs')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', inputId)
+
+      if (error) throw error
+      fetchProjectData()
+    } catch (error) {
+      console.error('Error deleting input:', error)
+      alert('Failed to delete input')
+      throw error
     }
   }
 
@@ -292,57 +350,57 @@ export default function ProjectDetailPage() {
     <div>
       {/* Header */}
       <div className="mb-8">
-        <button
-          onClick={() => router.push('/dashboard')}
-          className="text-body-sm text-medium-gray hover:text-cosmic-orange transition-colors mb-4 flex items-center gap-2"
-        >
-          ← Back to Dashboard
-        </button>
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            {editingProject ? (
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  value={editProjectName}
-                  onChange={(e) => setEditProjectName(e.target.value)}
-                  className="w-full text-display-sm bg-white/5 border border-white/10 rounded-glass px-4 py-2 text-secondary-white focus:outline-none focus:border-cosmic-orange"
-                />
-                <textarea
-                  value={editProjectDescription}
-                  onChange={(e) => setEditProjectDescription(e.target.value)}
-                  placeholder="Description (optional)"
-                  rows={2}
-                  className="w-full text-body-lg bg-white/5 border border-white/10 rounded-glass px-4 py-2 text-medium-gray focus:outline-none focus:border-cosmic-orange resize-none"
-                />
-                <div className="flex gap-2">
-                  <button onClick={handleSaveProject} className="btn-primary px-4 py-2 text-body-sm">
-                    Save
-                  </button>
-                  <button onClick={() => setEditingProject(false)} className="btn-secondary px-4 py-2 text-body-sm">
-                    Cancel
-                  </button>
-                </div>
+        <div className="flex items-center gap-3 mb-2">
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="text-medium-gray hover:text-secondary-white transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          {editingProject ? (
+            <div className="flex-1 space-y-3">
+              <input
+                type="text"
+                value={editProjectName}
+                onChange={(e) => setEditProjectName(e.target.value)}
+                className="w-full text-display-sm bg-white/5 border border-white/10 rounded-glass px-4 py-2 text-secondary-white focus:outline-none focus:border-cosmic-orange"
+              />
+              <textarea
+                value={editProjectDescription}
+                onChange={(e) => setEditProjectDescription(e.target.value)}
+                placeholder="Description (optional)"
+                rows={2}
+                className="w-full text-body-lg bg-white/5 border border-white/10 rounded-glass px-4 py-2 text-medium-gray focus:outline-none focus:border-cosmic-orange resize-none"
+              />
+              <div className="flex gap-2">
+                <button onClick={handleSaveProject} className="btn-primary px-4 py-2 text-body-sm">
+                  Save
+                </button>
+                <button onClick={() => setEditingProject(false)} className="btn-secondary px-4 py-2 text-body-sm">
+                  Cancel
+                </button>
               </div>
-            ) : (
-              <div className="group">
-                <div className="flex items-center gap-3">
-                  <h1 className="text-display-sm text-secondary-white">{project.name}</h1>
-                  <button
-                    onClick={handleEditProject}
-                    className="opacity-0 group-hover:opacity-100 text-medium-gray hover:text-cosmic-orange transition-all"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                  </button>
-                </div>
-                {project.description && (
-                  <p className="text-body-lg text-medium-gray mt-1">{project.description}</p>
-                )}
+            </div>
+          ) : (
+            <div className="group flex-1">
+              <div className="flex items-center gap-3">
+                <h1 className="text-display-sm text-secondary-white">{project.name}</h1>
+                <button
+                  onClick={handleEditProject}
+                  className="opacity-0 group-hover:opacity-100 text-medium-gray hover:text-cosmic-orange transition-all"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                </button>
               </div>
-            )}
-          </div>
+              {project.description && (
+                <p className="text-body-lg text-medium-gray mt-1 ml-0">{project.description}</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -374,6 +432,8 @@ export default function ProjectDetailPage() {
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-cosmic-orange" />
           )}
         </button>
+        {/* Visibility tab - only visible to project owner */}
+        {isProjectOwner && (
         <button
           onClick={() => setActiveTab('visibility')}
           className={`pb-3 px-4 text-body-md font-medium transition-colors relative ${
@@ -387,6 +447,7 @@ export default function ProjectDetailPage() {
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-cosmic-orange" />
           )}
         </button>
+        )}
         {trashedInputs.length > 0 && (
           <button
             onClick={() => setActiveTab('trash')}
@@ -407,7 +468,8 @@ export default function ProjectDetailPage() {
       {/* Inputs Tab */}
       {activeTab === 'inputs' && (
         <div>
-          {/* Add Input Buttons */}
+          {/* Add Input Buttons - Only visible to editors and above */}
+          {canEdit && (
           <div className="flex justify-end gap-3 mb-4">
             <button
               onClick={() => setShowTextInputModal(true)}
@@ -428,6 +490,7 @@ export default function ProjectDetailPage() {
               Add from Recordings
             </button>
           </div>
+          )}
 
           {inputs.length === 0 ? (
             <EmptyState
@@ -445,71 +508,43 @@ export default function ProjectDetailPage() {
               description="Add recordings as inputs or submit inputs via the workflow API."
             />
           ) : (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {inputs.map((input) => {
                 const isFromRecording = input.metadata?.source === 'recording'
-                const isHovered = hoveredInput === input.id
                 
                 return (
                   <div
                     key={input.id}
-                    onMouseEnter={() => setHoveredInput(input.id)}
-                    onMouseLeave={() => setHoveredInput(null)}
                     onClick={() => setSelectedInput(input)}
-                    className={`glass-container p-6 cursor-pointer transition-all relative ${
-                      isHovered ? 'bg-white/5 backdrop-blur-sm' : ''
-                    }`}
+                    className="glass-container p-6 hover:bg-white/10 transition-colors cursor-pointer"
                   >
-                    {/* Hover Actions */}
-                    {isHovered && (
-                      <div className="absolute top-4 right-4 flex gap-2 z-10">
-                        <button
-                          onClick={(e) => handleEditInput(input.id, e)}
-                          className="p-2 bg-white/10 hover:bg-cosmic-orange/20 rounded-glass transition-colors"
-                          title="Edit"
-                        >
-                          <svg className="w-4 h-4 text-cosmic-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={(e) => handleDeleteInput(input.id, e)}
-                          className="p-2 bg-white/10 hover:bg-red-500/20 rounded-glass transition-colors"
-                          title="Delete"
-                        >
-                          <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    )}
+                    {/* Title */}
+                    <h3 className="text-heading-md text-secondary-white font-medium mb-4 truncate">
+                      {input.file_name || (isFromRecording ? 'Recording' : 'Text Input')}
+                    </h3>
                     
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
+                    {/* Details */}
+                    <div className="space-y-2">
+                      {/* Type */}
+                      <div className="text-caption text-purple-400 uppercase tracking-wider">
                         {isFromRecording ? (
-                          <svg className="w-6 h-6 text-cosmic-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                          </svg>
-                        ) : (
-                          <svg className="w-6 h-6 text-cosmic-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                        )}
-                        <div>
-                          <p className="text-body-md text-secondary-white font-medium">
-                            {input.file_name || (isFromRecording ? 'Recording' : 'Text Input')}
-                          </p>
-                          <p className="text-caption text-medium-gray">
-                            {formatDateWithTime(input.created_at)}
-                          </p>
+                          <>
+                            RECORDING
+                            {input.metadata?.recording_duration && (
+                              <>
+                                <span className="text-medium-gray"> • </span>
+                                <span className="text-cosmic-orange">{formatDuration(input.metadata.recording_duration)}</span>
+                              </>
+                            )}
+                          </>
+                        ) : 'TEXT'}
                         </div>
+                      
+                      {/* Date */}
+                      <div className="text-caption text-medium-gray uppercase tracking-wider">
+                        {new Date(input.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
                       </div>
                     </div>
-                    {input.content && (
-                      <p className="text-body-sm text-medium-gray">
-                        {truncateText(input.content, 200)}
-                      </p>
-                    )}
                   </div>
                 )
               })}
@@ -537,33 +572,35 @@ export default function ProjectDetailPage() {
               description="Outputs will appear here when the workflow processes your inputs and returns results."
             />
           ) : (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {outputs.map((output) => (
                 <div
                   key={output.id}
                   onClick={() => setSelectedOutput(output)}
-                  className="glass-container-hover p-6 cursor-pointer"
+                  className="glass-container p-6 hover:bg-white/10 transition-colors cursor-pointer"
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <p className="text-body-md text-secondary-white font-medium mb-1">
+                  {/* Title */}
+                  <h3 className="text-heading-md text-secondary-white font-medium mb-4 truncate">
                         Workflow Output
-                      </p>
-                      <p className="text-caption text-medium-gray">
-                        {formatDateWithTime(output.created_at)}
-                      </p>
+                  </h3>
+                  
+                  {/* Details */}
+                  <div className="space-y-2">
+                    {/* Status */}
+                    <div className={`text-caption uppercase tracking-wider ${
+                      output.workflow_status === 'completed' ? 'text-green-400' :
+                      output.workflow_status === 'processing' ? 'text-cosmic-orange' :
+                      output.workflow_status === 'failed' ? 'text-red-400' :
+                      'text-pale-blue'
+                    }`}>
+                      {output.workflow_status.toUpperCase()}
                     </div>
-                    <span
-                      className={`px-3 py-1 text-caption font-medium rounded-full border ${
-                        workflowStatusColors[output.workflow_status]
-                      }`}
-                    >
-                      {output.workflow_status}
-                    </span>
+                    
+                    {/* Date */}
+                    <div className="text-caption text-medium-gray uppercase tracking-wider">
+                      {new Date(output.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
                   </div>
-                  <p className="text-body-sm text-medium-gray">
-                    {truncateText(output.content, 200)}
-                  </p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -573,40 +610,38 @@ export default function ProjectDetailPage() {
 
       {/* Visibility Tab */}
       {activeTab === 'visibility' && (
-        <div className="max-w-2xl">
-          <div className="glass-container p-6 mb-6">
-            <h3 className="text-heading-md text-secondary-white mb-4">Who can see this project?</h3>
-            <div className="space-y-3">
-              {/* Private Option */}
+        <div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {/* Private Option - Left Side */}
               <button
                 onClick={() => {
                   setVisibility('private')
                   setSelectedOrgs([])
                 }}
-                className={`w-full flex items-center gap-3 p-4 rounded-glass transition-colors ${
+              className={`glass-container p-6 flex flex-col items-center justify-center text-center transition-colors min-h-[200px] ${
                   visibility === 'private' 
-                    ? 'bg-cosmic-orange/20 border border-cosmic-orange/30' 
-                    : 'bg-white/5 hover:bg-white/10 border border-transparent'
+                  ? 'bg-cosmic-orange/20 border-cosmic-orange/30' 
+                  : 'hover:bg-white/10'
                 }`}
               >
-                <svg className={`w-5 h-5 ${visibility === 'private' ? 'text-cosmic-orange' : 'text-medium-gray'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-                <span className={`text-body-md font-medium ${visibility === 'private' ? 'text-cosmic-orange' : 'text-secondary-white'}`}>
+              <h3 className={`text-heading-lg font-medium mb-2 ${visibility === 'private' ? 'text-cosmic-orange' : 'text-secondary-white'}`}>
                   Private
-                </span>
+              </h3>
+              <p className="text-caption text-medium-gray uppercase tracking-wider">
+                ONLY YOU CAN ACCESS
+              </p>
                 {visibility === 'private' && (
-                  <svg className="w-5 h-5 text-cosmic-orange ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="mt-4">
+                  <svg className="w-6 h-6 text-cosmic-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
+                </div>
                 )}
               </button>
 
-              {/* Organization Options */}
-              {workspaces.length > 0 && (
-                <>
-                  <div className="border-t border-white/10 my-4" />
-                  <p className="text-caption text-medium-gray uppercase tracking-wider mb-3">Organizations</p>
+            {/* Organization Options - Right Side */}
+            {workspaces.length > 0 ? (
+              <div className="flex flex-col gap-2">
                   {workspaces.map(({ workspace }) => {
                     const isSelected = selectedOrgs.includes(workspace.id)
                     return (
@@ -614,42 +649,41 @@ export default function ProjectDetailPage() {
                         key={workspace.id}
                         onClick={() => {
                           if (isSelected) {
-                            // Deselect this org
                             const newOrgs = selectedOrgs.filter(id => id !== workspace.id)
                             setSelectedOrgs(newOrgs)
-                            // If no orgs selected, switch to private
                             if (newOrgs.length === 0) {
                               setVisibility('private')
                             }
                           } else {
-                            // Select this org and switch to public
                             setVisibility('public')
                             setSelectedOrgs([...selectedOrgs, workspace.id])
                           }
                         }}
-                        className={`w-full flex items-center gap-3 p-4 rounded-glass transition-colors ${
+                      className={`glass-container p-4 flex items-center justify-between transition-colors flex-1 ${
                           isSelected 
-                            ? 'bg-cosmic-orange/20 border border-cosmic-orange/30' 
-                            : 'bg-white/5 hover:bg-white/10 border border-transparent'
+                          ? 'bg-cosmic-orange/20 border-cosmic-orange/30' 
+                          : 'hover:bg-white/10'
                         }`}
                       >
-                        <svg className={`w-5 h-5 ${isSelected ? 'text-cosmic-orange' : 'text-medium-gray'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
                         <span className={`text-body-md font-medium ${isSelected ? 'text-cosmic-orange' : 'text-secondary-white'}`}>
                           {workspace.name}
                         </span>
                         {isSelected && (
-                          <svg className="w-5 h-5 text-cosmic-orange ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5 text-cosmic-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
                         )}
                       </button>
                     )
                   })}
-                </>
-              )}
             </div>
+            ) : (
+              <div className="glass-container p-6 flex flex-col items-center justify-center text-center min-h-[200px]">
+                <p className="text-body-md text-medium-gray">
+                  Join an organization to share projects
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Save Button */}
@@ -666,7 +700,7 @@ export default function ProjectDetailPage() {
       {/* Trash Tab */}
       {activeTab === 'trash' && (
         <div>
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {trashedInputs.map((input) => {
               const isFromRecording = input.metadata?.source === 'recording'
               
@@ -675,37 +709,42 @@ export default function ProjectDetailPage() {
                   key={input.id}
                   className="glass-container p-6 opacity-60"
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
+                  {/* Title */}
+                  <h3 className="text-heading-md text-secondary-white font-medium mb-4 truncate">
+                    {input.file_name || (isFromRecording ? 'Recording' : 'Text Input')}
+                  </h3>
+                  
+                  {/* Details */}
+                  <div className="space-y-2">
+                    {/* Type */}
+                    <div className="text-caption text-medium-gray uppercase tracking-wider">
                       {isFromRecording ? (
-                        <svg className="w-6 h-6 text-medium-gray" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                        </svg>
-                      ) : (
-                        <svg className="w-6 h-6 text-medium-gray" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      )}
-                      <div>
-                        <p className="text-body-md text-secondary-white font-medium">
-                          {input.file_name || (isFromRecording ? 'Recording' : 'Text Input')}
-                        </p>
-                        <p className="text-caption text-medium-gray">
-                          Deleted {formatDateWithTime(input.deleted_at || input.created_at)}
-                        </p>
+                        <>
+                          RECORDING
+                          {input.metadata?.recording_duration && (
+                            <>
+                              <span> • </span>
+                              <span className="text-cosmic-orange">{formatDuration(input.metadata.recording_duration)}</span>
+                            </>
+                          )}
+                        </>
+                      ) : 'TEXT'}
                       </div>
+                    
+                    {/* Deleted Date */}
+                    <div className="text-caption text-medium-gray uppercase tracking-wider">
+                      DELETED {new Date(input.deleted_at || input.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
                     </div>
+                  </div>
+                  
+                  {/* Restore Button - Only for editors and above */}
+                  {canEdit && (
                     <button
                       onClick={() => handleRestoreInput(input.id)}
-                      className="btn-secondary px-4 py-2 text-body-sm"
+                      className="btn-secondary w-full mt-4 py-2 text-body-sm"
                     >
                       Restore
                     </button>
-                  </div>
-                  {input.content && (
-                    <p className="text-body-sm text-medium-gray">
-                      {truncateText(input.content, 200)}
-                    </p>
                   )}
                 </div>
               )
@@ -716,7 +755,14 @@ export default function ProjectDetailPage() {
 
       {/* Modals */}
       {selectedInput && (
-        <InputDetailModal input={selectedInput} onClose={() => setSelectedInput(null)} />
+        <InputDetailModal 
+          input={selectedInput} 
+          onClose={() => setSelectedInput(null)}
+          onSave={handleSaveInput}
+          onDelete={handleDeleteInputFromModal}
+          canEdit={canEdit}
+          canDelete={canDelete}
+        />
       )}
       {selectedOutput && (
         <OutputDetailModal
@@ -810,61 +856,6 @@ export default function ProjectDetailPage() {
         </div>
       )}
 
-      {/* Edit Input Modal */}
-      {editingInput && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="glass-container p-8 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
-            <div className="flex items-start justify-between mb-6">
-              <div>
-                <h2 className="text-heading-lg text-secondary-white">Edit Input</h2>
-                <p className="text-body-sm text-medium-gray mt-1">
-                  Modify the input content
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setEditingInput(null)
-                  setEditInputContent('')
-                }}
-                className="text-medium-gray hover:text-secondary-white transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="flex-1 mb-6">
-              <label className="block text-body-sm text-secondary-white mb-2">
-                Content
-              </label>
-              <textarea
-                value={editInputContent}
-                onChange={(e) => setEditInputContent(e.target.value)}
-                className="w-full h-64 px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md focus:outline-none focus:border-cosmic-orange transition-colors resize-none"
-              />
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setEditingInput(null)
-                  setEditInputContent('')
-                }}
-                className="btn-secondary flex-1 py-3"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveInputEdit}
-                className="btn-primary flex-1 py-3"
-              >
-                Save Changes
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

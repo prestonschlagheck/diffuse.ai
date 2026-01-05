@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'member'
+export type UserRole = 'owner' | 'admin' | 'editor' | 'viewer'
 
 export type ProjectStatus = 'active' | 'archived' | 'draft'
 

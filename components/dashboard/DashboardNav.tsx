@@ -6,6 +6,17 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 
+// All plans ranked by cost (highest first)
+const planRankings: Record<string, { name: string; rank: number }> = {
+  // Enterprise plans (highest)
+  enterprise_pro_max: { name: 'Enterprise Pro Max', rank: 100 },
+  enterprise_pro: { name: 'Enterprise Pro', rank: 90 },
+  // Individual plans
+  pro_max: { name: 'Pro Max', rank: 30 },
+  pro: { name: 'Pro', rank: 20 },
+  free: { name: 'Free', rank: 0 },
+}
+
 const subscriptionNames: Record<string, string> = {
   free: 'Free',
   pro: 'Pro',
@@ -43,10 +54,11 @@ export async function addRecentProject(project: { id: string; name: string }) {
 export default function DashboardNav() {
   const pathname = usePathname()
   const router = useRouter()
-  const { user, userProfile, signOut } = useAuth()
+  const { user, userProfile, signOut, workspaces } = useAuth()
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([])
   const [recentExpanded, setRecentExpanded] = useState(true)
+  const [highestPlan, setHighestPlan] = useState<{ name: string; rank: number }>({ name: 'Free', rank: 0 })
   const supabase = createClient()
 
   // Load recent projects from database
@@ -75,6 +87,31 @@ export default function DashboardNav() {
     }
   }, [user, supabase])
 
+  // Compute the highest plan across individual subscription and org memberships
+  useEffect(() => {
+    const computeHighestPlan = () => {
+      // Start with user's individual plan
+      const individualTier = userProfile?.subscription_tier || 'free'
+      let highest = planRankings[individualTier] || { name: 'Free', rank: 0 }
+      
+      // Check organization plans
+      if (workspaces && workspaces.length > 0) {
+        for (const { workspace } of workspaces) {
+          if (workspace.plan && planRankings[workspace.plan]) {
+            const orgPlan = planRankings[workspace.plan]
+            if (orgPlan.rank > highest.rank) {
+              highest = orgPlan
+            }
+          }
+        }
+      }
+      
+      setHighestPlan(highest)
+    }
+    
+    computeHighestPlan()
+  }, [userProfile, workspaces])
+
   useEffect(() => {
     loadRecentProjects()
     
@@ -85,8 +122,6 @@ export default function DashboardNav() {
 
   // Get display name - use full_name if available, otherwise email prefix
   const displayName = userProfile?.full_name || user?.email?.split('@')[0] || 'User'
-  const subscriptionTier = userProfile?.subscription_tier || 'free'
-  const subscriptionLabel = subscriptionNames[subscriptionTier] || 'Free'
 
   const navItems = [
     { 
@@ -226,7 +261,7 @@ export default function DashboardNav() {
           >
             <div className="truncate">
               <div className="font-medium truncate">{displayName}</div>
-              <div className="text-caption text-cosmic-orange">{subscriptionLabel}</div>
+              <div className="text-caption text-cosmic-orange">{highestPlan.name}</div>
             </div>
           </button>
 
