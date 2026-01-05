@@ -217,20 +217,21 @@ export default function DashboardNav() {
       <div className="flex-1" />
 
       {/* Bottom Section */}
-      <div className="p-4 relative">
+      <div className="p-4">
         {/* User Menu Button */}
-        <button
-          onClick={() => setShowUserMenu(!showUserMenu)}
-          className="w-full px-4 py-3 bg-white/5 rounded-glass text-left text-body-sm text-secondary-white hover:bg-white/10 transition-colors"
-        >
-          <div className="truncate">
-            <div className="font-medium truncate">{displayName}</div>
-            <div className="text-caption text-cosmic-orange">{subscriptionLabel}</div>
-          </div>
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setShowUserMenu(!showUserMenu)}
+            className="w-full px-4 py-3 bg-white/5 rounded-glass text-left text-body-sm text-secondary-white hover:bg-white/10 transition-colors"
+          >
+            <div className="truncate">
+              <div className="font-medium truncate">{displayName}</div>
+              <div className="text-caption text-cosmic-orange">{subscriptionLabel}</div>
+            </div>
+          </button>
 
-        {showUserMenu && (
-          <div className="absolute bottom-full left-4 right-4 mb-1 bg-dark-gray border border-white/10 rounded-glass z-50 overflow-hidden">
+          {showUserMenu && (
+            <div className="absolute bottom-full left-0 right-0 mb-1 bg-dark-gray border border-white/10 rounded-glass z-50 overflow-hidden">
             <Link
               href="/dashboard/settings"
               onClick={() => setShowUserMenu(false)}
@@ -263,6 +264,7 @@ export default function DashboardNav() {
             </button>
           </div>
         )}
+        </div>
       </div>
     </nav>
   )
