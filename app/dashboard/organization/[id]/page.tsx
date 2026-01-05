@@ -177,6 +177,31 @@ export default function OrganizationDetailPage() {
     }
   }
 
+  const handleLeaveOrganization = async () => {
+    if (!user || !workspace) return
+    
+    const confirmLeave = window.confirm(
+      `Are you sure you want to leave "${workspace.name}"? You'll lose access to all shared projects.`
+    )
+    
+    if (!confirmLeave) return
+    
+    try {
+      const { error } = await supabase
+        .from('diffuse_workspace_members')
+        .delete()
+        .eq('workspace_id', workspace.id)
+        .eq('user_id', user.id)
+
+      if (error) throw error
+      
+      router.push('/dashboard/organization')
+    } catch (error) {
+      console.error('Error leaving organization:', error)
+      alert('Failed to leave organization')
+    }
+  }
+
   const handleEditOrg = () => {
     if (workspace) {
       setEditOrgName(workspace.name)
@@ -498,6 +523,24 @@ export default function OrganizationDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Leave Organization */}
+      <div className="glass-container p-6 mt-8 border border-red-500/20">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-body-md text-secondary-white mb-1">Leave Organization</h3>
+            <p className="text-body-sm text-medium-gray">
+              Remove yourself from this organization. You&apos;ll lose access to shared projects.
+            </p>
+          </div>
+          <button
+            onClick={handleLeaveOrganization}
+            className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-glass border border-red-500/30 transition-colors text-body-sm font-medium"
+          >
+            Leave Organization
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
