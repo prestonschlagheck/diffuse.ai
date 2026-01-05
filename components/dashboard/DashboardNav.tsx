@@ -186,8 +186,9 @@ export default function DashboardNav() {
         <div className="px-4 mt-4">
           <button
             onClick={() => setRecentExpanded(!recentExpanded)}
-            className="flex items-center gap-2 text-caption text-medium-gray uppercase tracking-wider mb-1 px-4 hover:text-secondary-white transition-colors"
+            className="flex items-center justify-between w-full text-caption text-medium-gray uppercase tracking-wider mb-1 px-4 hover:text-secondary-white transition-colors"
           >
+            <span>Recent</span>
             <svg 
               className={`w-2.5 h-2.5 transition-transform duration-200 ${recentExpanded ? 'rotate-90' : ''}`} 
               fill="none" 
@@ -197,31 +198,37 @@ export default function DashboardNav() {
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
-            <span>Recent</span>
           </button>
-          {recentExpanded && (
-            <div className="space-y-1">
-              {recentProjects.map((project) => {
-                const isActive = pathname === `/dashboard/projects/${project.id}`
-                return (
-                  <Link
-                    key={project.id}
-                    href={`/dashboard/projects/${project.id}`}
-                    className={`flex items-center gap-3 px-4 py-2 rounded-glass text-body-sm transition-colors ${
-                      isActive
-                        ? 'bg-cosmic-orange/20 text-cosmic-orange'
-                        : 'text-secondary-white hover:bg-white/10'
-                    }`}
-                  >
-                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span className="truncate">{project.name}</span>
-                  </Link>
-                )
-              })}
-            </div>
-          )}
+          <div 
+            className={`space-y-1 overflow-hidden transition-all duration-300 ease-out ${
+              recentExpanded ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'
+            }`}
+          >
+            {recentProjects.map((project, index) => {
+              const isActive = pathname === `/dashboard/projects/${project.id}`
+              return (
+                <Link
+                  key={project.id}
+                  href={`/dashboard/projects/${project.id}`}
+                  className={`flex items-center gap-3 px-4 py-2 rounded-glass text-body-sm transition-all ${
+                    isActive
+                      ? 'bg-cosmic-orange/20 text-cosmic-orange'
+                      : 'text-secondary-white hover:bg-white/10'
+                  }`}
+                  style={{
+                    transitionDelay: recentExpanded ? `${index * 50}ms` : '0ms',
+                    transform: recentExpanded ? 'translateY(0)' : 'translateY(-8px)',
+                    opacity: recentExpanded ? 1 : 0,
+                  }}
+                >
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span className="truncate">{project.name}</span>
+                </Link>
+              )
+            })}
+          </div>
         </div>
       )}
 
