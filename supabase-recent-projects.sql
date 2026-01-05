@@ -36,7 +36,7 @@ CREATE POLICY "Users can delete their own recent projects"
   FOR DELETE
   USING (auth.uid() = user_id);
 
--- Function to upsert a recent project and keep only the 3 most recent
+-- Function to upsert a recent project and keep only the 10 most recent
 CREATE OR REPLACE FUNCTION upsert_recent_project(
   p_user_id UUID,
   p_project_id UUID,
@@ -51,14 +51,14 @@ BEGIN
     project_name = EXCLUDED.project_name,
     viewed_at = NOW();
   
-  -- Delete old entries, keeping only the 3 most recent
+  -- Delete old entries, keeping only the 10 most recent
   DELETE FROM user_recent_projects
   WHERE user_id = p_user_id
     AND id NOT IN (
       SELECT id FROM user_recent_projects
       WHERE user_id = p_user_id
       ORDER BY viewed_at DESC
-      LIMIT 3
+      LIMIT 10
     );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

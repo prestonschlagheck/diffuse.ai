@@ -59,7 +59,7 @@ export default function DashboardNav() {
         .select('project_id, project_name, viewed_at')
         .eq('user_id', user.id)
         .order('viewed_at', { ascending: false })
-        .limit(3)
+        .limit(10)
       
       if (error) throw error
       
@@ -90,7 +90,7 @@ export default function DashboardNav() {
 
   const navItems = [
     { 
-      name: 'Organization', 
+      name: 'Organizations', 
       href: '/dashboard/organization', 
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -182,7 +182,7 @@ export default function DashboardNav() {
           </button>
           <div 
             className={`space-y-1 overflow-hidden transition-all duration-300 ease-out ${
-              recentExpanded ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'
+              recentExpanded ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'
             }`}
           >
             {recentProjects.map((project, index) => {
