@@ -195,7 +195,7 @@ export default function DashboardNav() {
                 className={`flex items-center gap-3 px-4 py-2 rounded-glass text-body-sm transition-colors ${
                   isActive
                     ? 'bg-cosmic-orange/20 text-cosmic-orange'
-                    : 'text-medium-gray hover:bg-white/10 hover:text-secondary-white'
+                    : 'text-secondary-white hover:bg-white/10'
                 }`}
               >
                 <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
