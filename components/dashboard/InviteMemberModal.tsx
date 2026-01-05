@@ -12,7 +12,7 @@ interface InviteMemberModalProps {
 
 export default function InviteMemberModal({ workspaceId, onClose, onSuccess }: InviteMemberModalProps) {
   const [email, setEmail] = useState('')
-  const [role, setRole] = useState<UserRole>('member')
+  const [role, setRole] = useState<UserRole>('viewer')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const supabase = createClient()
@@ -83,12 +83,22 @@ export default function InviteMemberModal({ workspaceId, onClose, onSuccess }: I
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
-                  value="member"
-                  checked={role === 'member'}
+                  value="viewer"
+                  checked={role === 'viewer'}
                   onChange={(e) => setRole(e.target.value as UserRole)}
                   className="accent-cosmic-orange"
                 />
-                <span className="text-body-sm text-secondary-white">Member</span>
+                <span className="text-body-sm text-secondary-white">Viewer</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  value="editor"
+                  checked={role === 'editor'}
+                  onChange={(e) => setRole(e.target.value as UserRole)}
+                  className="accent-cosmic-orange"
+                />
+                <span className="text-body-sm text-secondary-white">Editor</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -102,7 +112,7 @@ export default function InviteMemberModal({ workspaceId, onClose, onSuccess }: I
               </label>
             </div>
             <p className="mt-2 text-caption text-medium-gray">
-              Admins can manage projects and invite members
+              Viewers can only view. Editors can add/edit content. Admins can manage members.
             </p>
           </div>
 
