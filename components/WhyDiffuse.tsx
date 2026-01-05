@@ -74,8 +74,10 @@ export default function WhyDiffuse() {
                     'Manually upload to your CMS',
                     'Hours of work per article',
                   ].map((item, i) => (
-                    <li key={i} className="flex items-start gap-3 text-medium-gray text-sm md:text-base">
-                      <span className="text-red-400 mt-1">✗</span>
+                    <li key={i} className="flex items-center gap-3 text-medium-gray text-sm md:text-base">
+                      <svg className="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
                       {item}
                     </li>
                   ))}
@@ -100,8 +102,10 @@ export default function WhyDiffuse() {
                     'One-click publish to your site',
                     'Minutes, not hours',
                   ].map((item, i) => (
-                    <li key={i} className="flex items-start gap-3 text-secondary-white text-sm md:text-base">
-                      <span className="text-cosmic-orange mt-1">✓</span>
+                    <li key={i} className="flex items-center gap-3 text-secondary-white text-sm md:text-base">
+                      <svg className="w-5 h-5 text-cosmic-orange flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
                       {item}
                     </li>
                   ))}
