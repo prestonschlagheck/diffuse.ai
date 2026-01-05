@@ -69,6 +69,7 @@ export interface DiffuseProjectOutput {
   workflow_metadata?: Record<string, any>
   created_at: string
   updated_at: string
+  deleted_at?: string | null
 }
 
 export interface DiffuseRecording {

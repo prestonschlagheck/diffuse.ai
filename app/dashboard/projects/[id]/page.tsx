@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { formatDuration } from '@/lib/utils/format'
 import { useAuth } from '@/contexts/AuthContext'
@@ -20,14 +20,22 @@ const getRoleLevel = (role: string) => roleHierarchy.indexOf(role as typeof role
 export default function ProjectDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, workspaces } = useAuth()
   const projectId = params.id as string
+
+  // Get initial tab from URL query parameter
+  const tabParam = searchParams.get('tab')
+  const initialTab = (tabParam === 'inputs' || tabParam === 'outputs' || tabParam === 'visibility' || tabParam === 'trash') 
+    ? tabParam 
+    : 'inputs'
 
   const [project, setProject] = useState<DiffuseProject | null>(null)
   const [inputs, setInputs] = useState<DiffuseProjectInput[]>([])
   const [trashedInputs, setTrashedInputs] = useState<DiffuseProjectInput[]>([])
   const [outputs, setOutputs] = useState<DiffuseProjectOutput[]>([])
-  const [activeTab, setActiveTab] = useState<'inputs' | 'outputs' | 'visibility' | 'trash'>('inputs')
+  const [trashedOutputs, setTrashedOutputs] = useState<DiffuseProjectOutput[]>([])
+  const [activeTab, setActiveTab] = useState<'inputs' | 'outputs' | 'visibility' | 'trash'>(initialTab)
   const [loading, setLoading] = useState(true)
   const [selectedInput, setSelectedInput] = useState<DiffuseProjectInput | null>(null)
   const [selectedOutput, setSelectedOutput] = useState<DiffuseProjectOutput | null>(null)
@@ -43,12 +51,40 @@ export default function ProjectDetailPage() {
   const [selectedOrgs, setSelectedOrgs] = useState<string[]>([])
   const [savingVisibility, setSavingVisibility] = useState(false)
   const [userProjectRole, setUserProjectRole] = useState<string>('viewer')
+  const [generatingArticle, setGeneratingArticle] = useState(false)
   const supabase = createClient()
 
   // Permission helpers
   const isProjectOwner = project?.created_by === user?.id
   const canEdit = isProjectOwner || getRoleLevel(userProjectRole) >= getRoleLevel('editor')
   const canDelete = isProjectOwner || getRoleLevel(userProjectRole) >= getRoleLevel('admin')
+
+  // Helper to extract article info from output content
+  const getOutputInfo = (output: DiffuseProjectOutput) => {
+    try {
+      const parsed = JSON.parse(output.content)
+      return {
+        title: parsed.title || 'Workflow Output',
+        subtitle: parsed.subtitle || null,
+        author: parsed.author || 'Diffuse.AI',
+        excerpt: parsed.excerpt || null,
+      }
+    } catch {
+      return {
+        title: 'Workflow Output',
+        subtitle: null,
+        author: 'Diffuse.AI',
+        excerpt: null,
+      }
+    }
+  }
+
+  // Helper to truncate text
+  const truncateText = (text: string | null, maxLength: number): string => {
+    if (!text) return ''
+    if (text.length <= maxLength) return text
+    return text.substring(0, maxLength) + '...'
+  }
 
   const fetchProjectData = useCallback(async () => {
     setLoading(true)
@@ -129,15 +165,28 @@ export default function ProjectDetailPage() {
         setTrashedInputs(trashedData || [])
       }
 
-      // Fetch outputs
+      // Fetch active outputs (not deleted)
       const { data: outputsData, error: outputsError } = await supabase
         .from('diffuse_project_outputs')
         .select('*')
         .eq('project_id', projectId)
+        .is('deleted_at', null)
         .order('created_at', { ascending: false })
 
       if (outputsError) throw outputsError
       setOutputs(outputsData || [])
+
+      // Fetch trashed outputs
+      const { data: trashedOutputsData, error: trashedOutputsError } = await supabase
+        .from('diffuse_project_outputs')
+        .select('*')
+        .eq('project_id', projectId)
+        .not('deleted_at', 'is', null)
+        .order('deleted_at', { ascending: false })
+
+      if (!trashedOutputsError) {
+        setTrashedOutputs(trashedOutputsData || [])
+      }
     } catch (error) {
       console.error('Error fetching project data:', error)
     } finally {
@@ -148,6 +197,14 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     fetchProjectData()
   }, [fetchProjectData])
+
+  // Sync active tab with URL parameter changes
+  useEffect(() => {
+    const tabParam = searchParams.get('tab')
+    if (tabParam === 'inputs' || tabParam === 'outputs' || tabParam === 'visibility' || tabParam === 'trash') {
+      setActiveTab(tabParam)
+    }
+  }, [searchParams])
 
   // Track recent project view
   useEffect(() => {
@@ -260,6 +317,37 @@ export default function ProjectDetailPage() {
     }
   }
 
+  const handleDeleteOutput = async (outputId: string) => {
+    try {
+      const { error } = await supabase
+        .from('diffuse_project_outputs')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', outputId)
+
+      if (error) throw error
+      fetchProjectData()
+    } catch (error) {
+      console.error('Error deleting output:', error)
+      alert('Failed to delete output')
+      throw error
+    }
+  }
+
+  const handleRestoreOutput = async (outputId: string) => {
+    try {
+      const { error } = await supabase
+        .from('diffuse_project_outputs')
+        .update({ deleted_at: null })
+        .eq('id', outputId)
+
+      if (error) throw error
+      fetchProjectData()
+    } catch (error) {
+      console.error('Error restoring output:', error)
+      alert('Failed to restore output')
+    }
+  }
+
   const handleEditProject = () => {
     if (project) {
       setEditProjectName(project.name)
@@ -316,6 +404,40 @@ export default function ProjectDetailPage() {
         ? prev.filter(id => id !== orgId)
         : [...prev, orgId]
     )
+  }
+
+  const handleGenerateArticle = async () => {
+    if (inputs.length === 0) {
+      alert('Please add at least one input before generating an article')
+      return
+    }
+
+    setGeneratingArticle(true)
+    try {
+      const response = await fetch('/api/workflow', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ project_id: projectId }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to generate article')
+      }
+
+      // Refresh data to show new output
+      fetchProjectData()
+      // Switch to outputs tab to show the result
+      setActiveTab('outputs')
+    } catch (error) {
+      console.error('Error generating article:', error)
+      alert(error instanceof Error ? error.message : 'Failed to generate article')
+    } finally {
+      setGeneratingArticle(false)
+    }
   }
 
   if (loading) {
@@ -448,7 +570,7 @@ export default function ProjectDetailPage() {
           )}
         </button>
         )}
-        {trashedInputs.length > 0 && (
+        {(trashedInputs.length > 0 || trashedOutputs.length > 0) && (
           <button
             onClick={() => setActiveTab('trash')}
             className={`pb-3 px-4 text-body-md font-medium transition-colors relative ${
@@ -457,7 +579,7 @@ export default function ProjectDetailPage() {
                 : 'text-secondary-white hover:text-white'
             }`}
           >
-            Trash ({trashedInputs.length})
+            Trash ({trashedInputs.length + trashedOutputs.length})
             {activeTab === 'trash' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-cosmic-orange" />
             )}
@@ -519,9 +641,16 @@ export default function ProjectDetailPage() {
                     className="glass-container p-6 hover:bg-white/10 transition-colors cursor-pointer"
                   >
                     {/* Title */}
-                    <h3 className="text-heading-md text-secondary-white font-medium mb-4 truncate">
+                    <h3 className="text-heading-md text-secondary-white font-medium mb-2 truncate">
                       {input.file_name || (isFromRecording ? 'Recording' : 'Text Input')}
                     </h3>
+                    
+                    {/* Content Preview */}
+                    {input.content && (
+                      <p className="text-body-sm text-secondary-white/70 mb-3 line-clamp-2">
+                        {input.content}
+                      </p>
+                    )}
                     
                     {/* Details */}
                     <div className="space-y-2">
@@ -556,6 +685,47 @@ export default function ProjectDetailPage() {
       {/* Outputs Tab */}
       {activeTab === 'outputs' && (
         <div>
+          {/* Generate Button - Same position as Inputs buttons */}
+          {canEdit && inputs.length > 0 && (
+            <div className="flex justify-end gap-3 mb-4">
+              <button
+                onClick={handleGenerateArticle}
+                disabled={generatingArticle || outputs.length > 0}
+                className={`px-4 py-2 flex items-center gap-2 text-body-sm rounded-glass transition-colors ${
+                  outputs.length > 0
+                    ? 'bg-white/5 border border-white/10 text-medium-gray cursor-not-allowed'
+                    : generatingArticle
+                    ? 'btn-primary opacity-50 cursor-not-allowed'
+                    : 'btn-primary'
+                }`}
+              >
+                {generatingArticle ? (
+                  <>
+                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Generating
+                  </>
+                ) : outputs.length > 0 ? (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Generated with diffuse.ai
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Generate with diffuse.ai
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
           {outputs.length === 0 ? (
             <EmptyState
               icon={
@@ -569,40 +739,48 @@ export default function ProjectDetailPage() {
                 </svg>
               }
               title="No Outputs Yet"
-              description="Outputs will appear here when the workflow processes your inputs and returns results."
+              description="Click 'Generate with diffuse.ai' above to create an article from your inputs."
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {outputs.map((output) => (
-                <div
-                  key={output.id}
-                  onClick={() => setSelectedOutput(output)}
-                  className="glass-container p-6 hover:bg-white/10 transition-colors cursor-pointer"
-                >
-                  {/* Title */}
-                  <h3 className="text-heading-md text-secondary-white font-medium mb-4 truncate">
-                        Workflow Output
-                  </h3>
-                  
-                  {/* Details */}
-                  <div className="space-y-2">
-                    {/* Status */}
-                    <div className={`text-caption uppercase tracking-wider ${
-                      output.workflow_status === 'completed' ? 'text-green-400' :
-                      output.workflow_status === 'processing' ? 'text-cosmic-orange' :
-                      output.workflow_status === 'failed' ? 'text-red-400' :
-                      'text-pale-blue'
-                    }`}>
-                      {output.workflow_status.toUpperCase()}
+              {outputs.map((output) => {
+                const info = getOutputInfo(output)
+                return (
+                  <div
+                    key={output.id}
+                    onClick={() => setSelectedOutput(output)}
+                    className="glass-container p-6 hover:bg-white/10 transition-colors cursor-pointer"
+                  >
+                    {/* Title */}
+                    <h3 className="text-heading-md text-secondary-white font-medium mb-3">
+                      {info.title}
+                    </h3>
+                    
+                    {/* Subtitle */}
+                    {info.subtitle && (
+                      <p className="text-caption text-purple-400 uppercase tracking-wider mb-2">
+                        {info.subtitle.toUpperCase()}
+                      </p>
+                    )}
+                    
+                    {/* Author & Date */}
+                    <div className="text-caption uppercase tracking-wider mb-2">
+                      <span className="text-cosmic-orange">{info.author}</span>
+                      <span className="text-medium-gray"> • </span>
+                      <span className="text-medium-gray">
+                        {new Date(output.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
+                      </span>
                     </div>
                     
-                    {/* Date */}
-                    <div className="text-caption text-medium-gray uppercase tracking-wider">
-                      {new Date(output.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
+                    {/* Excerpt */}
+                    {info.excerpt && (
+                      <p className="text-caption text-medium-gray uppercase tracking-wider line-clamp-2">
+                        {info.excerpt.toUpperCase()}
+                      </p>
+                    )}
                   </div>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
@@ -699,57 +877,138 @@ export default function ProjectDetailPage() {
 
       {/* Trash Tab */}
       {activeTab === 'trash' && (
-        <div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {trashedInputs.map((input) => {
-              const isFromRecording = input.metadata?.source === 'recording'
-              
-              return (
-                <div
-                  key={input.id}
-                  className="glass-container p-6 opacity-60"
-                >
-                  {/* Title */}
-                  <h3 className="text-heading-md text-secondary-white font-medium mb-4 truncate">
-                    {input.file_name || (isFromRecording ? 'Recording' : 'Text Input')}
-                  </h3>
+        <div className="space-y-8">
+          {/* Trashed Inputs */}
+          {trashedInputs.length > 0 && (
+            <div>
+              <h3 className="text-body-md text-medium-gray uppercase tracking-wider mb-4">
+                Trashed Inputs ({trashedInputs.length})
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {trashedInputs.map((input) => {
+                  const isFromRecording = input.metadata?.source === 'recording'
                   
-                  {/* Details */}
-                  <div className="space-y-2">
-                    {/* Type */}
-                    <div className="text-caption text-medium-gray uppercase tracking-wider">
-                      {isFromRecording ? (
-                        <>
-                          RECORDING
-                          {input.metadata?.recording_duration && (
-                            <>
-                              <span> • </span>
-                              <span className="text-cosmic-orange">{formatDuration(input.metadata.recording_duration)}</span>
-                            </>
-                          )}
-                        </>
-                      ) : 'TEXT'}
-                      </div>
-                    
-                    {/* Deleted Date */}
-                    <div className="text-caption text-medium-gray uppercase tracking-wider">
-                      DELETED {new Date(input.deleted_at || input.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
-                    </div>
-                  </div>
-                  
-                  {/* Restore Button - Only for editors and above */}
-                  {canEdit && (
-                    <button
-                      onClick={() => handleRestoreInput(input.id)}
-                      className="btn-secondary w-full mt-4 py-2 text-body-sm"
+                  return (
+                    <div
+                      key={input.id}
+                      className="glass-container p-6 opacity-60"
                     >
-                      Restore
-                    </button>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+                      {/* Title */}
+                      <h3 className="text-heading-md text-secondary-white font-medium mb-2 truncate">
+                        {input.file_name || (isFromRecording ? 'Recording' : 'Text Input')}
+                      </h3>
+                      
+                      {/* Content Preview */}
+                      {input.content && (
+                        <p className="text-body-sm text-secondary-white/70 mb-3 line-clamp-2">
+                          {input.content}
+                        </p>
+                      )}
+                      
+                      {/* Details */}
+                      <div className="space-y-2">
+                        {/* Type */}
+                        <div className="text-caption text-purple-400 uppercase tracking-wider">
+                          {isFromRecording ? (
+                            <>
+                              RECORDING
+                              {input.metadata?.recording_duration && (
+                                <>
+                                  <span className="text-medium-gray"> • </span>
+                                  <span className="text-cosmic-orange">{formatDuration(input.metadata.recording_duration)}</span>
+                                </>
+                              )}
+                            </>
+                          ) : 'TEXT'}
+                        </div>
+                        
+                        {/* Deleted Date */}
+                        <div className="text-caption text-medium-gray uppercase tracking-wider">
+                          DELETED {new Date(input.deleted_at || input.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
+                        </div>
+                      </div>
+                      
+                      {/* Restore Button - Only for editors and above */}
+                      {canEdit && (
+                        <button
+                          onClick={() => handleRestoreInput(input.id)}
+                          className="btn-secondary w-full mt-4 py-2 text-body-sm"
+                        >
+                          Restore
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Trashed Outputs */}
+          {trashedOutputs.length > 0 && (
+            <div>
+              <h3 className="text-body-md text-medium-gray uppercase tracking-wider mb-4">
+                Trashed Outputs ({trashedOutputs.length})
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {trashedOutputs.map((output) => {
+                  const info = getOutputInfo(output)
+                  return (
+                    <div
+                      key={output.id}
+                      className="glass-container p-6 opacity-60"
+                    >
+                      {/* Title */}
+                      <h3 className="text-heading-md text-secondary-white font-medium mb-3">
+                        {info.title}
+                      </h3>
+                      
+                      {/* Subtitle */}
+                      {info.subtitle && (
+                        <p className="text-caption text-purple-400 uppercase tracking-wider mb-2">
+                          {info.subtitle.toUpperCase()}
+                        </p>
+                      )}
+                      
+                      {/* Author & Deleted Date */}
+                      <div className="text-caption uppercase tracking-wider mb-2">
+                        <span className="text-cosmic-orange">{info.author}</span>
+                        <span className="text-medium-gray"> • </span>
+                        <span className="text-medium-gray">
+                          DELETED {new Date(output.deleted_at || output.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
+                        </span>
+                      </div>
+                      
+                      {/* Excerpt */}
+                      {info.excerpt && (
+                        <p className="text-caption text-medium-gray uppercase tracking-wider line-clamp-2">
+                          {info.excerpt.toUpperCase()}
+                        </p>
+                      )}
+                      
+                      {/* Restore Button - Only for editors and above */}
+                      {canEdit && (
+                        <button
+                          onClick={() => handleRestoreOutput(output.id)}
+                          className="btn-secondary w-full mt-4 py-2 text-body-sm"
+                        >
+                          Restore
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Empty state if both are empty (shouldn't happen but just in case) */}
+          {trashedInputs.length === 0 && trashedOutputs.length === 0 && (
+            <EmptyState
+              title="Trash is Empty"
+              description="Deleted inputs and outputs will appear here."
+            />
+          )}
         </div>
       )}
 
@@ -769,6 +1028,9 @@ export default function ProjectDetailPage() {
           output={selectedOutput}
           onClose={() => setSelectedOutput(null)}
           onUpdate={fetchProjectData}
+          onDelete={handleDeleteOutput}
+          canEdit={canEdit}
+          canDelete={canDelete}
         />
       )}
       {showRecordingModal && (

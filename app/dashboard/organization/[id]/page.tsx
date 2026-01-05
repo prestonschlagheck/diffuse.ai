@@ -504,11 +504,23 @@ export default function OrganizationDetailPage() {
               <div className="space-y-2">
                 {/* Inputs & Outputs */}
                 <div className="flex items-center gap-2">
-                  <span className="text-caption text-purple-400 uppercase tracking-wider">
+                  <span 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      router.push(`/dashboard/projects/${project.id}?tab=inputs`)
+                    }}
+                    className="text-caption text-purple-400 uppercase tracking-wider hover:text-purple-200 cursor-pointer transition-colors"
+                  >
                     {project.input_count} INPUT{project.input_count !== 1 ? 'S' : ''}
                   </span>
                   <span className="text-caption text-medium-gray">•</span>
-                  <span className="text-caption text-cosmic-orange uppercase tracking-wider">
+                  <span 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      router.push(`/dashboard/projects/${project.id}?tab=outputs`)
+                    }}
+                    className="text-caption text-cosmic-orange uppercase tracking-wider hover:text-orange-300 cursor-pointer transition-colors"
+                  >
                     {project.output_count} OUTPUT{project.output_count !== 1 ? 'S' : ''}
                   </span>
                 </div>

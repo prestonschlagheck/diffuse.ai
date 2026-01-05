@@ -11,11 +11,16 @@ import type { DiffuseProject } from '@/types/database'
 
 type SubscriptionTier = 'free' | 'pro' | 'pro_max'
 
+interface OrgInfo {
+  id: string
+  name: string
+}
+
 interface ProjectWithCounts extends DiffuseProject {
   input_count: number
   output_count: number
   creator_name?: string
-  org_names?: string[]
+  orgs?: OrgInfo[]
 }
 
 export default function DashboardPage() {
@@ -79,7 +84,7 @@ export default function DashboardPage() {
           project.visible_to_orgs && project.visible_to_orgs.length > 0
             ? supabase
                 .from('diffuse_workspaces')
-                .select('name')
+                .select('id, name')
                 .in('id', project.visible_to_orgs)
             : Promise.resolve({ data: [] }),
         ])
@@ -89,7 +94,7 @@ export default function DashboardPage() {
           input_count: inputCount || 0,
           output_count: outputCount || 0,
           creator_name: creatorResult.data?.full_name || 'Unknown',
-          org_names: orgsResult.data?.map((org: { name: string }) => org.name) || [],
+          orgs: orgsResult.data?.map((org: { id: string; name: string }) => ({ id: org.id, name: org.name })) || [],
         })
       }
       setProjects(projectsWithCounts)
@@ -210,11 +215,23 @@ export default function DashboardPage() {
               <div className="space-y-2">
                 {/* Inputs & Outputs */}
                 <div className="flex items-center gap-2">
-                  <span className="text-caption text-purple-400 uppercase tracking-wider">
+                  <span 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      router.push(`/dashboard/projects/${project.id}?tab=inputs`)
+                    }}
+                    className="text-caption text-purple-400 uppercase tracking-wider hover:text-purple-200 cursor-pointer transition-colors"
+                  >
                     {project.input_count} INPUT{project.input_count !== 1 ? 'S' : ''}
                   </span>
                   <span className="text-caption text-medium-gray">•</span>
-                  <span className="text-caption text-cosmic-orange uppercase tracking-wider">
+                  <span 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      router.push(`/dashboard/projects/${project.id}?tab=outputs`)
+                    }}
+                    className="text-caption text-cosmic-orange uppercase tracking-wider hover:text-orange-300 cursor-pointer transition-colors"
+                  >
                     {project.output_count} OUTPUT{project.output_count !== 1 ? 'S' : ''}
                   </span>
                 </div>
@@ -228,8 +245,23 @@ export default function DashboardPage() {
                 
                 {/* Access */}
                 <div className="text-caption text-medium-gray uppercase tracking-wider">
-                  {project.org_names && project.org_names.length > 0 ? (
-                    <span>{project.org_names.join(', ')}</span>
+                  {project.orgs && project.orgs.length > 0 ? (
+                    <span className="flex items-center gap-1 flex-wrap">
+                      {project.orgs.map((org, index) => (
+                        <span key={org.id} className="inline-flex items-center">
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              router.push(`/dashboard/organization/${org.id}`)
+                            }}
+                            className="text-medium-gray hover:text-gray-300 cursor-pointer transition-colors"
+                          >
+                            {org.name}
+                          </span>
+                          {index < project.orgs!.length - 1 && <span className="text-medium-gray">,&nbsp;</span>}
+                        </span>
+                      ))}
+                    </span>
                   ) : (
                     <span>PRIVATE</span>
                   )}
