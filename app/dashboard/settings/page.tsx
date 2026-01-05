@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
-import { formatDate } from '@/lib/utils/format'
 import LoadingSpinner from '@/components/dashboard/LoadingSpinner'
 
 type SubscriptionTier = 'free' | 'pro' | 'pro_max'
@@ -14,12 +14,34 @@ interface UserProfile {
   subscription_tier: SubscriptionTier
 }
 
+// Role badge colors matching the organization page
+const getRoleBadgeClass = (role: string) => {
+  switch (role) {
+    case 'owner':
+      return 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+    case 'admin':
+      return 'bg-cosmic-orange/20 text-cosmic-orange border-cosmic-orange/30'
+    case 'editor':
+      return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+    default: // viewer
+      return 'bg-medium-gray/20 text-medium-gray border-medium-gray/30'
+  }
+}
+
+const roleLabels: Record<string, string> = {
+  owner: 'Owner',
+  admin: 'Admin',
+  editor: 'Editor',
+  viewer: 'Viewer',
+}
+
 export default function SettingsPage() {
+  const router = useRouter()
   const { user, workspaces } = useAuth()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [fullName, setFullName] = useState('')
   const [saving, setSaving] = useState(false)
+  const [leavingOrg, setLeavingOrg] = useState<string | null>(null)
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
   const supabase = createClient()
 
@@ -49,7 +71,6 @@ export default function SettingsPage() {
 
       if (data) {
         setProfile(data)
-        setFullName(data.full_name || '')
       } else {
         // Create default profile
         const newProfile = {
@@ -86,30 +107,32 @@ export default function SettingsPage() {
     fetchProfile()
   }, [fetchProfile])
 
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleLeaveOrganization = async (workspaceId: string, workspaceName: string) => {
     if (!user) return
 
-    setSaving(true)
-    setMessage(null)
+    const confirmLeave = window.confirm(
+      `Are you sure you want to leave "${workspaceName}"? You will lose access to all shared projects.`
+    )
+    
+    if (!confirmLeave) return
 
+    setLeavingOrg(workspaceId)
     try {
       const { error } = await supabase
-        .from('user_profiles')
-        .update({ full_name: fullName })
-        .eq('id', user.id)
+        .from('diffuse_workspace_members')
+        .delete()
+        .eq('workspace_id', workspaceId)
+        .eq('user_id', user.id)
 
       if (error) throw error
 
-      setMessage({ type: 'success', text: 'Profile updated successfully!' })
-      fetchProfile()
+      // Reload page to refresh workspaces
+      window.location.reload()
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Failed to update profile' })
-    } finally {
-      setSaving(false)
+      setMessage({ type: 'error', text: error.message || 'Failed to leave organization' })
+      setLeavingOrg(null)
     }
   }
-
 
   const handleDeleteAccount = async () => {
     if (!user) return
@@ -171,14 +194,38 @@ export default function SettingsPage() {
         <div className="glass-container p-6 mb-6">
           <h2 className="text-heading-lg text-secondary-white mb-4">Organizations</h2>
           <div className="divide-y divide-white/10">
-            {workspaces.map(({ workspace, role }) => (
-              <div key={workspace.id} className="flex items-center justify-between py-4 first:pt-0 last:pb-0">
-                <p className="text-body-md text-secondary-white">{workspace.name}</p>
-                <span className="px-3 py-1 text-caption font-medium rounded-full border bg-cosmic-orange/20 text-cosmic-orange border-cosmic-orange/30 capitalize">
-                  {role}
-                </span>
-              </div>
-            ))}
+            {workspaces.map(({ workspace, role }) => {
+              // Check if user is owner (owners can't leave)
+              const isOwner = role === 'owner'
+              
+              return (
+                <div key={workspace.id} className="py-4 first:pt-0 last:pb-0 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <p className="text-body-md text-secondary-white font-medium">{workspace.name}</p>
+                    <span className={`px-3 py-1 text-caption font-medium rounded-full border ${getRoleBadgeClass(role)}`}>
+                      {roleLabels[role] || role}
+                    </span>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => router.push(`/dashboard/organization/${workspace.id}`)}
+                      className="px-4 py-2 text-body-sm text-secondary-white bg-white/5 border border-white/10 rounded-glass hover:bg-white/10 transition-colors"
+                    >
+                      Go to Organization
+                    </button>
+                    {!isOwner && (
+                      <button
+                        onClick={() => handleLeaveOrganization(workspace.id, workspace.name)}
+                        disabled={leavingOrg === workspace.id}
+                        className="px-4 py-2 text-body-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-glass hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                      >
+                        {leavingOrg === workspace.id ? 'Leaving...' : 'Leave Organization'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
@@ -186,33 +233,18 @@ export default function SettingsPage() {
       {/* Profile Settings */}
       <div className="glass-container p-6 mb-6">
         <h2 className="text-heading-lg text-secondary-white mb-6">Profile</h2>
-        <form onSubmit={handleSaveProfile} className="space-y-4">
+        <div className="space-y-4">
           <div>
             <label className="block text-caption text-medium-gray mb-1">Email</label>
             <p className="text-body-md text-secondary-white">{user?.email}</p>
           </div>
           <div>
-            <label className="block text-body-sm text-secondary-white mb-2">
-              Full Name
-            </label>
-            <div className="flex gap-4">
-              <input
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="John Doe"
-                className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md focus:outline-none focus:border-cosmic-orange transition-colors"
-              />
-              <button
-                type="submit"
-                disabled={saving}
-                className="btn-primary px-6 py-3 disabled:opacity-50 whitespace-nowrap"
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
+            <label className="block text-caption text-medium-gray mb-1">Full Name</label>
+            <p className="text-body-md text-secondary-white">
+              {profile?.full_name || <span className="text-medium-gray italic">Not set</span>}
+            </p>
           </div>
-        </form>
+        </div>
       </div>
 
       {/* Delete Account */}
@@ -223,7 +255,7 @@ export default function SettingsPage() {
         <button
           onClick={handleDeleteAccount}
           disabled={saving}
-          className="btn-secondary px-6 py-3 text-red-400 hover:text-red-300 disabled:opacity-50 whitespace-nowrap"
+          className="px-4 py-2 text-body-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-glass hover:bg-red-500/20 transition-colors disabled:opacity-50"
         >
           Delete Account
         </button>
