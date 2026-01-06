@@ -124,11 +124,11 @@ export default function Pricing() {
         >
           {/* Section Header */}
           <motion.div variants={itemVariants} className="text-center mb-12 px-4">
-            <span className={`text-xs sm:text-sm md:text-caption uppercase tracking-wider font-semibold mb-3 block ${showEnterprise ? 'text-purple-400' : 'text-cosmic-orange'}`}>
+            <span className={`text-xs sm:text-sm md:text-caption uppercase tracking-wider font-semibold mb-3 block ${showEnterprise ? 'text-accent-purple' : 'text-cosmic-orange'}`}>
               Simple Pricing
             </span>
             <h2 className="text-2xl sm:text-3xl md:text-heading-xl lg:text-display-sm font-bold mb-4">
-              Start Free, <span className={showEnterprise ? 'bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent' : 'gradient-text'}>Scale As You Grow</span>
+              Start Free, <span className={showEnterprise ? 'text-accent-purple' : 'gradient-text'}>Scale As You Grow</span>
             </h2>
             <p className="text-base sm:text-lg md:text-body-md text-medium-gray max-w-2xl mx-auto mb-8">
               No hidden fees. No credit card required to start.
@@ -150,7 +150,7 @@ export default function Pricing() {
                 onClick={() => setShowEnterprise(true)}
                 className={`px-4 py-2 rounded-glass text-sm font-medium transition-all ${
                   showEnterprise
-                    ? 'bg-purple-500 text-white'
+                    ? 'bg-accent-purple text-black'
                     : 'text-medium-gray hover:text-secondary-white'
                 }`}
               >
@@ -229,7 +229,7 @@ export default function Pricing() {
               {enterprisePlans.map((plan, index) => (
                 <div
                   key={plan.name}
-                  className={`glass-container p-6 md:p-8 ${index === 1 ? 'border-purple-500/50 bg-purple-500/5' : ''}`}
+                  className={`glass-container p-6 md:p-8 ${index === 1 ? 'border-accent-purple/50 bg-accent-purple/5' : ''}`}
                 >
                   <h3 className="text-xl md:text-2xl font-bold text-secondary-white mb-2">
                     {plan.name}
@@ -237,18 +237,18 @@ export default function Pricing() {
                   <p className="text-sm text-medium-gray mb-4">{plan.description}</p>
 
                   <div className="mb-6">
-                    <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent">{plan.price}</span>
+                    <span className="text-3xl md:text-4xl font-bold text-accent-purple">{plan.price}</span>
                     <span className="text-medium-gray text-sm">{plan.period}</span>
                   </div>
 
                   <div className="mb-6 pb-6 border-b border-white/10">
-                    <span className="text-purple-400 font-semibold">{plan.projects} projects</span>
+                    <span className="text-accent-purple font-semibold">{plan.projects} projects</span>
                   </div>
 
                   <ul className="space-y-3 mb-8">
                     {plan.features.map((feature, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm text-medium-gray">
-                        <svg className="w-5 h-5 text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5 text-accent-purple flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                         {feature}
@@ -260,7 +260,7 @@ export default function Pricing() {
                     href={plan.name === 'Enterprise Pro Max' ? 'mailto:enterprise@diffuse.ai' : '/login'}
                     className={`block w-full py-3 text-center font-medium rounded-glass transition-all ${
                       index === 1
-                        ? 'bg-purple-500 hover:bg-purple-600 text-white'
+                        ? 'bg-accent-purple hover:bg-accent-purple/80 text-black'
                         : 'bg-white/10 hover:bg-white/20 text-secondary-white'
                     }`}
                   >
@@ -274,7 +274,7 @@ export default function Pricing() {
       </div>
 
       {/* Background Accents */}
-      <div className={`absolute top-1/3 left-0 w-1/3 h-1/3 rounded-full blur-[150px] -z-10 ${showEnterprise ? 'bg-purple-500/5' : 'bg-cosmic-orange/5'}`} />
+      <div className={`absolute top-1/3 left-0 w-1/3 h-1/3 rounded-full blur-[150px] -z-10 ${showEnterprise ? 'bg-accent-purple/5' : 'bg-cosmic-orange/5'}`} />
     </section>
   )
 }

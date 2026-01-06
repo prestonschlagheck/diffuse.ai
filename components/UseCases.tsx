@@ -228,7 +228,7 @@ export default function UseCases() {
           >
             {/* Media Networks */}
             <div className="glass-container overflow-hidden group hover:bg-white/10 transition-colors duration-300">
-              <div className="bg-purple-500/90 px-4 py-3 flex items-center justify-center">
+              <div className="bg-accent-purple/90 px-4 py-3 flex items-center justify-center">
                 <h3 className="text-base sm:text-lg md:text-body-md font-bold text-white">Media Networks</h3>
               </div>
               <div className="p-5">
@@ -237,11 +237,11 @@ export default function UseCases() {
                 </p>
                 <ul className="space-y-2 text-sm text-medium-gray">
                   <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
+                    <span className="w-1.5 h-1.5 bg-accent-purple rounded-full"></span>
                     Enterprise Pro Max: Unlimited
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
+                    <span className="w-1.5 h-1.5 bg-accent-purple rounded-full"></span>
                     Role-based team access
                   </li>
                 </ul>
@@ -250,7 +250,7 @@ export default function UseCases() {
 
             {/* Municipalities */}
             <div className="glass-container overflow-hidden group hover:bg-white/10 transition-colors duration-300">
-              <div className="bg-purple-500/90 px-4 py-3 flex items-center justify-center">
+              <div className="bg-accent-purple/90 px-4 py-3 flex items-center justify-center">
                 <h3 className="text-base sm:text-lg md:text-body-md font-bold text-white">Municipalities</h3>
               </div>
               <div className="p-5">
@@ -259,11 +259,11 @@ export default function UseCases() {
                 </p>
                 <ul className="space-y-2 text-sm text-medium-gray">
                   <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
+                    <span className="w-1.5 h-1.5 bg-accent-purple rounded-full"></span>
                     Public records compliance
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
+                    <span className="w-1.5 h-1.5 bg-accent-purple rounded-full"></span>
                     Citizen engagement
                   </li>
                 </ul>
@@ -272,7 +272,7 @@ export default function UseCases() {
 
             {/* Nonprofits */}
             <div className="glass-container overflow-hidden group hover:bg-white/10 transition-colors duration-300">
-              <div className="bg-purple-500/90 px-4 py-3 flex items-center justify-center">
+              <div className="bg-accent-purple/90 px-4 py-3 flex items-center justify-center">
                 <h3 className="text-base sm:text-lg md:text-body-md font-bold text-white">Nonprofits</h3>
               </div>
               <div className="p-5">
@@ -281,11 +281,11 @@ export default function UseCases() {
                 </p>
                 <ul className="space-y-2 text-sm text-medium-gray">
                   <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
+                    <span className="w-1.5 h-1.5 bg-accent-purple rounded-full"></span>
                     Community impact focus
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
+                    <span className="w-1.5 h-1.5 bg-accent-purple rounded-full"></span>
                     Grant-friendly pricing
                   </li>
                 </ul>
@@ -297,7 +297,7 @@ export default function UseCases() {
 
       {/* Background Accents */}
       <div className="absolute top-1/3 left-0 w-1/3 h-1/3 bg-cosmic-orange/5 rounded-full blur-[150px] -z-10" />
-      <div className="absolute bottom-1/3 right-0 w-1/3 h-1/3 bg-purple-500/5 rounded-full blur-[150px] -z-10" />
+      <div className="absolute bottom-1/3 right-0 w-1/3 h-1/3 bg-accent-purple/5 rounded-full blur-[150px] -z-10" />
     </section>
   )
 }

@@ -20,6 +20,8 @@ const config: Config = {
         'dusty-blue': '#447aa6',
         'rich-orange': '#ff7300',
         'off-white': '#f4f4f4',
+        // Accent Colors
+        'accent-purple': '#c086fa',
       },
       fontFamily: {
         mono: ['Space Grotesk', 'sans-serif'],

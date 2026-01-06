@@ -107,11 +107,11 @@ export default function Enterprise() {
         >
           {/* Section Header */}
           <motion.div variants={itemVariants} className="text-center mb-12 md:mb-16 px-4">
-            <span className="text-purple-400 text-xs sm:text-sm md:text-caption uppercase tracking-wider font-semibold mb-3 block">
+            <span className="text-accent-purple text-xs sm:text-sm md:text-caption uppercase tracking-wider font-semibold mb-3 block">
               Enterprise Solutions
             </span>
             <h2 className="text-2xl sm:text-3xl md:text-heading-xl lg:text-display-sm font-bold mb-4">
-              Scale Across <span className="bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent">Multiple Publications</span>
+              Scale Across <span className="text-accent-purple">Multiple Publications</span>
             </h2>
             <p className="text-base sm:text-lg md:text-body-md text-medium-gray max-w-3xl mx-auto">
               Enterprise accounts enable seamless integration between Diffuse and your branch sites. 
@@ -120,7 +120,7 @@ export default function Enterprise() {
           </motion.div>
 
           {/* Integration Flow Diagram */}
-          <motion.div variants={itemVariants} className="glass-container p-6 md:p-8 mb-8 border-purple-500/20">
+          <motion.div variants={itemVariants} className="glass-container p-6 md:p-8 mb-8 border-accent-purple/20">
             <h3 className="text-xl md:text-2xl font-bold text-secondary-white mb-6 text-center">
               Branch Site Integration
             </h3>
@@ -128,8 +128,8 @@ export default function Enterprise() {
             <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8">
               {/* Step 1: Diffuse Dashboard */}
               <div className="glass-container p-4 md:p-6 text-center flex-1 max-w-xs">
-                <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-purple-500/20 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-accent-purple/20 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-accent-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
@@ -139,47 +139,47 @@ export default function Enterprise() {
 
               {/* Arrow */}
               <div className="hidden md:block">
-                <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-8 h-8 text-accent-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </div>
               <div className="md:hidden">
-                <svg className="w-8 h-8 text-purple-400 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-8 h-8 text-accent-purple transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </div>
 
               {/* Step 2: API Connection */}
-              <div className="glass-container p-4 md:p-6 text-center flex-1 max-w-xs border-purple-500/30 bg-purple-500/5">
-                <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-purple-500/20 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="glass-container p-4 md:p-6 text-center flex-1 max-w-xs border-accent-purple/30 bg-accent-purple/5">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-accent-purple/20 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-accent-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <h4 className="font-bold text-purple-400 mb-1">Connect Account</h4>
+                <h4 className="font-bold text-accent-purple mb-1">Connect Account</h4>
                 <p className="text-sm text-medium-gray">Link Diffuse to your CMS</p>
               </div>
 
               {/* Arrow */}
               <div className="hidden md:block">
-                <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-8 h-8 text-accent-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </div>
               <div className="md:hidden">
-                <svg className="w-8 h-8 text-purple-400 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-8 h-8 text-accent-purple transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </div>
 
               {/* Step 3: Branch Site */}
               <div className="glass-container p-4 md:p-6 text-center flex-1 max-w-xs">
-                <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-purple-500/20 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-accent-purple/20 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-accent-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
                   </svg>
                 </div>
-                <h4 className="font-bold text-purple-400 mb-1">Branch Sites</h4>
+                <h4 className="font-bold text-accent-purple mb-1">Branch Sites</h4>
                 <p className="text-sm text-medium-gray">One-click import to publish</p>
               </div>
             </div>
@@ -195,7 +195,7 @@ export default function Enterprise() {
               <div className="space-y-4">
                 {roles.map((role) => {
                   const colorClasses = {
-                    purple: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+                    purple: 'bg-accent-purple/20 text-accent-purple border-accent-purple/30',
                     orange: 'bg-cosmic-orange/20 text-cosmic-orange border-cosmic-orange/30',
                     blue: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
                     gray: 'bg-medium-gray/20 text-medium-gray border-medium-gray/30',
@@ -220,7 +220,7 @@ export default function Enterprise() {
               <div className="space-y-4">
                 {orgFeatures.map((item, i) => (
                   <div key={i} className="flex items-center gap-3">
-                    <div className="text-purple-400">
+                    <div className="text-accent-purple">
                       {item.icon}
                     </div>
                     <span className="text-sm md:text-base text-secondary-white">{item.feature}</span>
@@ -233,7 +233,7 @@ export default function Enterprise() {
           {/* Enterprise CTA */}
           <motion.div
             variants={itemVariants}
-            className="glass-container p-6 md:p-8 text-center border-purple-500/20 bg-gradient-to-r from-purple-500/5 to-purple-600/5"
+            className="glass-container p-6 md:p-8 text-center border-accent-purple/20 bg-accent-purple/5"
           >
             <h3 className="text-xl md:text-2xl font-bold text-secondary-white mb-3">
               Ready to Scale Your Newsroom?
@@ -245,7 +245,7 @@ export default function Enterprise() {
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <a 
                 href="#pricing" 
-                className="inline-flex items-center justify-center gap-2 bg-purple-500 hover:bg-purple-600 text-white font-medium px-8 py-3 rounded-glass transition-colors"
+                className="inline-flex items-center justify-center gap-2 bg-accent-purple hover:bg-accent-purple/80 text-black font-medium px-8 py-3 rounded-glass transition-colors"
               >
                 View Pricing
               </a>
@@ -261,8 +261,8 @@ export default function Enterprise() {
       </div>
 
       {/* Background Accents */}
-      <div className="absolute top-1/2 right-0 w-1/4 h-1/4 bg-purple-500/5 rounded-full blur-[150px] -z-10" />
-      <div className="absolute bottom-1/4 left-0 w-1/4 h-1/4 bg-purple-500/5 rounded-full blur-[150px] -z-10" />
+      <div className="absolute top-1/2 right-0 w-1/4 h-1/4 bg-accent-purple/5 rounded-full blur-[150px] -z-10" />
+      <div className="absolute bottom-1/4 left-0 w-1/4 h-1/4 bg-accent-purple/5 rounded-full blur-[150px] -z-10" />
     </section>
   )
 }
