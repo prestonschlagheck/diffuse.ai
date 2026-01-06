@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, createContext, useContext } from 'react'
+import { useState, useEffect, useCallback, createContext, useContext, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
@@ -89,13 +89,13 @@ export default function DashboardNav() {
       
       if (error) throw error
       
-      setRecentProjects(
-        (data || []).map(item => ({
-          id: item.project_id,
-          name: item.project_name,
-          viewedAt: item.viewed_at
-        }))
-      )
+      const newProjects = (data || []).map(item => ({
+        id: item.project_id,
+        name: item.project_name,
+        viewedAt: item.viewed_at
+      }))
+      
+      setRecentProjects(newProjects)
     } catch (error) {
       console.error('Error loading recent projects:', error)
     }
@@ -272,34 +272,37 @@ export default function DashboardNav() {
             </svg>
           </button>
           <div 
-            className={`space-y-1 overflow-hidden transition-all duration-300 ease-out ${
+            className={`overflow-hidden transition-all duration-300 ease-out ${
               recentExpanded ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'
             }`}
           >
-            {recentProjects.map((project, index) => {
-              const isActive = pathname === `/dashboard/projects/${project.id}`
-              return (
-                <Link
-                  key={project.id}
-                  href={`/dashboard/projects/${project.id}`}
-                  className={`flex items-center gap-3 px-4 py-2 rounded-glass text-body-sm transition-all ${
-                    isActive
-                      ? 'bg-cosmic-orange/20 text-cosmic-orange'
-                      : 'text-secondary-white hover:bg-white/10'
-                  }`}
-                  style={{
-                    transitionDelay: recentExpanded ? `${index * 50}ms` : '0ms',
-                    transform: recentExpanded ? 'translateY(0)' : 'translateY(-8px)',
-                    opacity: recentExpanded ? 1 : 0,
-                  }}
-                >
-                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <span className="truncate">{project.name}</span>
-                </Link>
-              )
-            })}
+            <div className="space-y-1">
+              {recentProjects.map((project, index) => {
+                const isActive = pathname === `/dashboard/projects/${project.id}`
+                
+                return (
+                  <Link
+                    key={project.id}
+                    href={`/dashboard/projects/${project.id}`}
+                    className={`flex items-center gap-3 px-4 py-2 rounded-glass text-body-sm transition-all duration-200 ease-out ${
+                      isActive
+                        ? 'bg-cosmic-orange/20 text-cosmic-orange'
+                        : 'text-secondary-white hover:bg-white/10'
+                    }`}
+                    style={{
+                      transform: recentExpanded ? 'translateY(0)' : 'translateY(-8px)',
+                      opacity: recentExpanded ? 1 : 0,
+                      transitionDelay: recentExpanded ? `${index * 25}ms` : '0ms',
+                    }}
+                  >
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span className="truncate">{project.name}</span>
+                  </Link>
+                )
+              })}
+            </div>
           </div>
         </div>
       )}
@@ -317,7 +320,9 @@ export default function DashboardNav() {
           >
             <div className="truncate">
               <div className="font-medium truncate">{displayName}</div>
-              <div className="text-caption text-cosmic-orange">{highestPlan.name}</div>
+              <div className={`text-caption uppercase tracking-wider ${highestPlan.rank >= 90 ? 'text-purple-400' : 'text-cosmic-orange'}`}>
+                {highestPlan.name}
+              </div>
             </div>
           </button>
 

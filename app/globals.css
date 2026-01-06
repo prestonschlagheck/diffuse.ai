@@ -76,6 +76,22 @@
     }
   }
   
+  @keyframes pulse-once {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  
+  .animate-pulse-once {
+    animation: pulse-once 0.5s ease-out;
+  }
+  
   /* Glow Effect */
   .glow-orange {
     @apply shadow-lg shadow-cosmic-orange/30;

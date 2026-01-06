@@ -111,6 +111,30 @@ export default function OutputDetailModal({
     }
   }
 
+  const handleCopyAll = async () => {
+    if (!article) {
+      // If no structured article, just copy raw content
+      handleCopy(rawContent, 'all')
+      return
+    }
+
+    const sections = [
+      article.title && `Title:\n${article.title}`,
+      article.author && `Author:\n${article.author}`,
+      article.subtitle && `Subtitle:\n${article.subtitle}`,
+      article.excerpt && `Excerpt:\n${article.excerpt}`,
+      article.content && `Content:\n${article.content}`,
+      article.category && `Category:\n${article.category}`,
+      article.suggested_sections?.length && `Suggested Sections:\n${article.suggested_sections.join(', ')}`,
+      article.tags?.length && `Tags:\n${article.tags.join(', ')}`,
+      article.meta_title && `Meta Title:\n${article.meta_title}`,
+      article.meta_description && `Meta Description:\n${article.meta_description}`,
+    ].filter(Boolean)
+
+    const allContent = sections.join('\n\n')
+    handleCopy(allContent, 'all')
+  }
+
   const updateArticleField = (field: keyof StructuredArticle, value: any) => {
     if (article) {
       setArticle({ ...article, [field]: value })
@@ -234,6 +258,25 @@ export default function OutputDetailModal({
             <h2 className="text-heading-lg text-secondary-white">Output Details</h2>
           </div>
           <div className="flex items-center gap-2">
+            {/* Copy All Button */}
+            <button
+              onClick={handleCopyAll}
+              className="flex items-center gap-1.5 px-3 py-2 text-medium-gray hover:text-cosmic-orange hover:bg-cosmic-orange/10 rounded-glass transition-colors"
+              title="Copy all fields"
+            >
+              {copied === 'all' ? (
+                <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              )}
+              <span className="text-caption font-medium tracking-wider">
+                {copied === 'all' ? 'COPIED' : 'COPY ALL'}
+              </span>
+            </button>
             {/* Delete Button */}
             {showDeleteButton && (
               <button
