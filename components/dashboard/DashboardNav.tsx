@@ -118,17 +118,17 @@ export default function DashboardNav() {
       
       // Remove invalid projects from user_recent_projects in the background
       if (invalidProjectIds.length > 0) {
-        supabase
-          .from('user_recent_projects')
-          .delete()
-          .eq('user_id', user.id)
-          .in('project_id', invalidProjectIds)
-          .then(() => {
-            // Silently cleaned up
-          })
-          .catch(err => {
+        (async () => {
+          try {
+            await supabase
+              .from('user_recent_projects')
+              .delete()
+              .eq('user_id', user.id)
+              .in('project_id', invalidProjectIds)
+          } catch (err) {
             console.error('Error cleaning up invalid recent projects:', err)
-          })
+          }
+        })()
       }
       
       // Update state with valid projects (use current name from database)
