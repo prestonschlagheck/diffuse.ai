@@ -75,11 +75,12 @@ export default function DashboardNav() {
     setMobileMenuOpen(false)
   }, [pathname])
 
-  // Load recent projects from database
+  // Load recent projects from database and validate they still exist
   const loadRecentProjects = useCallback(async () => {
     if (!user) return
     
     try {
+      // Get recent projects from user's list
       const { data, error } = await supabase
         .from('user_recent_projects')
         .select('project_id, project_name, viewed_at')
@@ -88,10 +89,52 @@ export default function DashboardNav() {
         .limit(10)
       
       if (error) throw error
+      if (!data || data.length === 0) {
+        setRecentProjects([])
+        return
+      }
       
-      const newProjects = (data || []).map(item => ({
+      // Get the project IDs to verify they still exist and are accessible
+      const projectIds = data.map(item => item.project_id)
+      
+      // Check which projects still exist (RLS will filter out inaccessible ones)
+      const { data: existingProjects, error: projectsError } = await supabase
+        .from('diffuse_projects')
+        .select('id, name')
+        .in('id', projectIds)
+      
+      if (projectsError) throw projectsError
+      
+      // Create a map of existing project IDs to their current names
+      const existingProjectMap = new Map(
+        (existingProjects || []).map(p => [p.id, p.name])
+      )
+      
+      // Filter to only include projects that still exist
+      const validProjects = data.filter(item => existingProjectMap.has(item.project_id))
+      const invalidProjectIds = data
+        .filter(item => !existingProjectMap.has(item.project_id))
+        .map(item => item.project_id)
+      
+      // Remove invalid projects from user_recent_projects in the background
+      if (invalidProjectIds.length > 0) {
+        supabase
+          .from('user_recent_projects')
+          .delete()
+          .eq('user_id', user.id)
+          .in('project_id', invalidProjectIds)
+          .then(() => {
+            // Silently cleaned up
+          })
+          .catch(err => {
+            console.error('Error cleaning up invalid recent projects:', err)
+          })
+      }
+      
+      // Update state with valid projects (use current name from database)
+      const newProjects = validProjects.map(item => ({
         id: item.project_id,
-        name: item.project_name,
+        name: existingProjectMap.get(item.project_id) || item.project_name,
         viewedAt: item.viewed_at
       }))
       

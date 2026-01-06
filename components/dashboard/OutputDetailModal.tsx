@@ -248,9 +248,9 @@ export default function OutputDetailModal({
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-      <div className="glass-container p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <div className="glass-container p-8 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-start justify-between mb-6">
+        <div className="flex items-start justify-between mb-6 flex-shrink-0">
           <div className="flex items-center gap-3">
             <svg className="w-6 h-6 text-cosmic-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -303,7 +303,7 @@ export default function OutputDetailModal({
         </div>
 
         {/* Metadata Row */}
-        <div className="flex items-center gap-2 text-body-sm text-medium-gray mb-6">
+        <div className="flex items-center gap-2 text-body-sm text-medium-gray mb-6 flex-shrink-0">
           <span className={`uppercase font-medium tracking-wider ${statusColors[output.workflow_status]}`}>
             {output.workflow_status.toUpperCase()}
           </span>
@@ -311,6 +311,8 @@ export default function OutputDetailModal({
           <span>{formatDateTime(output.created_at)}</span>
         </div>
 
+        {/* Scrollable Content Area */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 -mr-2">
         {article ? (
           /* Structured Article View */
           <div className="space-y-5">
@@ -409,9 +411,10 @@ export default function OutputDetailModal({
             </div>
           </div>
         )}
+        </div>
 
         {/* Action Buttons */}
-        <div className="mt-8 flex gap-3">
+        <div className="mt-6 flex gap-3 flex-shrink-0">
           <button 
             onClick={onClose} 
             className="btn-secondary flex-1 py-3"

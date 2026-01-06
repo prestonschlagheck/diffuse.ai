@@ -12,12 +12,6 @@ const MicrophoneIcon = ({ className }: { className?: string }) => (
   </svg>
 )
 
-const CheckCircleIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-)
-
 interface Recording {
   id: string
   user_id: string
@@ -42,7 +36,8 @@ export default function SelectRecordingModal({
 }: SelectRecordingModalProps) {
   const [recordings, setRecordings] = useState<Recording[]>([])
   const [loading, setLoading] = useState(true)
-  const [adding, setAdding] = useState<string | null>(null)
+  const [adding, setAdding] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const supabase = createClient()
 
   const fetchRecordings = useCallback(async () => {
@@ -77,53 +72,65 @@ export default function SelectRecordingModal({
     fetchRecordings()
   }, [fetchRecordings])
 
-  const handleSelectRecording = async (recording: Recording) => {
-    if (!recording.transcription) return
+  const toggleSelection = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
 
-    setAdding(recording.id)
+  const handleAddSelected = async () => {
+    if (selectedIds.size === 0) return
+
+    setAdding(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
-      // Create a new input from the recording's transcription
+      const selectedRecordings = recordings.filter(r => selectedIds.has(r.id))
+      
+      // Insert all selected recordings as inputs
+      const inputs = selectedRecordings.map(recording => ({
+        project_id: projectId,
+        type: 'text',
+        content: recording.transcription,
+        file_name: recording.title,
+        metadata: {
+          source: 'recording',
+          recording_id: recording.id,
+          recording_title: recording.title,
+          recording_duration: recording.duration,
+        },
+        created_by: user.id,
+      }))
+
       const { error } = await supabase
         .from('diffuse_project_inputs')
-        .insert({
-          project_id: projectId,
-          type: 'text',
-          content: recording.transcription,
-          file_name: recording.title,
-          metadata: {
-            source: 'recording',
-            recording_id: recording.id,
-            recording_title: recording.title,
-            recording_duration: recording.duration,
-          },
-          created_by: user.id,
-        })
+        .insert(inputs)
 
       if (error) throw error
 
       onSuccess()
       onClose()
     } catch (error) {
-      console.error('Error adding recording as input:', error)
-      alert('Failed to add recording as input')
+      console.error('Error adding recordings as inputs:', error)
+      alert('Failed to add recordings as inputs')
     } finally {
-      setAdding(null)
+      setAdding(false)
     }
   }
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="glass-container p-8 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <h2 className="text-heading-lg text-secondary-white">Select Recording</h2>
-            <p className="text-body-sm text-medium-gray mt-1">
-              Choose a transcribed recording to use as input
-            </p>
-          </div>
+      <div className="glass-container p-8 max-w-2xl w-full h-[500px] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between flex-shrink-0">
+          <h2 className="text-heading-lg text-secondary-white">Add from Recordings</h2>
           <button
             onClick={onClose}
             className="text-medium-gray hover:text-secondary-white transition-colors"
@@ -134,14 +141,15 @@ export default function SelectRecordingModal({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto mt-6 min-h-0">
           {loading ? (
-            <div className="flex items-center justify-center py-16">
+            <div className="flex items-center justify-center h-full">
               <LoadingSpinner size="lg" />
             </div>
           ) : recordings.length === 0 ? (
-            <div className="text-center py-16">
-              <MicrophoneIcon className="w-16 h-16 text-medium-gray mx-auto mb-4" />
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <MicrophoneIcon className="w-16 h-16 text-medium-gray mb-4" />
               <p className="text-body-md text-secondary-white mb-2">No Transcribed Recordings</p>
               <p className="text-body-sm text-medium-gray">
                 Record audio and generate transcriptions first, then you can use them as inputs.
@@ -149,57 +157,73 @@ export default function SelectRecordingModal({
             </div>
           ) : (
             <div className="space-y-3">
-              {recordings.map((recording) => (
-                <button
-                  key={recording.id}
-                  onClick={() => handleSelectRecording(recording)}
-                  disabled={adding !== null}
-                  className="w-full text-left p-4 bg-white/5 hover:bg-white/10 rounded-glass border border-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-1">
-                        <MicrophoneIcon className="w-5 h-5 text-cosmic-orange flex-shrink-0" />
-                        <p className="text-body-md text-secondary-white font-medium truncate">
-                          {recording.title}
-                        </p>
+              {recordings.map((recording) => {
+                const isSelected = selectedIds.has(recording.id)
+                return (
+                  <button
+                    key={recording.id}
+                    onClick={() => toggleSelection(recording.id)}
+                    disabled={adding}
+                    className={`w-full text-left p-4 rounded-glass border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                      isSelected 
+                        ? 'bg-cosmic-orange/10 border-cosmic-orange/30' 
+                        : 'bg-white/5 hover:bg-white/10 border-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      {/* Checkbox */}
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                        isSelected 
+                          ? 'bg-cosmic-orange border-cosmic-orange' 
+                          : 'border-medium-gray'
+                      }`}>
+                        {isSelected && (
+                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
                       </div>
-                      <div className="flex items-center gap-4 text-body-sm text-medium-gray ml-8">
-                        <span>{formatDuration(recording.duration)}</span>
-                        <span>•</span>
-                        <span>{formatRelativeTime(recording.created_at)}</span>
-                      </div>
-                      {recording.transcription && (
-                        <p className="text-body-sm text-medium-gray mt-2 ml-8 line-clamp-2">
-                          {recording.transcription.substring(0, 150)}
-                          {recording.transcription.length > 150 ? '...' : ''}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex-shrink-0 ml-4">
-                      {adding === recording.id ? (
-                        <LoadingSpinner size="sm" />
-                      ) : (
-                        <div className="flex items-center gap-2 text-cosmic-orange">
-                          <CheckCircleIcon className="w-5 h-5" />
-                          <span className="text-body-sm">Transcribed</span>
+                      
+                      {/* Recording Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-1">
+                          <MicrophoneIcon className="w-5 h-5 text-cosmic-orange flex-shrink-0" />
+                          <p className="text-body-md text-secondary-white font-medium truncate">
+                            {recording.title}
+                          </p>
                         </div>
-                      )}
+                        <div className="flex items-center gap-4 text-body-sm text-medium-gray ml-8">
+                          <span>{formatDuration(recording.duration)}</span>
+                          <span>•</span>
+                          <span>{formatRelativeTime(recording.created_at)}</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>
 
-        <div className="flex justify-end gap-3 pt-6 border-t border-white/10 mt-6">
-          <button onClick={onClose} className="btn-secondary px-6 py-3">
+        {/* Buttons */}
+        <div className="flex gap-3 pt-6 flex-shrink-0">
+          <button 
+            onClick={onClose} 
+            className="btn-secondary flex-1 py-3"
+            disabled={adding}
+          >
             Cancel
+          </button>
+          <button 
+            onClick={handleAddSelected}
+            disabled={adding || selectedIds.size === 0}
+            className="btn-primary flex-1 py-3 disabled:opacity-50"
+          >
+            {adding ? 'Adding...' : `Add ${selectedIds.size > 0 ? `(${selectedIds.size})` : 'Selected'}`}
           </button>
         </div>
       </div>
     </div>
   )
 }
-

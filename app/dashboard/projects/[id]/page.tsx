@@ -44,7 +44,6 @@ export default function ProjectDetailPage() {
   const [textInputContent, setTextInputContent] = useState('')
   const [textInputTitle, setTextInputTitle] = useState('')
   const [savingTextInput, setSavingTextInput] = useState(false)
-  const [editingProject, setEditingProject] = useState(false)
   const [editProjectName, setEditProjectName] = useState('')
   const [editProjectDescription, setEditProjectDescription] = useState('')
   const [visibility, setVisibility] = useState<ProjectVisibility>('private')
@@ -52,6 +51,12 @@ export default function ProjectDetailPage() {
   const [savingVisibility, setSavingVisibility] = useState(false)
   const [userProjectRole, setUserProjectRole] = useState<string>('viewer')
   const [generatingArticle, setGeneratingArticle] = useState(false)
+  const [showProjectSettings, setShowProjectSettings] = useState(false)
+  const [deletingAllInputs, setDeletingAllInputs] = useState(false)
+  const [deletingAllOutputs, setDeletingAllOutputs] = useState(false)
+  const [deletingProject, setDeletingProject] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const supabase = createClient()
 
   // Permission helpers
@@ -213,6 +218,24 @@ export default function ProjectDetailPage() {
     }
   }, [project])
 
+  // Filter selectedOrgs to only include organizations the user is still a member of
+  useEffect(() => {
+    if (workspaces && selectedOrgs.length > 0) {
+      const currentOrgIds = workspaces.map(({ workspace }) => workspace.id)
+      const validSelectedOrgs = selectedOrgs.filter(orgId => currentOrgIds.includes(orgId))
+      
+      // Only update if there's a difference (user left an org)
+      if (validSelectedOrgs.length !== selectedOrgs.length) {
+        setSelectedOrgs(validSelectedOrgs)
+        
+        // If no valid orgs left, switch to private
+        if (validSelectedOrgs.length === 0 && visibility === 'public') {
+          setVisibility('private')
+        }
+      }
+    }
+  }, [workspaces, selectedOrgs, visibility])
+
   const handleSaveTextInput = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!textInputContent.trim()) return
@@ -280,6 +303,40 @@ export default function ProjectDetailPage() {
     }
   }
 
+  const handlePermanentDeleteInput = async (inputId: string) => {
+    if (!confirm('Are you sure you want to permanently delete this input? This cannot be undone.')) return
+    
+    try {
+      const { error } = await supabase
+        .from('diffuse_project_inputs')
+        .delete()
+        .eq('id', inputId)
+
+      if (error) throw error
+      fetchProjectData()
+    } catch (error) {
+      console.error('Error permanently deleting input:', error)
+      alert('Failed to delete input')
+    }
+  }
+
+  const handlePermanentDeleteOutput = async (outputId: string) => {
+    if (!confirm('Are you sure you want to permanently delete this output? This cannot be undone.')) return
+    
+    try {
+      const { error } = await supabase
+        .from('diffuse_project_outputs')
+        .delete()
+        .eq('id', outputId)
+
+      if (error) throw error
+      fetchProjectData()
+    } catch (error) {
+      console.error('Error permanently deleting output:', error)
+      alert('Failed to delete output')
+    }
+  }
+
   const handleSaveInput = async (inputId: string, title: string, content: string) => {
     try {
       const { error } = await supabase
@@ -325,6 +382,7 @@ export default function ProjectDetailPage() {
         .eq('id', outputId)
 
       if (error) throw error
+
       fetchProjectData()
     } catch (error) {
       console.error('Error deleting output:', error)
@@ -332,6 +390,97 @@ export default function ProjectDetailPage() {
       throw error
     }
   }
+
+  const handleDeleteAllInputs = async () => {
+    if (!confirm('Are you sure you want to delete ALL inputs? This action cannot be undone.')) return
+    
+    setDeletingAllInputs(true)
+    try {
+      const { error } = await supabase
+        .from('diffuse_project_inputs')
+        .delete()
+        .eq('project_id', projectId)
+
+      if (error) throw error
+
+      fetchProjectData()
+      setShowProjectSettings(false)
+    } catch (error) {
+      console.error('Error deleting all inputs:', error)
+      alert('Failed to delete inputs')
+    } finally {
+      setDeletingAllInputs(false)
+    }
+  }
+
+  const handleDeleteAllOutputs = async () => {
+    if (!confirm('Are you sure you want to delete ALL outputs? This action cannot be undone.')) return
+    
+    setDeletingAllOutputs(true)
+    try {
+      const { error } = await supabase
+        .from('diffuse_project_outputs')
+        .delete()
+        .eq('project_id', projectId)
+
+      if (error) throw error
+
+      fetchProjectData()
+      setShowProjectSettings(false)
+    } catch (error) {
+      console.error('Error deleting all outputs:', error)
+      alert('Failed to delete outputs')
+    } finally {
+      setDeletingAllOutputs(false)
+    }
+  }
+
+  const handleDeleteProject = async () => {
+    if (deleteConfirmText !== 'DELETE') return
+    
+    setDeletingProject(true)
+    try {
+      // Delete inputs first
+      const { error: inputsError } = await supabase
+        .from('diffuse_project_inputs')
+        .delete()
+        .eq('project_id', projectId)
+
+      if (inputsError) {
+        console.error('Error deleting inputs:', inputsError)
+        throw new Error(`Failed to delete inputs: ${inputsError.message}`)
+      }
+
+      // Delete outputs
+      const { error: outputsError } = await supabase
+        .from('diffuse_project_outputs')
+        .delete()
+        .eq('project_id', projectId)
+
+      if (outputsError) {
+        console.error('Error deleting outputs:', outputsError)
+        throw new Error(`Failed to delete outputs: ${outputsError.message}`)
+      }
+
+      // Delete the project
+      const { error: projectError } = await supabase
+        .from('diffuse_projects')
+        .delete()
+        .eq('id', projectId)
+
+      if (projectError) {
+        console.error('Error deleting project:', projectError)
+        throw new Error(`Failed to delete project: ${projectError.message}`)
+      }
+
+      router.push('/dashboard')
+    } catch (error: any) {
+      console.error('Error deleting project:', error)
+      alert(error.message || 'Failed to delete project. Check console for details.')
+      setDeletingProject(false)
+    }
+  }
+
 
   const handleRestoreOutput = async (outputId: string) => {
     try {
@@ -345,34 +494,6 @@ export default function ProjectDetailPage() {
     } catch (error) {
       console.error('Error restoring output:', error)
       alert('Failed to restore output')
-    }
-  }
-
-  const handleEditProject = () => {
-    if (project) {
-      setEditProjectName(project.name)
-      setEditProjectDescription(project.description || '')
-      setEditingProject(true)
-    }
-  }
-
-  const handleSaveProject = async () => {
-    if (!project) return
-    try {
-      const { error } = await supabase
-        .from('diffuse_projects')
-        .update({ 
-          name: editProjectName,
-          description: editProjectDescription || null
-        })
-        .eq('id', project.id)
-
-      if (error) throw error
-      setEditingProject(false)
-      fetchProjectData()
-    } catch (error) {
-      console.error('Error saving project:', error)
-      alert('Failed to save project')
     }
   }
 
@@ -481,48 +602,12 @@ export default function ProjectDetailPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          {editingProject ? (
-            <div className="flex-1 space-y-3">
-              <input
-                type="text"
-                value={editProjectName}
-                onChange={(e) => setEditProjectName(e.target.value)}
-                className="w-full text-display-sm bg-white/5 border border-white/10 rounded-glass px-4 py-2 text-secondary-white focus:outline-none focus:border-cosmic-orange"
-              />
-              <textarea
-                value={editProjectDescription}
-                onChange={(e) => setEditProjectDescription(e.target.value)}
-                placeholder="Description (optional)"
-                rows={2}
-                className="w-full text-body-lg bg-white/5 border border-white/10 rounded-glass px-4 py-2 text-medium-gray focus:outline-none focus:border-cosmic-orange resize-none"
-              />
-              <div className="flex gap-2">
-                <button onClick={handleSaveProject} className="btn-primary px-4 py-2 text-body-sm">
-                  Save
-                </button>
-                <button onClick={() => setEditingProject(false)} className="btn-secondary px-4 py-2 text-body-sm">
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="group flex-1">
-              <div className="flex items-center gap-3">
-                <h1 className="text-display-sm text-secondary-white">{project.name}</h1>
-                <button
-                  onClick={handleEditProject}
-                  className="opacity-0 group-hover:opacity-100 text-medium-gray hover:text-cosmic-orange transition-all"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                  </svg>
-                </button>
-              </div>
-              {project.description && (
-                <p className="text-body-lg text-medium-gray mt-1 ml-0">{project.description}</p>
-              )}
-            </div>
-          )}
+          <div className="flex-1">
+            <h1 className="text-display-sm text-secondary-white">{project.name}</h1>
+            {project.description && (
+              <p className="text-body-lg text-medium-gray mt-1">{project.description}</p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -594,6 +679,21 @@ export default function ProjectDetailPage() {
           {canEdit && (
           <div className="flex flex-col md:flex-row md:justify-end gap-3 mb-4">
             <button
+              onClick={() => {
+                setEditProjectName(project?.name || '')
+                setEditProjectDescription(project?.description || '')
+                setShowProjectSettings(true)
+              }}
+              className="btn-secondary px-4 py-2 flex items-center justify-center gap-2 text-body-sm w-full md:w-auto"
+              title="Project Settings"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Settings
+            </button>
+            <button
               onClick={() => setShowTextInputModal(true)}
               className="btn-secondary px-4 py-2 flex items-center justify-center gap-2 text-body-sm w-full md:w-auto"
             >
@@ -627,7 +727,7 @@ export default function ProjectDetailPage() {
                 </svg>
               }
               title="No Inputs Yet"
-              description="Add recordings as inputs or submit inputs via the workflow API."
+              description="Add recordings or text as inputs to generate your article."
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -739,7 +839,10 @@ export default function ProjectDetailPage() {
                 </svg>
               }
               title="No Outputs Yet"
-              description="Click 'Generate with diffuse.ai' above to create an article from your inputs."
+              description={inputs.length === 0 
+                ? "Add inputs before generating your article." 
+                : "Click 'Generate with diffuse.ai' above to create an article from your inputs."
+              }
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -928,14 +1031,22 @@ export default function ProjectDetailPage() {
                         </div>
                       </div>
                       
-                      {/* Restore Button - Only for editors and above */}
+                      {/* Action Buttons - Only for editors and above */}
                       {canEdit && (
-                        <button
-                          onClick={() => handleRestoreInput(input.id)}
-                          className="btn-secondary w-full mt-4 py-2 text-body-sm"
-                        >
-                          Restore
-                        </button>
+                        <div className="flex gap-2 mt-4">
+                          <button
+                            onClick={() => handleRestoreInput(input.id)}
+                            className="btn-secondary flex-1 py-2 text-body-sm"
+                          >
+                            Restore
+                          </button>
+                          <button
+                            onClick={() => handlePermanentDeleteInput(input.id)}
+                            className="flex-1 py-2 text-body-sm bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/30 text-red-400 rounded-glass transition-colors"
+                          >
+                            Delete Forever
+                          </button>
+                        </div>
                       )}
                     </div>
                   )
@@ -986,14 +1097,22 @@ export default function ProjectDetailPage() {
                         </p>
                       )}
                       
-                      {/* Restore Button - Only for editors and above */}
+                      {/* Action Buttons - Only for editors and above */}
                       {canEdit && (
-                        <button
-                          onClick={() => handleRestoreOutput(output.id)}
-                          className="btn-secondary w-full mt-4 py-2 text-body-sm"
-                        >
-                          Restore
-                        </button>
+                        <div className="flex gap-2 mt-4">
+                          <button
+                            onClick={() => handleRestoreOutput(output.id)}
+                            className="btn-secondary flex-1 py-2 text-body-sm"
+                          >
+                            Restore
+                          </button>
+                          <button
+                            onClick={() => handlePermanentDeleteOutput(output.id)}
+                            className="flex-1 py-2 text-body-sm bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/30 text-red-400 rounded-glass transition-colors"
+                          >
+                            Delete Forever
+                          </button>
+                        </div>
                       )}
                     </div>
                   )
@@ -1044,14 +1163,10 @@ export default function ProjectDetailPage() {
       {/* Text Input Modal */}
       {showTextInputModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="glass-container p-8 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
-            <div className="flex items-start justify-between mb-6">
-              <div>
-                <h2 className="text-heading-lg text-secondary-white">Add Text Input</h2>
-                <p className="text-body-sm text-medium-gray mt-1">
-                  Paste or type text to use as input for this project
-                </p>
-              </div>
+          <div className="glass-container p-8 max-w-2xl w-full h-[500px] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between flex-shrink-0">
+              <h2 className="text-heading-lg text-secondary-white">Add Text Input</h2>
               <button
                 onClick={() => {
                   setShowTextInputModal(false)
@@ -1066,8 +1181,10 @@ export default function ProjectDetailPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveTextInput} className="flex-1 flex flex-col">
-              <div className="mb-4">
+            {/* Content */}
+            <form onSubmit={handleSaveTextInput} className="flex-1 flex flex-col mt-6 min-h-0">
+              {/* Title Input - Fixed */}
+              <div className="flex-shrink-0 mb-4">
                 <label className="block text-body-sm text-secondary-white mb-2">
                   Title (optional)
                 </label>
@@ -1080,8 +1197,9 @@ export default function ProjectDetailPage() {
                 />
               </div>
               
-              <div className="flex-1 mb-6">
-                <label className="block text-body-sm text-secondary-white mb-2">
+              {/* Content Textarea - Scrollable */}
+              <div className="flex-1 flex flex-col min-h-0">
+                <label className="block text-body-sm text-secondary-white mb-2 flex-shrink-0">
                   Content
                 </label>
                 <textarea
@@ -1089,11 +1207,12 @@ export default function ProjectDetailPage() {
                   onChange={(e) => setTextInputContent(e.target.value)}
                   placeholder="Paste or type your text here..."
                   required
-                  className="w-full h-64 px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md focus:outline-none focus:border-cosmic-orange transition-colors resize-none"
+                  className="flex-1 w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md focus:outline-none focus:border-cosmic-orange transition-colors resize-none overflow-y-auto"
                 />
               </div>
 
-              <div className="flex gap-3">
+              {/* Buttons */}
+              <div className="flex gap-3 pt-6 flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => {
@@ -1114,6 +1233,143 @@ export default function ProjectDetailPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Project Settings Modal */}
+      {showProjectSettings && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="glass-container p-6 max-w-md w-full">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-heading-md text-secondary-white">Project Settings</h2>
+              <button
+                onClick={() => {
+                  setShowProjectSettings(false)
+                  setShowDeleteConfirm(false)
+                  setDeleteConfirmText('')
+                }}
+                className="text-medium-gray hover:text-secondary-white transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Title */}
+            <div className="mb-4">
+              <label className="block text-caption text-medium-gray uppercase tracking-wider mb-2">Title</label>
+              <input
+                type="text"
+                value={editProjectName}
+                onChange={(e) => setEditProjectName(e.target.value)}
+                placeholder="Project name"
+                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-sm focus:outline-none focus:border-cosmic-orange transition-colors"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="mb-4">
+              <label className="block text-caption text-medium-gray uppercase tracking-wider mb-2">Description</label>
+              <textarea
+                value={editProjectDescription}
+                onChange={(e) => setEditProjectDescription(e.target.value)}
+                placeholder="Project description (optional)"
+                rows={3}
+                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-sm focus:outline-none focus:border-cosmic-orange transition-colors resize-none"
+              />
+            </div>
+
+            {/* Save Button */}
+            <button
+              onClick={async () => {
+                if (!editProjectName.trim()) return
+                try {
+                  const { error } = await supabase
+                    .from('diffuse_projects')
+                    .update({ 
+                      name: editProjectName.trim(),
+                      description: editProjectDescription.trim() || null
+                    })
+                    .eq('id', projectId)
+                  if (error) throw error
+                  fetchProjectData()
+                } catch (error) {
+                  console.error('Error updating project:', error)
+                  alert('Failed to update project')
+                }
+              }}
+              disabled={!editProjectName.trim()}
+              className="btn-primary w-full py-2 text-body-sm disabled:opacity-50 mb-5"
+            >
+              Save Changes
+            </button>
+
+            {/* Action Grid */}
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={handleDeleteAllInputs}
+                disabled={deletingAllInputs || (inputs.length === 0 && trashedInputs.length === 0)}
+                className="p-3 bg-white/5 hover:bg-yellow-500/10 border border-white/10 hover:border-yellow-500/30 rounded-glass transition-colors text-left disabled:opacity-50 disabled:hover:bg-white/5 disabled:hover:border-white/10"
+              >
+                <p className="text-body-sm text-secondary-white font-medium">Delete Inputs</p>
+                <p className="text-caption text-medium-gray">{inputs.length + trashedInputs.length} items</p>
+              </button>
+
+              <button
+                onClick={handleDeleteAllOutputs}
+                disabled={deletingAllOutputs || (outputs.length === 0 && trashedOutputs.length === 0)}
+                className="p-3 bg-white/5 hover:bg-yellow-500/10 border border-white/10 hover:border-yellow-500/30 rounded-glass transition-colors text-left disabled:opacity-50 disabled:hover:bg-white/5 disabled:hover:border-white/10"
+              >
+                <p className="text-body-sm text-secondary-white font-medium">Delete Outputs</p>
+                <p className="text-caption text-medium-gray">{outputs.length + trashedOutputs.length} items</p>
+              </button>
+
+              {canDelete && !showDeleteConfirm && (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={deletingProject}
+                  className="col-span-2 p-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/30 rounded-glass transition-colors text-left disabled:opacity-50"
+                >
+                  <p className="text-body-sm text-red-400 font-medium">Delete Project</p>
+                  <p className="text-caption text-medium-gray">Permanently remove everything</p>
+                </button>
+              )}
+
+              {canDelete && showDeleteConfirm && (
+                <div className="col-span-2 p-3 bg-red-500/10 border border-red-500/30 rounded-glass">
+                  <p className="text-body-sm text-red-400 font-medium mb-2">Type "DELETE" to confirm:</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={deleteConfirmText}
+                      onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
+                      placeholder="DELETE"
+                      className="flex-1 px-3 py-2 bg-white/5 border border-red-500/30 rounded-glass text-secondary-white text-body-sm focus:outline-none focus:border-red-400 transition-colors"
+                      autoFocus
+                    />
+                    <button
+                      onClick={handleDeleteProject}
+                      disabled={deletingProject || deleteConfirmText !== 'DELETE'}
+                      className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 rounded-glass text-body-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {deletingProject ? 'Deleting...' : 'Delete'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowDeleteConfirm(false)
+                        setDeleteConfirmText('')
+                      }}
+                      className="px-3 py-2 text-medium-gray hover:text-secondary-white transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -615,10 +615,6 @@ export default function RecordingsPage() {
           }
           title="No Recordings Yet"
           description="Start recording audio to create transcriptions for your projects."
-          action={{
-            label: 'Start Recording',
-            onClick: () => setShowRecordingModal(true),
-          }}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
