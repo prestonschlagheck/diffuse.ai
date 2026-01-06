@@ -114,20 +114,25 @@ export default function SharedWithMePage() {
     )
   }
 
+  const ViewOrgsButton = ({ className = '' }: { className?: string }) => (
+    <a
+      href="/dashboard/organization"
+      className={`btn-primary px-4 py-2 flex items-center justify-center gap-2 text-body-sm ${className}`}
+    >
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+      </svg>
+      View Organizations
+    </a>
+  )
+
   return (
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-display-sm text-secondary-white">Shared With Me</h1>
-        <a
-          href="/dashboard/organization"
-          className="btn-primary px-4 py-2 flex items-center gap-2 text-body-sm"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-          </svg>
-          View Organizations
-        </a>
+        {/* Desktop button - hidden on mobile */}
+        <ViewOrgsButton className="hidden md:flex" />
       </div>
 
       {/* Shared Projects Grid */}
@@ -175,6 +180,8 @@ export default function SharedWithMePage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Mobile button - full width at top of grid, hidden on desktop */}
+          <ViewOrgsButton className="md:hidden col-span-1" />
           {sharedProjects.map((project) => (
             <div
               key={project.id}

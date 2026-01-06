@@ -203,30 +203,39 @@ export default function OrganizationPage() {
     )
   }
 
+  const JoinButton = ({ className = '' }: { className?: string }) => (
+    <button
+      onClick={() => setShowJoinModal(true)}
+      className={`btn-secondary px-4 py-2 flex items-center justify-center gap-2 text-body-sm ${className}`}
+    >
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+      </svg>
+      Join
+    </button>
+  )
+
+  const CreateButton = ({ className = '' }: { className?: string }) => (
+    <button
+      onClick={() => setShowCreateModal(true)}
+      className={`btn-primary px-4 py-2 flex items-center justify-center gap-2 text-body-sm ${className}`}
+    >
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+      </svg>
+      Create
+    </button>
+  )
+
   return (
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-display-sm text-secondary-white">Organizations</h1>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowJoinModal(true)}
-            className="btn-secondary px-4 py-2 flex items-center gap-2 text-body-sm"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-            </svg>
-            Join Organization
-          </button>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="btn-primary px-4 py-2 flex items-center gap-2 text-body-sm"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Create Organization
-          </button>
+        {/* Desktop buttons - hidden on mobile */}
+        <div className="hidden md:flex gap-2">
+          <JoinButton />
+          <CreateButton />
         </div>
       </div>
 
@@ -243,6 +252,11 @@ export default function OrganizationPage() {
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Mobile buttons - row of two at top of grid, hidden on desktop */}
+          <div className="md:hidden col-span-1 flex gap-2">
+            <JoinButton className="flex-1" />
+            <CreateButton className="flex-1" />
+          </div>
           {workspaces.map(({ workspace, role }) => {
             const plan = workspace.plan && planDetails[workspace.plan as keyof typeof planDetails]
             return (

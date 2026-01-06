@@ -150,27 +150,32 @@ export default function DashboardPage() {
   const hasReachedLimit = projectCount >= projectLimit
   const remainingProjects = projectLimit - projectCount
 
+  const CreateProjectButton = ({ className = '' }: { className?: string }) => (
+    <button
+      onClick={() => {
+        if (hasReachedLimit) {
+          alert(`You've reached your project limit. Please upgrade your plan to create more projects.`)
+          return
+        }
+        setShowCreateModal(true)
+      }}
+      className={`btn-primary px-4 py-2 flex items-center justify-center gap-2 text-body-sm ${hasReachedLimit ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+      disabled={hasReachedLimit}
+    >
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+      </svg>
+      Create Project
+    </button>
+  )
+
   return (
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-display-sm text-secondary-white">Projects</h1>
-        <button
-          onClick={() => {
-            if (hasReachedLimit) {
-              alert(`You've reached your project limit. Please upgrade your plan to create more projects.`)
-              return
-            }
-            setShowCreateModal(true)
-          }}
-          className={`btn-primary px-4 py-2 flex items-center gap-2 text-body-sm ${hasReachedLimit ? 'opacity-50 cursor-not-allowed' : ''}`}
-          disabled={hasReachedLimit}
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Create Project
-        </button>
+        {/* Desktop button - hidden on mobile */}
+        <CreateProjectButton className="hidden md:flex" />
       </div>
 
       {/* Projects Grid */}
@@ -200,6 +205,8 @@ export default function DashboardPage() {
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Mobile button - full width at top of grid, hidden on desktop */}
+          <CreateProjectButton className="md:hidden col-span-1" />
           {projects.map((project) => (
             <div
               key={project.id}

@@ -468,6 +468,35 @@ export default function RecordingsPage() {
     )
   }
 
+  const StartRecordingButton = ({ className = '' }: { className?: string }) => (
+    <button
+      onClick={startRecording}
+      className={`btn-primary px-4 py-2 flex items-center justify-center gap-2 text-body-sm ${className}`}
+    >
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+      </svg>
+      Start Recording
+    </button>
+  )
+
+  const RecordingControls = ({ className = '' }: { className?: string }) => (
+    <div className={`flex items-center justify-center gap-4 ${className}`}>
+      <div className="flex items-center gap-2">
+        <span className="animate-pulse w-3 h-3 bg-red-500 rounded-full"></span>
+        <span className="text-body-md text-secondary-white">
+          {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
+        </span>
+      </div>
+      <button
+        onClick={stopRecording}
+        className="btn-primary px-4 py-2 bg-red-500 hover:bg-red-600 text-body-sm"
+      >
+        Stop Recording
+      </button>
+    </div>
+  )
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -481,32 +510,11 @@ export default function RecordingsPage() {
           )}
         </div>
         
-        {/* Recording Controls */}
+        {/* Desktop Recording Controls - hidden on mobile */}
         {!recording ? (
-          <button
-            onClick={startRecording}
-            className="btn-primary px-4 py-2 flex items-center gap-2 text-body-sm"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-            </svg>
-            Start Recording
-          </button>
+          <StartRecordingButton className="hidden md:flex" />
         ) : (
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="animate-pulse w-3 h-3 bg-red-500 rounded-full"></span>
-              <span className="text-body-md text-secondary-white">
-                {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
-              </span>
-            </div>
-            <button
-              onClick={stopRecording}
-              className="btn-primary px-4 py-2 bg-red-500 hover:bg-red-600 text-body-sm"
-            >
-              Stop Recording
-            </button>
-          </div>
+          <RecordingControls className="hidden md:flex" />
         )}
       </div>
 
@@ -531,6 +539,14 @@ export default function RecordingsPage() {
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Mobile Recording Controls - full width at top of grid, hidden on desktop */}
+          {!recording ? (
+            <StartRecordingButton className="md:hidden col-span-1" />
+          ) : (
+            <div className="md:hidden col-span-1 glass-container p-4">
+              <RecordingControls />
+            </div>
+          )}
           {recordings.map((rec) => (
             <div
               key={rec.id}
