@@ -48,7 +48,7 @@ export default function OutputDetailModal({
   useEffect(() => {
     const parseContent = (content: string): StructuredArticle | null => {
       try {
-        let parsed = content
+        let parsed: Record<string, unknown> | null = null
         
         // If content is a string, try to parse it
         if (typeof content === 'string') {
@@ -76,12 +76,16 @@ export default function OutputDetailModal({
         // Verify it has the expected structure
         if (parsed && typeof parsed === 'object' && (parsed.title || parsed.content)) {
           return {
-          ...parsed,
-          author: parsed.author || 'Diffuse.AI',
-          // Clean up any escaped newlines in content
-          content: parsed.content?.replace(/\\n/g, '\n') || '',
-          excerpt: parsed.excerpt?.replace(/\\n/g, '\n') || '',
-            subtitle: parsed.subtitle?.replace(/\\n/g, '\n') || null,
+            title: (parsed.title as string) || '',
+            author: (parsed.author as string) || 'Diffuse.AI',
+            subtitle: ((parsed.subtitle as string)?.replace(/\\n/g, '\n')) || null,
+            excerpt: ((parsed.excerpt as string)?.replace(/\\n/g, '\n')) || '',
+            content: ((parsed.content as string)?.replace(/\\n/g, '\n')) || '',
+            suggested_sections: parsed.suggested_sections as string[] | undefined,
+            category: parsed.category as string | undefined,
+            tags: parsed.tags as string[] | undefined,
+            meta_title: parsed.meta_title as string | undefined,
+            meta_description: parsed.meta_description as string | undefined,
           }
         }
         
