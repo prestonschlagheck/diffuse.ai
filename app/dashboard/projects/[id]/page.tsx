@@ -66,21 +66,70 @@ export default function ProjectDetailPage() {
 
   // Helper to extract article info from output content
   const getOutputInfo = (output: DiffuseProjectOutput) => {
+    // Helper to extract field from JSON-like string using regex
+    const extractField = (content: string, field: string): string | null => {
+      const regex = new RegExp(`"${field}"\\s*:\\s*"([^"]*(?:\\\\"[^"]*)*)"`, 's')
+      const match = content.match(regex)
+      if (match) {
+        return match[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
+      }
+      return null
+    }
+
     try {
-      const parsed = JSON.parse(output.content)
-      return {
-        title: parsed.title || 'Workflow Output',
-        subtitle: parsed.subtitle || null,
-        author: parsed.author || 'Diffuse.AI',
-        excerpt: parsed.excerpt || null,
+      // First try standard JSON parsing
+      let parsed = output.content
+      if (typeof output.content === 'string') {
+        const trimmed = output.content.trim()
+        try {
+          parsed = JSON.parse(trimmed)
+        } catch {
+          // If parsing fails, check for double-encoded JSON
+          if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+            try {
+              const unwrapped = JSON.parse(trimmed)
+              parsed = JSON.parse(unwrapped)
+            } catch {
+              // Fall through to regex extraction
+            }
+          }
+        }
+      }
+
+      // If we got a parsed object with expected fields
+      if (parsed && typeof parsed === 'object' && (parsed.title || parsed.content)) {
+        return {
+          title: parsed.title || 'Untitled Article',
+          subtitle: parsed.subtitle || null,
+          author: parsed.author || 'Diffuse.AI',
+          excerpt: parsed.excerpt || null,
+        }
       }
     } catch {
+      // Fall through to regex extraction
+    }
+
+    // Fallback: try regex extraction for JSON-like content
+    const title = extractField(output.content, 'title')
+    const subtitle = extractField(output.content, 'subtitle')
+    const author = extractField(output.content, 'author')
+    const excerpt = extractField(output.content, 'excerpt')
+
+    if (title) {
       return {
-        title: 'Workflow Output',
-        subtitle: null,
-        author: 'Diffuse.AI',
-        excerpt: null,
+        title,
+        subtitle,
+        author: author || 'Diffuse.AI',
+        excerpt,
       }
+    }
+
+    // Ultimate fallback
+    return {
+      title: 'Untitled Article',
+      subtitle: null,
+      author: 'Diffuse.AI',
+      excerpt: null,
     }
   }
 
@@ -854,30 +903,30 @@ export default function ProjectDetailPage() {
                     onClick={() => setSelectedOutput(output)}
                     className="glass-container p-6 hover:bg-white/10 transition-colors cursor-pointer"
                   >
-                    {/* Title */}
-                    <h3 className="text-heading-md text-secondary-white font-medium mb-3">
+                    {/* 1. Title */}
+                    <h3 className="text-heading-md text-secondary-white font-medium mb-2">
                       {info.title}
                     </h3>
                     
-                    {/* Subtitle */}
+                    {/* 2. Subtitle - all caps */}
                     {info.subtitle && (
                       <p className="text-caption text-purple-400 uppercase tracking-wider mb-2">
                         {info.subtitle.toUpperCase()}
                       </p>
                     )}
                     
-                    {/* Author & Date */}
-                    <div className="text-caption uppercase tracking-wider mb-2">
-                      <span className="text-cosmic-orange">{info.author}</span>
+                    {/* 3. Author & Date - all caps */}
+                    <div className="text-caption uppercase tracking-wider mb-3">
+                      <span className="text-cosmic-orange">{info.author.toUpperCase()}</span>
                       <span className="text-medium-gray"> • </span>
                       <span className="text-medium-gray">
                         {new Date(output.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
                       </span>
                     </div>
                     
-                    {/* Excerpt */}
+                    {/* 4. Excerpt/Text - Two lines, all caps */}
                     {info.excerpt && (
-                      <p className="text-caption text-medium-gray uppercase tracking-wider line-clamp-2">
+                      <p className="text-caption text-medium-gray uppercase tracking-wider leading-relaxed line-clamp-2">
                         {info.excerpt.toUpperCase()}
                       </p>
                     )}
@@ -1069,30 +1118,30 @@ export default function ProjectDetailPage() {
                       key={output.id}
                       className="glass-container p-6 opacity-60"
                     >
-                      {/* Title */}
-                      <h3 className="text-heading-md text-secondary-white font-medium mb-3">
+                      {/* 1. Title */}
+                      <h3 className="text-heading-md text-secondary-white font-medium mb-2">
                         {info.title}
                       </h3>
                       
-                      {/* Subtitle */}
+                      {/* 2. Subtitle - all caps */}
                       {info.subtitle && (
                         <p className="text-caption text-purple-400 uppercase tracking-wider mb-2">
                           {info.subtitle.toUpperCase()}
                         </p>
                       )}
                       
-                      {/* Author & Deleted Date */}
-                      <div className="text-caption uppercase tracking-wider mb-2">
-                        <span className="text-cosmic-orange">{info.author}</span>
+                      {/* 3. Author & Deleted Date - all caps */}
+                      <div className="text-caption uppercase tracking-wider mb-3">
+                        <span className="text-cosmic-orange">{info.author.toUpperCase()}</span>
                         <span className="text-medium-gray"> • </span>
                         <span className="text-medium-gray">
                           DELETED {new Date(output.deleted_at || output.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
                         </span>
                       </div>
                       
-                      {/* Excerpt */}
+                      {/* 4. Excerpt/Text - Two lines, all caps */}
                       {info.excerpt && (
-                        <p className="text-caption text-medium-gray uppercase tracking-wider line-clamp-2">
+                        <p className="text-caption text-medium-gray uppercase tracking-wider leading-relaxed line-clamp-2">
                           {info.excerpt.toUpperCase()}
                         </p>
                       )}

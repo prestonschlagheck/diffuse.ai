@@ -152,11 +152,16 @@ const SoundwaveToText = () => {
           className="text-center mb-8 md:mb-10 px-4 md:px-8"
         >
           <h1 className="text-3xl sm:text-4xl md:text-display-md lg:text-display-lg font-bold mb-4 md:mb-5 leading-tight">
-            Reviving Local News Through{' '}
-            <span className="gradient-text">Smart Automation</span>
+            Turn Meeting Recordings Into{' '}
+            <span className="gradient-text">Published Articles</span>
+            <br className="hidden sm:block" />
+            <span className="text-secondary-white"> in Minutes, Not Hours</span>
           </h1>
-          <p className="text-base sm:text-lg md:text-body-lg text-medium-gray max-w-2xl mx-auto">
-            AI-driven workflow that transforms meeting recordings into publication-ready journalism
+          <p className="text-base sm:text-lg md:text-body-lg text-medium-gray max-w-2xl mx-auto mb-3">
+            AI-powered workflow that transforms audio into publication-ready journalism
+          </p>
+          <p className="text-sm sm:text-base md:text-body-md text-cosmic-orange font-semibold">
+            Save 15+ hours per week · Cut content costs by 90%
           </p>
         </motion.div>
 
@@ -408,11 +413,11 @@ const SoundwaveToText = () => {
           transition={{ duration: 0.8, delay: 0.6 }}
           className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center mt-8 mx-4 md:mx-8"
         >
-          <a href="#overview" className="btn-primary text-center text-sm sm:text-base py-3 md:py-4 px-6 md:px-8 w-full sm:w-auto">
-            Learn More
+          <a href="/login" className="btn-primary text-center text-sm sm:text-base py-3 md:py-4 px-6 md:px-8 w-full sm:w-auto">
+            Start Free
           </a>
-          <a href="#why-diffuse" className="btn-secondary text-center text-sm sm:text-base py-3 md:py-4 px-6 md:px-8 w-full sm:w-auto">
-            Why Diffuse?
+          <a href="#how-it-works" className="btn-secondary text-center text-sm sm:text-base py-3 md:py-4 px-6 md:px-8 w-full sm:w-auto">
+            See How It Works
           </a>
         </motion.div>
       </div>

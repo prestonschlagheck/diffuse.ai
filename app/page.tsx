@@ -2,9 +2,14 @@
 
 import Navbar from '@/components/Navbar'
 import Hero from '@/components/Hero'
-import About from '@/components/About'
-import WhyDiffuse from '@/components/WhyDiffuse'
+import SocialProofBar from '@/components/SocialProofBar'
+import HowItWorks from '@/components/HowItWorks'
+import ValueProposition from '@/components/ValueProposition'
+import Features from '@/components/Features'
 import UseCases from '@/components/UseCases'
+import Enterprise from '@/components/Enterprise'
+import Pricing from '@/components/Pricing'
+import FAQ from '@/components/FAQ'
 import Footer from '@/components/Footer'
 
 export default function Home() {
@@ -32,9 +37,14 @@ export default function Home() {
       <Navbar />
       <main className="relative overflow-hidden">
         <Hero />
-        <About />
-        <WhyDiffuse />
+        <SocialProofBar />
+        <HowItWorks />
+        <ValueProposition />
+        <Features />
         <UseCases />
+        <Enterprise />
+        <Pricing />
+        <FAQ />
         <Footer />
       </main>
     </>

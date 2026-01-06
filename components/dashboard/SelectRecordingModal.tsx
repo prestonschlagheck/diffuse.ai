@@ -35,6 +35,7 @@ export default function SelectRecordingModal({
   onSuccess,
 }: SelectRecordingModalProps) {
   const [recordings, setRecordings] = useState<Recording[]>([])
+  const [alreadyAddedIds, setAlreadyAddedIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -46,8 +47,8 @@ export default function SelectRecordingModal({
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      // Only fetch recordings that have transcriptions
-      const { data, error } = await supabase
+      // Fetch recordings that have transcriptions
+      const { data: recordingsData, error: recordingsError } = await supabase
         .from('diffuse_recordings')
         .select('*')
         .eq('user_id', user.id)
@@ -55,18 +56,39 @@ export default function SelectRecordingModal({
         .not('transcription', 'is', null)
         .order('created_at', { ascending: false })
 
-      if (error) {
-        console.error('Error fetching recordings:', error)
+      if (recordingsError) {
+        console.error('Error fetching recordings:', recordingsError)
         return
       }
 
-      setRecordings(data || [])
+      // Fetch existing inputs for this project to check which recordings are already added
+      const { data: existingInputs, error: inputsError } = await supabase
+        .from('diffuse_project_inputs')
+        .select('metadata')
+        .eq('project_id', projectId)
+
+      if (inputsError) {
+        console.error('Error fetching existing inputs:', inputsError)
+      }
+
+      // Extract recording IDs that are already added as inputs
+      const addedRecordingIds = new Set<string>()
+      if (existingInputs) {
+        existingInputs.forEach((input) => {
+          if (input.metadata?.recording_id) {
+            addedRecordingIds.add(input.metadata.recording_id)
+          }
+        })
+      }
+
+      setAlreadyAddedIds(addedRecordingIds)
+      setRecordings(recordingsData || [])
     } catch (error) {
       console.error('Error:', error)
     } finally {
       setLoading(false)
     }
-  }, [supabase])
+  }, [supabase, projectId])
 
   useEffect(() => {
     fetchRecordings()
@@ -159,38 +181,55 @@ export default function SelectRecordingModal({
             <div className="space-y-3">
               {recordings.map((recording) => {
                 const isSelected = selectedIds.has(recording.id)
+                const isAlreadyAdded = alreadyAddedIds.has(recording.id)
+                
                 return (
                   <button
                     key={recording.id}
-                    onClick={() => toggleSelection(recording.id)}
-                    disabled={adding}
-                    className={`w-full text-left p-4 rounded-glass border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                      isSelected 
-                        ? 'bg-cosmic-orange/10 border-cosmic-orange/30' 
-                        : 'bg-white/5 hover:bg-white/10 border-white/10'
-                    }`}
+                    onClick={() => !isAlreadyAdded && toggleSelection(recording.id)}
+                    disabled={adding || isAlreadyAdded}
+                    className={`w-full text-left p-4 rounded-glass border transition-colors ${
+                      isAlreadyAdded
+                        ? 'bg-white/5 border-white/10 opacity-60 cursor-not-allowed'
+                        : isSelected 
+                          ? 'bg-cosmic-orange/10 border-cosmic-orange/30' 
+                          : 'bg-white/5 hover:bg-white/10 border-white/10'
+                    } ${adding ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <div className="flex items-center gap-4">
-                      {/* Checkbox */}
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                        isSelected 
-                          ? 'bg-cosmic-orange border-cosmic-orange' 
-                          : 'border-medium-gray'
-                      }`}>
-                        {isSelected && (
-                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      {/* Checkbox or Already Added indicator */}
+                      {isAlreadyAdded ? (
+                        <div className="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 bg-green-500/20 border-green-500/50">
+                          <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                           </svg>
-                        )}
-                      </div>
+                        </div>
+                      ) : (
+                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                          isSelected 
+                            ? 'bg-cosmic-orange border-cosmic-orange' 
+                            : 'border-medium-gray'
+                        }`}>
+                          {isSelected && (
+                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                      )}
                       
                       {/* Recording Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-1">
-                          <MicrophoneIcon className="w-5 h-5 text-cosmic-orange flex-shrink-0" />
+                          <MicrophoneIcon className={`w-5 h-5 flex-shrink-0 ${isAlreadyAdded ? 'text-green-400' : 'text-cosmic-orange'}`} />
                           <p className="text-body-md text-secondary-white font-medium truncate">
                             {recording.title}
                           </p>
+                          {isAlreadyAdded && (
+                            <span className="text-caption text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full flex-shrink-0">
+                              Added
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-4 text-body-sm text-medium-gray ml-8">
                           <span>{formatDuration(recording.duration)}</span>

@@ -1,5 +1,10 @@
+import type { Metadata } from 'next'
 import { AuthProvider } from '@/contexts/AuthContext'
 import DashboardNav from '@/components/dashboard/DashboardNav'
+
+export const metadata: Metadata = {
+  title: 'diffuse.ai dashboard',
+}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (

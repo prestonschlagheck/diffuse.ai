@@ -1,40 +1,133 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import Link from 'next/link'
+
+const footerLinks = {
+  product: [
+    { name: 'How It Works', href: '#how-it-works' },
+    { name: 'Features', href: '#features' },
+    { name: 'Pricing', href: '#pricing' },
+    { name: 'FAQ', href: '#faq' },
+  ],
+  solutions: [
+    { name: 'For Individuals', href: '#use-cases' },
+    { name: 'For Teams', href: '#enterprise' },
+    { name: 'Spring-Ford Press', href: 'https://springford.press', external: true },
+  ],
+  company: [
+    { name: 'Contact', href: 'mailto:hello@diffuse.ai' },
+    { name: 'Privacy Policy', href: '#' },
+    { name: 'Terms of Service', href: '#' },
+  ],
+}
 
 export default function Footer() {
   return (
     <footer className="relative border-t border-white/5">
       <div className="container-padding py-12 md:py-16">
         <div className="max-w-7xl mx-auto">
-          {/* Top Section */}
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6 md:gap-8 mb-10 md:mb-12">
-            {/* Logo */}
+          {/* Main Footer Grid */}
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            {/* Brand Column */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="text-center md:text-left"
+              className="md:col-span-1"
             >
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">
+              <h2 className="text-2xl sm:text-3xl font-bold mb-3">
                 diffuse<span className="text-cosmic-orange">.ai</span>
               </h2>
-              <p className="text-sm sm:text-base md:text-body-sm text-medium-gray mt-2">
-                Reviving local news through smart automation
+              <p className="text-sm text-medium-gray mb-6">
+                Turn meeting recordings into published articles in minutes.
               </p>
+              <Link 
+                href="/login" 
+                className="btn-primary inline-block px-5 py-2.5 text-sm"
+              >
+                Start Free
+              </Link>
             </motion.div>
 
-            {/* CTA */}
+            {/* Product Links */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
+              <h3 className="text-sm font-semibold text-secondary-white uppercase tracking-wider mb-4">
+                Product
+              </h3>
+              <ul className="space-y-3">
+                {footerLinks.product.map((link) => (
+                  <li key={link.name}>
+                    <a
+                      href={link.href}
+                      className="text-sm text-medium-gray hover:text-cosmic-orange transition-colors"
+                    >
+                      {link.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+
+            {/* Solutions Links */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              <button className="btn-primary px-6 py-3 text-sm sm:text-base md:text-body-sm">
-                Schedule a Demo
-              </button>
+              <h3 className="text-sm font-semibold text-secondary-white uppercase tracking-wider mb-4">
+                Solutions
+              </h3>
+              <ul className="space-y-3">
+                {footerLinks.solutions.map((link) => (
+                  <li key={link.name}>
+                    <a
+                      href={link.href}
+                      target={link.external ? '_blank' : undefined}
+                      rel={link.external ? 'noopener noreferrer' : undefined}
+                      className="text-sm text-medium-gray hover:text-cosmic-orange transition-colors inline-flex items-center gap-1"
+                    >
+                      {link.name}
+                      {link.external && (
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      )}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+
+            {/* Company Links */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+            >
+              <h3 className="text-sm font-semibold text-secondary-white uppercase tracking-wider mb-4">
+                Company
+              </h3>
+              <ul className="space-y-3">
+                {footerLinks.company.map((link) => (
+                  <li key={link.name}>
+                    <a
+                      href={link.href}
+                      className="text-sm text-medium-gray hover:text-cosmic-orange transition-colors"
+                    >
+                      {link.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
             </motion.div>
           </div>
 
@@ -44,26 +137,11 @@ export default function Footer() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.4 }}
-            className="pt-6 md:pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4"
+            className="pt-6 border-t border-white/5"
           >
-            <p className="text-xs sm:text-sm md:text-body-sm text-medium-gray text-center md:text-left">
-              © {new Date().getFullYear()} Diffuse.AI. All rights reserved.
+            <p className="text-xs sm:text-sm text-medium-gray text-center">
+              © {new Date().getFullYear()} diffuse.ai. All rights reserved.
             </p>
-            
-            <div className="flex items-center gap-4 md:gap-6">
-              <a
-                href="#"
-                className="text-xs sm:text-sm md:text-body-sm text-medium-gray hover:text-cosmic-orange transition-colors duration-300"
-              >
-                Privacy Policy
-              </a>
-              <a
-                href="#"
-                className="text-xs sm:text-sm md:text-body-sm text-medium-gray hover:text-cosmic-orange transition-colors duration-300"
-              >
-                Terms of Service
-              </a>
-            </div>
           </motion.div>
         </div>
       </div>

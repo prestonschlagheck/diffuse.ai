@@ -68,12 +68,30 @@ export default function DashboardNav() {
   const [recentExpanded, setRecentExpanded] = useState(true)
   const [highestPlan, setHighestPlan] = useState<{ name: string; rank: number }>({ name: 'Free', rank: 0 })
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const userMenuRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
 
   // Close mobile menu on route change
   useEffect(() => {
     setMobileMenuOpen(false)
   }, [pathname])
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false)
+      }
+    }
+
+    if (showUserMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showUserMenu])
 
   // Load recent projects from database and validate they still exist
   const loadRecentProjects = useCallback(async () => {
@@ -356,7 +374,7 @@ export default function DashboardNav() {
       {/* Bottom Section */}
       <div className="p-4">
         {/* User Menu Button */}
-        <div className="relative">
+        <div className="relative" ref={userMenuRef}>
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
             className="w-full px-4 py-3 bg-white/5 rounded-glass text-left text-body-sm text-secondary-white hover:bg-white/10 transition-colors"

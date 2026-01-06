@@ -5,9 +5,10 @@ import { useState } from 'react'
 import Link from 'next/link'
 
 const navLinks = [
-  { name: 'Overview', href: '#overview' },
-  { name: 'Why Diffuse', href: '#why-diffuse' },
+  { name: 'How It Works', href: '#how-it-works' },
+  { name: 'Features', href: '#features' },
   { name: 'Use Cases', href: '#use-cases' },
+  { name: 'Pricing', href: '#pricing' },
 ]
 
 export default function Navbar() {
@@ -54,7 +55,7 @@ export default function Navbar() {
                   </button>
                 ))}
                 <Link href="/login" className="btn-primary px-5 py-2.5 text-sm md:text-body-sm whitespace-nowrap">
-                  Login
+                  Start Free
                 </Link>
               </div>
 
@@ -116,7 +117,7 @@ export default function Navbar() {
                 </button>
               ))}
               <Link href="/login" className="btn-primary w-full py-3 text-sm md:text-body-sm text-center">
-                Login
+                Start Free
               </Link>
             </div>
           </div>

@@ -3,48 +3,56 @@ import './globals.css'
 import { faqSchema, productSchema, serviceSchema, howToSchema } from './schema'
 
 const siteUrl = 'https://diffuse.ai'
-const siteName = 'Diffuse.AI'
-const siteDescription = 'Transform local meetings into news articles with AI-powered automation. Diffuse brings cutting-edge technology to community journalism, reviving local news through smart automation.'
+const siteName = 'diffuse.ai'
+const siteDescription = 'Turn meeting recordings into published articles in minutes. AI-powered journalism automation that saves 90% on content costs. Free to start, scales to enterprise.'
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Diffuse.AI - Reviving Local News Through Smart Automation',
-    template: '%s | Diffuse.AI',
+    default: 'diffuse.ai',
+    template: '%s | diffuse.ai',
   },
   description: siteDescription,
   keywords: [
+    // Primary keywords
     'AI journalism',
+    'automated article writing',
+    'meeting to article AI',
+    'transcription to news',
     'local news automation',
-    'meeting transcription',
-    'community journalism',
-    'news AI',
-    'automated reporting',
-    'local government coverage',
-    'journalism technology',
-    'news automation platform',
-    'civic journalism',
-    'meeting summarization',
-    'AI news writing',
-    'local media',
-    'Schuylkill River Press',
-    'automated news generation',
-    'GPT 5.1',
-    'OpenAI API',
-    'newsroom automation',
+    // Problem-focused
+    'save time writing articles',
+    'reduce content costs',
+    'automate newsroom',
+    'one-person newsroom',
+    // Use case keywords
+    'meeting transcription to article',
+    'government meeting coverage',
+    'school board meeting news',
+    'township meeting coverage',
+    'municipal meeting automation',
+    // Technology keywords
+    'AI content generation',
+    'GPT journalism',
+    'LLM news writing',
+    'automated transcription',
+    'speech to article',
+    // Industry keywords
     'local journalism software',
-    'meeting coverage AI',
-    'municipal news automation',
-    'government meeting transcription',
-    'AI editorial assistant',
-    'news workflow automation',
-    'local news technology',
+    'newsroom automation platform',
+    'community journalism AI',
+    'freelance journalist tools',
+    'independent reporter software',
+    // Competitor alternatives
+    'ChatGPT for journalism',
+    'AI writing for news',
+    'automated reporting tool',
   ],
   authors: [
-    { name: 'Diffuse.AI', url: siteUrl },
+    { name: 'diffuse.ai', url: siteUrl },
   ],
-  creator: 'Diffuse.AI',
-  publisher: 'Diffuse.AI',
+  creator: 'diffuse.ai',
+  publisher: 'diffuse.ai',
   formatDetection: {
     email: false,
     address: false,
@@ -55,14 +63,14 @@ export const metadata: Metadata = {
     locale: 'en_US',
     url: siteUrl,
     siteName: siteName,
-    title: 'Diffuse.AI - Reviving Local News Through Smart Automation',
+    title: 'diffuse.ai — Turn Meetings Into Articles in Minutes',
     description: siteDescription,
     images: [
       {
         url: '/socialcover.png',
         width: 1200,
         height: 630,
-        alt: 'Diffuse.AI - Reviving Local News Through Smart Automation',
+        alt: 'diffuse.ai - AI-Powered Journalism Automation',
         type: 'image/png',
       },
     ],
@@ -71,7 +79,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     site: '@DiffuseAI',
     creator: '@DiffuseAI',
-    title: 'Diffuse.AI - Reviving Local News Through Smart Automation',
+    title: 'diffuse.ai — Turn Meetings Into Articles in Minutes',
     description: siteDescription,
     images: ['/socialcover.png'],
   },
@@ -133,7 +141,7 @@ export default function RootLayout({
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'Organization',
-              name: 'Diffuse.AI',
+              name: 'diffuse.ai',
               url: siteUrl,
               logo: `${siteUrl}/icon-512.png`,
               description: siteDescription,
@@ -157,7 +165,7 @@ export default function RootLayout({
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'SoftwareApplication',
-              name: 'Diffuse.AI',
+              name: 'diffuse.ai',
               applicationCategory: 'BusinessApplication',
               operatingSystem: 'Web',
               offers: {

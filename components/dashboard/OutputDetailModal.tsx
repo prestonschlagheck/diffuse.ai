@@ -46,21 +46,53 @@ export default function OutputDetailModal({
 
   // Try to parse structured content
   useEffect(() => {
-    try {
-      const parsed = JSON.parse(output.content)
-      if (parsed.title || parsed.content) {
-        // Ensure author defaults to Diffuse.AI
-        setArticle({
+    const parseContent = (content: string): StructuredArticle | null => {
+      try {
+        let parsed = content
+        
+        // If content is a string, try to parse it
+        if (typeof content === 'string') {
+          // Handle double-encoded JSON (string within string)
+          let jsonString = content.trim()
+          
+          // Try parsing directly first
+          try {
+            parsed = JSON.parse(jsonString)
+          } catch {
+            // If that fails, check if it's double-encoded
+            if (jsonString.startsWith('"') && jsonString.endsWith('"')) {
+              try {
+                jsonString = JSON.parse(jsonString) // Unwrap the outer quotes
+                parsed = JSON.parse(jsonString)
+              } catch {
+                return null
+              }
+            } else {
+              return null
+            }
+          }
+        }
+        
+        // Verify it has the expected structure
+        if (parsed && typeof parsed === 'object' && (parsed.title || parsed.content)) {
+          return {
           ...parsed,
           author: parsed.author || 'Diffuse.AI',
           // Clean up any escaped newlines in content
           content: parsed.content?.replace(/\\n/g, '\n') || '',
           excerpt: parsed.excerpt?.replace(/\\n/g, '\n') || '',
-        })
+            subtitle: parsed.subtitle?.replace(/\\n/g, '\n') || null,
+          }
+        }
+        
+        return null
+      } catch {
+        return null
       }
-    } catch {
-      setArticle(null)
     }
+    
+    const parsedArticle = parseContent(output.content)
+    setArticle(parsedArticle)
   }, [output.content])
 
   const handleSave = async () => {
@@ -112,27 +144,65 @@ export default function OutputDetailModal({
   }
 
   const handleCopyAll = async () => {
-    if (!article) {
-      // If no structured article, just copy raw content
-      handleCopy(rawContent, 'all')
+    if (article) {
+      // Copy structured article with clean formatting
+      const sections = [
+        article.title && `${article.title}`,
+        article.subtitle && `${article.subtitle}`,
+        article.author && `By ${article.author}`,
+        article.excerpt && `${article.excerpt}`,
+        article.content && `${article.content}`,
+        article.category && `Category: ${article.category}`,
+        article.suggested_sections?.length && `Sections: ${article.suggested_sections.join(', ')}`,
+        article.tags?.length && `Tags: ${article.tags.join(', ')}`,
+        article.meta_title && `Meta Title: ${article.meta_title}`,
+        article.meta_description && `Meta Description: ${article.meta_description}`,
+      ].filter(Boolean)
+
+      const allContent = sections.join('\n\n')
+      handleCopy(allContent, 'all')
       return
     }
 
+    // Try to extract and format from raw content
+    try {
+      const extractField = (json: string, field: string): string | null => {
+        const regex = new RegExp(`"${field}"\\s*:\\s*"([^"]*(?:\\\\"[^"]*)*)"`, 's')
+        const match = json.match(regex)
+        if (match) {
+          return match[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
+        }
+        return null
+      }
+      
+      const title = extractField(rawContent, 'title')
+      const subtitle = extractField(rawContent, 'subtitle')
+      const excerpt = extractField(rawContent, 'excerpt')
+      const content = extractField(rawContent, 'content')
+      const category = extractField(rawContent, 'category')
+      const metaTitle = extractField(rawContent, 'meta_title')
+      const metaDesc = extractField(rawContent, 'meta_description')
+
     const sections = [
-      article.title && `Title:\n${article.title}`,
-      article.author && `Author:\n${article.author}`,
-      article.subtitle && `Subtitle:\n${article.subtitle}`,
-      article.excerpt && `Excerpt:\n${article.excerpt}`,
-      article.content && `Content:\n${article.content}`,
-      article.category && `Category:\n${article.category}`,
-      article.suggested_sections?.length && `Suggested Sections:\n${article.suggested_sections.join(', ')}`,
-      article.tags?.length && `Tags:\n${article.tags.join(', ')}`,
-      article.meta_title && `Meta Title:\n${article.meta_title}`,
-      article.meta_description && `Meta Description:\n${article.meta_description}`,
+        title,
+        subtitle,
+        excerpt,
+        content,
+        category && `Category: ${category}`,
+        metaTitle && `Meta Title: ${metaTitle}`,
+        metaDesc && `Meta Description: ${metaDesc}`,
     ].filter(Boolean)
 
-    const allContent = sections.join('\n\n')
-    handleCopy(allContent, 'all')
+      if (sections.length >= 2) {
+        handleCopy(sections.join('\n\n'), 'all')
+        return
+      }
+    } catch {
+      // Fall through to raw copy
+    }
+    
+    // Fallback: copy raw content
+    handleCopy(rawContent, 'all')
   }
 
   const updateArticleField = (field: keyof StructuredArticle, value: any) => {
@@ -173,6 +243,7 @@ export default function OutputDetailModal({
     multiline = false,
     rows = 3,
     charLimit,
+    autoExpand = false,
   }: { 
     label: string
     field: string
@@ -180,7 +251,17 @@ export default function OutputDetailModal({
     multiline?: boolean
     rows?: number
     charLimit?: number
-  }) => (
+    autoExpand?: boolean
+  }) => {
+    // Calculate dynamic rows based on content for auto-expand
+    const calculateRows = (text: string) => {
+      if (!text) return rows
+      const lineBreaks = (text.match(/\n/g) || []).length + 1
+      const estimatedWrappedLines = Math.ceil(text.length / 80) // Rough estimate for line wrapping
+      return Math.max(rows, lineBreaks, estimatedWrappedLines)
+    }
+
+    return (
     <div>
       <div className="flex items-center justify-between mb-2">
         <label className="text-caption text-medium-gray uppercase tracking-wider">
@@ -193,7 +274,7 @@ export default function OutputDetailModal({
         <textarea
           value={value || ''}
           onChange={(e) => updateArticleField(field as keyof StructuredArticle, e.target.value)}
-          rows={rows}
+            rows={autoExpand ? calculateRows(value) : rows}
           readOnly={!canEdit}
           className={`w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-sm transition-colors resize-none ${
             canEdit 
@@ -216,6 +297,7 @@ export default function OutputDetailModal({
       )}
     </div>
   )
+  }
 
   const TagsField = ({ 
     label, 
@@ -329,10 +411,8 @@ export default function OutputDetailModal({
             <EditableField label="Excerpt" field="excerpt" value={article.excerpt} multiline rows={3} />
 
             {/* Content */}
-            <EditableField label="Article Content" field="content" value={article.content} multiline rows={10} />
+            <EditableField label="Article Content" field="content" value={article.content} multiline rows={3} autoExpand />
 
-            {/* Two Column Layout */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Category */}
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -359,7 +439,6 @@ export default function OutputDetailModal({
                 values={article.suggested_sections || []} 
                 color="bg-pale-blue/20 text-pale-blue"
               />
-            </div>
 
             {/* Tags */}
             <TagsField 
@@ -390,11 +469,156 @@ export default function OutputDetailModal({
             </div>
           </div>
         ) : (
-          /* Raw Content View (fallback) */
-          <div className="space-y-6">
+          /* Raw Content View (fallback) - Try to extract fields from JSON-like content */
+          <div className="space-y-5">
+            {(() => {
+              // Try to extract fields even if formal parsing failed
+              try {
+                const extractField = (json: string, field: string): string | null => {
+                  const regex = new RegExp(`"${field}"\\s*:\\s*"([^"]*(?:\\\\"[^"]*)*)"`, 's')
+                  const match = json.match(regex)
+                  if (match) {
+                    return match[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
+                  }
+                  return null
+                }
+
+                // Extract array fields like tags and suggested_sections
+                const extractArrayField = (json: string, field: string): string[] => {
+                  const regex = new RegExp(`"${field}"\\s*:\\s*\\[([^\\]]*)\\]`, 's')
+                  const match = json.match(regex)
+                  if (match) {
+                    const arrayContent = match[1]
+                    const items = arrayContent.match(/"([^"]*)"/g)
+                    if (items) {
+                      return items.map(item => item.replace(/"/g, ''))
+                    }
+                  }
+                  return []
+                }
+                
+                // Main content fields
+                const mainFields = [
+                  { key: 'title', label: 'Title', multiline: false, autoExpand: false },
+                  { key: 'subtitle', label: 'Subtitle', multiline: false, autoExpand: false },
+                  { key: 'excerpt', label: 'Excerpt', multiline: true, rows: 3, autoExpand: false },
+                  { key: 'content', label: 'Article Content', multiline: true, rows: 3, autoExpand: true },
+                  { key: 'category', label: 'Category', multiline: false, autoExpand: false },
+                ]
+
+                // SEO fields (displayed after sections/tags)
+                const seoFields = [
+                  { key: 'meta_title', label: 'Meta Title', multiline: false, autoExpand: false },
+                  { key: 'meta_description', label: 'Meta Description', multiline: true, rows: 2, autoExpand: false },
+                ]
+
+                // Helper to calculate rows for auto-expand
+                const calcRows = (text: string, baseRows: number) => {
+                  if (!text) return baseRows
+                  const lineBreaks = (text.match(/\n/g) || []).length + 1
+                  const estimatedWrappedLines = Math.ceil(text.length / 80)
+                  return Math.max(baseRows, lineBreaks, estimatedWrappedLines)
+                }
+                
+                const extractedMainFields = mainFields.map(f => ({
+                  ...f,
+                  value: extractField(rawContent, f.key)
+                })).filter(f => f.value)
+
+                const extractedSeoFields = seoFields.map(f => ({
+                  ...f,
+                  value: extractField(rawContent, f.key)
+                })).filter(f => f.value)
+
+                // Extract array fields
+                const suggestedSections = extractArrayField(rawContent, 'suggested_sections')
+                const tags = extractArrayField(rawContent, 'tags')
+
+                // Helper to render a field
+                const renderField = (f: { key: string; label: string; value?: string | null; multiline: boolean; rows?: number; autoExpand: boolean }) => (
+                  <div key={f.key}>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-caption text-medium-gray uppercase tracking-wider">{f.label}</label>
+                      <CopyButton text={f.value || ''} field={f.key} />
+                    </div>
+                    {f.multiline ? (
+                      <textarea
+                        value={f.value || ''}
+                        readOnly
+                        rows={f.autoExpand ? calcRows(f.value || '', f.rows || 3) : f.rows}
+                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-sm resize-none cursor-default opacity-75"
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        value={f.value || ''}
+                        readOnly
+                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md cursor-default opacity-75"
+                      />
+                    )}
+                  </div>
+                )
+                
+                // If we extracted at least 2 fields, show them individually
+                if (extractedMainFields.length >= 2) {
+                  return (
+                    <>
+                      {/* Main fields: Title, Subtitle, Excerpt, Content, Category */}
+                      {extractedMainFields.map(renderField)}
+
+                      {/* Suggested Sections - right after category */}
+                      {suggestedSections.length > 0 && (
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-caption text-medium-gray uppercase tracking-wider">Suggested Sections</label>
+                            <CopyButton text={suggestedSections.join(', ')} field="sections" />
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {suggestedSections.map((section, i) => (
+                              <span key={i} className="px-3 py-1 bg-pale-blue/20 text-pale-blue text-caption rounded-full">
+                                {section}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tags - after sections */}
+                      {tags.length > 0 && (
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-caption text-medium-gray uppercase tracking-wider">Tags</label>
+                            <CopyButton text={tags.join(', ')} field="tags" />
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {tags.map((tag, i) => (
+                              <span key={i} className="px-3 py-1 bg-white/10 text-secondary-white text-caption rounded-full">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* SEO fields: Meta Title, Meta Description */}
+                      {extractedSeoFields.length > 0 && (
+                        <div className="pt-4 border-t border-white/10 space-y-5">
+                          <h3 className="text-body-md text-secondary-white font-medium">SEO Settings</h3>
+                          {extractedSeoFields.map(renderField)}
+                        </div>
+                      )}
+                    </>
+                  )
+                }
+              } catch {
+                // Fall through to raw view
+              }
+              
+              // Ultimate fallback: show raw content
+              return (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-caption text-medium-gray uppercase tracking-wider">Content</label>
+                    <label className="text-caption text-medium-gray uppercase tracking-wider">Raw Content</label>
                 <CopyButton text={rawContent} field="raw" />
               </div>
               <textarea
@@ -409,6 +633,8 @@ export default function OutputDetailModal({
                 }`}
               />
             </div>
+              )
+            })()}
           </div>
         )}
         </div>
