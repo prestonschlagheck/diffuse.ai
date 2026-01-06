@@ -99,7 +99,7 @@ export default function OrganizationPage() {
       setMessage({ type: 'success', text: `Successfully joined ${org.name}!` })
       setJoinCode('')
       setShowJoinModal(false)
-      window.location.reload()
+      router.push(`/dashboard/organization/${org.id}`)
     } catch (error: any) {
       console.error('Join organization error:', error)
       setMessage({ type: 'error', text: error.message || 'Failed to join organization' })
@@ -155,7 +155,7 @@ export default function OrganizationPage() {
       setOrgDescription('')
       setOrgPlan('enterprise_pro')
       setShowCreateModal(false)
-      window.location.reload()
+      router.push(`/dashboard/organization/${newOrg.id}`)
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'Failed to create organization' })
     } finally {
@@ -275,7 +275,7 @@ export default function OrganizationPage() {
                   {/* Plan & Role */}
                   <div className="flex items-center gap-2">
                     {plan && (
-                      <span className="text-caption text-purple-400 uppercase tracking-wider">
+                      <span className="text-caption text-accent-purple uppercase tracking-wider">
                         {plan.name}
                       </span>
                     )}
@@ -417,7 +417,7 @@ export default function OrganizationPage() {
                           <p className="text-caption text-medium-gray">{plan.projects} projects</p>
                         </div>
                       </div>
-                      <span className="text-body-md text-purple-400 font-medium">{plan.price}</span>
+                      <span className="text-body-md text-accent-purple font-medium">{plan.price}</span>
                     </label>
                   ))}
                 </div>

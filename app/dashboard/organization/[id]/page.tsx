@@ -510,7 +510,7 @@ export default function OrganizationDetailPage() {
                       e.stopPropagation()
                       router.push(`/dashboard/projects/${project.id}?tab=inputs`)
                     }}
-                    className="text-caption text-purple-400 uppercase tracking-wider hover:text-purple-200 cursor-pointer transition-colors"
+                    className="text-caption text-accent-purple uppercase tracking-wider hover:text-accent-purple/70 cursor-pointer transition-colors"
                   >
                     {project.input_count} INPUT{project.input_count !== 1 ? 'S' : ''}
                   </span>
@@ -565,7 +565,7 @@ export default function OrganizationDetailPage() {
               const getRoleBadgeClass = (role: string) => {
                 switch (role) {
                   case 'owner':
-                    return 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+                    return 'bg-accent-purple/20 text-accent-purple border-accent-purple/30'
                   case 'admin':
                     return 'bg-cosmic-orange/20 text-cosmic-orange border-cosmic-orange/30'
                   case 'editor':
@@ -650,7 +650,7 @@ export default function OrganizationDetailPage() {
                                   <button
                                     onClick={() => handleTransferOwnership(member.user_id, member.name)}
                                     disabled={savingRole}
-                                    className="w-full px-4 py-2.5 text-left text-body-sm text-purple-400 hover:bg-purple-500/10 transition-colors disabled:opacity-50"
+                                    className="w-full px-4 py-2.5 text-left text-body-sm text-accent-purple hover:bg-accent-purple/10 transition-colors disabled:opacity-50"
                                   >
                                     Transfer Ownership
                                   </button>

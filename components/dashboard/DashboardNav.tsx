@@ -381,7 +381,7 @@ export default function DashboardNav() {
           >
             <div className="truncate">
               <div className="font-medium truncate">{displayName}</div>
-              <div className={`text-caption uppercase tracking-wider ${highestPlan.rank >= 90 ? 'text-purple-400' : 'text-cosmic-orange'}`}>
+              <div className={`text-caption uppercase tracking-wider ${highestPlan.rank >= 90 ? 'text-accent-purple' : 'text-cosmic-orange'}`}>
                 {highestPlan.name}
               </div>
             </div>

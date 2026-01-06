@@ -804,7 +804,7 @@ export default function ProjectDetailPage() {
                     {/* Details */}
                     <div className="space-y-2">
                       {/* Type */}
-                      <div className="text-caption text-purple-400 uppercase tracking-wider">
+                      <div className="text-caption text-accent-purple uppercase tracking-wider">
                         {isFromRecording ? (
                           <>
                             RECORDING
@@ -910,7 +910,7 @@ export default function ProjectDetailPage() {
                     
                     {/* 2. Subtitle - all caps */}
                     {info.subtitle && (
-                      <p className="text-caption text-purple-400 uppercase tracking-wider mb-2">
+                      <p className="text-caption text-accent-purple uppercase tracking-wider mb-2">
                         {info.subtitle.toUpperCase()}
                       </p>
                     )}
@@ -1060,7 +1060,7 @@ export default function ProjectDetailPage() {
                       {/* Details */}
                       <div className="space-y-2">
                         {/* Type */}
-                        <div className="text-caption text-purple-400 uppercase tracking-wider">
+                        <div className="text-caption text-accent-purple uppercase tracking-wider">
                           {isFromRecording ? (
                             <>
                               RECORDING
@@ -1125,7 +1125,7 @@ export default function ProjectDetailPage() {
                       
                       {/* 2. Subtitle - all caps */}
                       {info.subtitle && (
-                        <p className="text-caption text-purple-400 uppercase tracking-wider mb-2">
+                        <p className="text-caption text-accent-purple uppercase tracking-wider mb-2">
                           {info.subtitle.toUpperCase()}
                         </p>
                       )}
@@ -1345,6 +1345,7 @@ export default function ProjectDetailPage() {
                     .eq('id', projectId)
                   if (error) throw error
                   fetchProjectData()
+                  setShowProjectSettings(false)
                 } catch (error) {
                   console.error('Error updating project:', error)
                   alert('Failed to update project')

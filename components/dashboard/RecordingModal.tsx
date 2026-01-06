@@ -256,11 +256,12 @@ export default function RecordingModal({
 
   // Save recording
   const handleSave = async () => {
-    if (!pendingBlob || !title.trim()) return
+    if (!pendingBlob) return
 
     setSaving(true)
     try {
-      await onSave(pendingBlob, recordingTime, title.trim())
+      // Title is optional - will be auto-generated from transcription
+      await onSave(pendingBlob, recordingTime, title.trim() || '')
     } catch (err) {
       console.error('Error saving:', err)
       setError('Failed to save recording.')
@@ -395,13 +396,13 @@ export default function RecordingModal({
             >
               <div>
                 <label className="block text-body-sm text-secondary-white mb-2">
-                  Recording Title
+                  Title <span className="text-medium-gray">(optional - auto-generated from content)</span>
                 </label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Town Council Meeting - Jan 2026"
+                  placeholder="Leave blank to auto-generate"
                   className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md focus:outline-none focus:border-cosmic-orange transition-colors"
                   autoFocus={showSaveForm}
                 />
@@ -416,10 +417,10 @@ export default function RecordingModal({
                 </button>
                 <button
                   onClick={handleSave}
-                  disabled={saving || !title.trim()}
+                  disabled={saving}
                   className="btn-primary flex-1 py-3 disabled:opacity-50"
                 >
-                  {saving ? 'Saving...' : 'Save'}
+                  {saving ? 'Processing...' : 'Save & Transcribe'}
                 </button>
               </div>
             </div>

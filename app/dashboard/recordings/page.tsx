@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import { formatRelativeTime, formatDuration } from '@/lib/utils/format'
@@ -99,6 +100,7 @@ function TranscriptionDiffView({ original, current }: { original: string; curren
 }
 
 export default function RecordingsPage() {
+  const router = useRouter()
   const { user } = useAuth()
   const [recordings, setRecordings] = useState<Recording[]>([])
   const [loading, setLoading] = useState(true)
@@ -112,6 +114,7 @@ export default function RecordingsPage() {
   const [editedTitle, setEditedTitle] = useState('')
   const [editedTranscription, setEditedTranscription] = useState<string | null>(null)
   const [savingTranscription, setSavingTranscription] = useState(false)
+  const [generatingProject, setGeneratingProject] = useState(false)
   
   // Persistent recording state (survives modal close)
   const [isRecording, setIsRecording] = useState(false)
@@ -248,7 +251,7 @@ export default function RecordingsPage() {
     }
   }, [isRecording])
 
-  // Save recording from modal
+  // Save recording from modal and auto-start transcription
   const handleSaveRecording = async (blob: Blob, duration: number, title: string) => {
     if (!user) throw new Error('Not authenticated')
 
@@ -259,29 +262,80 @@ export default function RecordingsPage() {
 
     if (uploadError) throw uploadError
 
+    // Use placeholder title if none provided - will be auto-generated
+    const initialTitle = title || 'Processing...'
+
     const { data: newRecording, error: dbError } = await supabase
       .from('diffuse_recordings')
       .insert({
         user_id: user.id,
-        title: title,
+        title: initialTitle,
         duration: duration,
         file_path: fileName,
-        status: 'recorded',
+        status: 'generating', // Start in generating state
       })
       .select()
       .single()
 
     if (dbError) throw dbError
 
-    // Reset recording state
+    // Reset recording state and close modal
     setPendingBlob(null)
     setRecordingTime(0)
     setShowRecordingModal(false)
     
+    // Show the recording detail with generating state
+    setSelectedRecording(newRecording)
     await fetchRecordings()
-    
-    if (newRecording) {
-      setSelectedRecording(newRecording)
+
+    // Auto-start transcription in the background
+    try {
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+        .from('recordings')
+        .createSignedUrl(newRecording.file_path, 3600)
+
+      if (signedUrlError || !signedUrlData?.signedUrl) {
+        throw new Error('Failed to get audio URL for transcription')
+      }
+
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recordingId: newRecording.id,
+          audioUrl: signedUrlData.signedUrl,
+          autoSave: true, // Tell API to save directly to database
+          currentTitle: title, // Pass user-provided title (may be empty)
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Transcription failed')
+      }
+
+      // Refresh to show the updated recording with title and transcription
+      await fetchRecordings()
+      
+      // Update the selected recording with new data
+      const { data: updatedRecording } = await supabase
+        .from('diffuse_recordings')
+        .select('*')
+        .eq('id', newRecording.id)
+        .single()
+      
+      if (updatedRecording) {
+        setSelectedRecording(updatedRecording)
+      }
+    } catch (error) {
+      console.error('Auto-transcription error:', error)
+      // Reset status on failure
+      await supabase
+        .from('diffuse_recordings')
+        .update({ status: 'recorded', title: title || 'Untitled Recording' })
+        .eq('id', newRecording.id)
+      await fetchRecordings()
     }
   }
 
@@ -367,13 +421,9 @@ export default function RecordingsPage() {
 
       if (error) throw error
 
-      setSelectedRecording({ 
-        ...selectedRecording, 
-        transcription: pendingTranscription,
-        original_transcription: pendingTranscription,
-        status: 'transcribed' 
-      })
+      // Update local state and close modal
       setPendingTranscription(null)
+      setSelectedRecording(null)
       fetchRecordings()
     } catch (error) {
       console.error('Error saving transcription:', error)
@@ -404,6 +454,38 @@ export default function RecordingsPage() {
       alert('Failed to save transcription')
     } finally {
       setSavingTranscription(false)
+    }
+  }
+
+  const handleCreateProjectAndArticle = async () => {
+    if (!selectedRecording || !selectedRecording.transcription) return
+
+    setGeneratingProject(true)
+    try {
+      const response = await fetch('/api/workflow/quick', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recording_id: selectedRecording.id,
+          recording_title: selectedRecording.title,
+          transcription: selectedRecording.transcription,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create project')
+      }
+
+      // Close modal and navigate to the new project
+      setSelectedRecording(null)
+      router.push(`/dashboard/projects/${result.project_id}`)
+    } catch (error) {
+      console.error('Error creating project:', error)
+      alert(error instanceof Error ? error.message : 'Failed to create project and article')
+    } finally {
+      setGeneratingProject(false)
     }
   }
 
@@ -632,7 +714,7 @@ export default function RecordingsPage() {
               
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-caption uppercase tracking-wider">
-                  <span className="text-purple-400">{formatDuration(rec.duration)}</span>
+                  <span className="text-accent-purple">{formatDuration(rec.duration)}</span>
                   <span className="text-medium-gray">•</span>
                   {rec.status === 'transcribed' ? (
                     <span className="text-cosmic-orange">TRANSCRIBED</span>
@@ -854,19 +936,60 @@ export default function RecordingsPage() {
                     </>
                   ) : (
                     /* View mode - show diff if edited, plain text if not */
-                    <div className="flex-1 min-h-[150px] px-4 py-3 bg-white/5 border border-white/10 rounded-glass overflow-y-auto">
-                      {selectedRecording.original_transcription && 
-                       selectedRecording.transcription !== selectedRecording.original_transcription ? (
-                        <TranscriptionDiffView 
-                          original={selectedRecording.original_transcription} 
-                          current={selectedRecording.transcription} 
-                        />
-                      ) : (
-                        <p className="text-body-md text-secondary-white leading-relaxed whitespace-pre-wrap">
-                          {selectedRecording.transcription}
-                        </p>
-                      )}
-                    </div>
+                    <>
+                      <div className="flex-1 min-h-[150px] px-4 py-3 bg-white/5 border border-white/10 rounded-glass overflow-y-auto">
+                        {selectedRecording.original_transcription && 
+                         selectedRecording.transcription !== selectedRecording.original_transcription ? (
+                          <TranscriptionDiffView 
+                            original={selectedRecording.original_transcription} 
+                            current={selectedRecording.transcription} 
+                          />
+                        ) : (
+                          <p className="text-body-md text-secondary-white leading-relaxed whitespace-pre-wrap">
+                            {selectedRecording.transcription}
+                          </p>
+                        )}
+                      </div>
+                      {/* Action Buttons */}
+                      <div className="mt-4 flex-shrink-0 flex gap-3">
+                        <button
+                          onClick={() => setSelectedRecording(null)}
+                          disabled={generatingProject}
+                          className="flex-1 px-4 py-3 flex items-center justify-center gap-2 text-body-sm rounded-glass btn-secondary"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Save & Close
+                        </button>
+                        <button
+                          onClick={handleCreateProjectAndArticle}
+                          disabled={generatingProject}
+                          className={`flex-1 px-4 py-3 flex items-center justify-center gap-2 text-body-sm rounded-glass transition-colors ${
+                            generatingProject
+                              ? 'btn-primary opacity-50 cursor-not-allowed'
+                              : 'btn-primary'
+                          }`}
+                        >
+                          {generatingProject ? (
+                            <>
+                              <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                              </svg>
+                              Creating Project...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                              </svg>
+                              Create Project & Article
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </>
                   )}
                 </div>
               ) : pendingTranscription ? (
@@ -877,7 +1000,7 @@ export default function RecordingsPage() {
                     className="flex-1 min-h-[150px] px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md focus:outline-none focus:border-cosmic-orange transition-colors resize-none leading-relaxed overflow-y-auto"
                   />
                 </div>
-              ) : transcribing ? (
+              ) : (transcribing || selectedRecording.status === 'generating') ? (
                 <div className="p-4 bg-white/5 rounded-glass text-center">
                   <div className="flex items-center justify-center gap-3">
                     <svg className="w-5 h-5 text-cosmic-orange animate-spin" fill="none" viewBox="0 0 24 24">
@@ -886,9 +1009,6 @@ export default function RecordingsPage() {
                     </svg>
                     <span className="text-body-md text-secondary-white">Generating transcription...</span>
                   </div>
-                  <p className="text-body-sm text-medium-gray mt-3">
-                    This may take a minute. You can close this and check back later.
-                  </p>
                 </div>
               ) : (
                 <div className="p-4 bg-white/5 rounded-glass text-center">
@@ -904,31 +1024,14 @@ export default function RecordingsPage() {
             </div>
 
             {/* Action buttons - only show when there's a pending action */}
-            {(pendingTranscription || transcribing) && (
+            {pendingTranscription && (
               <div className="flex gap-3 pt-4 border-t border-white/10 flex-shrink-0">
-                {pendingTranscription ? (
-                  <>
-                    <button
-                      onClick={() => setPendingTranscription(null)}
-                      className="btn-secondary flex-1 py-3"
-                    >
-                      Discard
-                    </button>
-                    <button
-                      onClick={saveTranscription}
-                      className="btn-primary flex-1 py-3"
-                    >
-                      Save Transcription
-                    </button>
-                  </>
-                ) : transcribing ? (
-                  <button
-                    onClick={() => cancelTranscription(selectedRecording.id)}
-                    className="btn-secondary flex-1 py-3 text-yellow-400 hover:text-yellow-300"
-                  >
-                    Cancel Transcription
-                  </button>
-                ) : null}
+                <button
+                  onClick={saveTranscription}
+                  className="btn-primary flex-1 py-3"
+                >
+                  Save
+                </button>
               </div>
             )}
           </div>

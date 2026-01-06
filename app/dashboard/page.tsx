@@ -228,7 +228,7 @@ export default function DashboardPage() {
                       e.stopPropagation()
                       router.push(`/dashboard/projects/${project.id}?tab=inputs`)
                     }}
-                    className="text-caption text-purple-400 uppercase tracking-wider hover:text-purple-200 cursor-pointer transition-colors"
+                    className="text-caption text-accent-purple uppercase tracking-wider hover:text-accent-purple/70 cursor-pointer transition-colors"
                   >
                     {project.input_count} INPUT{project.input_count !== 1 ? 'S' : ''}
                   </span>
