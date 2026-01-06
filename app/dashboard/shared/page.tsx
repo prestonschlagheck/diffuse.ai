@@ -74,7 +74,8 @@ export default function SharedWithMePage() {
           supabase
             .from('diffuse_project_outputs')
             .select('*', { count: 'exact', head: true })
-            .eq('project_id', project.id),
+            .eq('project_id', project.id)
+            .is('deleted_at', null),
           project.visible_to_orgs && project.visible_to_orgs.length > 0
             ? supabase
                 .from('diffuse_workspaces')

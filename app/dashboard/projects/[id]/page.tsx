@@ -78,7 +78,7 @@ export default function ProjectDetailPage() {
 
     try {
       // First try standard JSON parsing
-      let parsed = output.content
+      let parsed: Record<string, unknown> | null = null
       if (typeof output.content === 'string') {
         const trimmed = output.content.trim()
         try {
@@ -99,10 +99,10 @@ export default function ProjectDetailPage() {
       // If we got a parsed object with expected fields
       if (parsed && typeof parsed === 'object' && (parsed.title || parsed.content)) {
         return {
-          title: parsed.title || 'Untitled Article',
-          subtitle: parsed.subtitle || null,
-          author: parsed.author || 'Diffuse.AI',
-          excerpt: parsed.excerpt || null,
+          title: (parsed.title as string) || 'Untitled Article',
+          subtitle: (parsed.subtitle as string) || null,
+          author: (parsed.author as string) || 'Diffuse.AI',
+          excerpt: (parsed.excerpt as string) || null,
         }
       }
     } catch {

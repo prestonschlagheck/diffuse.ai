@@ -75,7 +75,8 @@ export default function DashboardPage() {
           supabase
             .from('diffuse_project_outputs')
             .select('*', { count: 'exact', head: true })
-            .eq('project_id', project.id),
+            .eq('project_id', project.id)
+            .is('deleted_at', null),
           supabase
             .from('user_profiles')
             .select('full_name')
