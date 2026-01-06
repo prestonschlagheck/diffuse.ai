@@ -536,7 +536,7 @@ export default function ProjectDetailPage() {
               : 'text-secondary-white hover:text-white'
           }`}
         >
-          Inputs ({inputs.length})
+          Inputs<span className="hidden md:inline"> ({inputs.length})</span>
           {activeTab === 'inputs' && (
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-cosmic-orange" />
           )}
@@ -549,7 +549,7 @@ export default function ProjectDetailPage() {
               : 'text-secondary-white hover:text-white'
           }`}
         >
-          Outputs ({outputs.length})
+          Outputs<span className="hidden md:inline"> ({outputs.length})</span>
           {activeTab === 'outputs' && (
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-cosmic-orange" />
           )}
@@ -564,7 +564,7 @@ export default function ProjectDetailPage() {
               : 'text-secondary-white hover:text-white'
           }`}
         >
-          Visibility ({visibility === 'public' ? selectedOrgs.length : 0})
+          Visibility<span className="hidden md:inline"> ({visibility === 'public' ? selectedOrgs.length : 0})</span>
           {activeTab === 'visibility' && (
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-cosmic-orange" />
           )}
@@ -579,7 +579,7 @@ export default function ProjectDetailPage() {
                 : 'text-secondary-white hover:text-white'
             }`}
           >
-            Trash ({trashedInputs.length + trashedOutputs.length})
+            Trash<span className="hidden md:inline"> ({trashedInputs.length + trashedOutputs.length})</span>
             {activeTab === 'trash' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-cosmic-orange" />
             )}
@@ -592,10 +592,10 @@ export default function ProjectDetailPage() {
         <div>
           {/* Add Input Buttons - Only visible to editors and above */}
           {canEdit && (
-          <div className="flex justify-end gap-3 mb-4">
+          <div className="flex flex-col md:flex-row md:justify-end gap-3 mb-4">
             <button
               onClick={() => setShowTextInputModal(true)}
-              className="btn-secondary px-4 py-2 flex items-center gap-2 text-body-sm"
+              className="btn-secondary px-4 py-2 flex items-center justify-center gap-2 text-body-sm w-full md:w-auto"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -604,7 +604,7 @@ export default function ProjectDetailPage() {
             </button>
             <button
               onClick={() => setShowRecordingModal(true)}
-              className="btn-primary px-4 py-2 flex items-center gap-2 text-body-sm"
+              className="btn-primary px-4 py-2 flex items-center justify-center gap-2 text-body-sm w-full md:w-auto"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
