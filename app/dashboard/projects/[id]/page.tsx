@@ -1340,7 +1340,7 @@ export default function ProjectDetailPage() {
 
               {canDelete && showDeleteConfirm && (
                 <div className="col-span-2 p-3 bg-red-500/10 border border-red-500/30 rounded-glass">
-                  <p className="text-body-sm text-red-400 font-medium mb-2">Type "DELETE" to confirm:</p>
+                  <p className="text-body-sm text-red-400 font-medium mb-2">Type &quot;DELETE&quot; to confirm:</p>
                   <div className="flex gap-2">
                     <input
                       type="text"
