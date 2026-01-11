@@ -4,7 +4,7 @@ export type ProjectStatus = 'active' | 'archived' | 'draft'
 
 export type ProjectVisibility = 'private' | 'public'
 
-export type InputType = 'text' | 'audio'
+export type InputType = 'text' | 'audio' | 'image' | 'document'
 
 export type WorkflowStatus = 'pending' | 'processing' | 'completed' | 'failed'
 

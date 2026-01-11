@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { formatDuration } from '@/lib/utils/format'
@@ -11,7 +11,7 @@ import InputDetailModal from '@/components/dashboard/InputDetailModal'
 import OutputDetailModal from '@/components/dashboard/OutputDetailModal'
 import SelectRecordingModal from '@/components/dashboard/SelectRecordingModal'
 import { addRecentProject } from '@/components/dashboard/DashboardNav'
-import type { DiffuseProject, DiffuseProjectInput, DiffuseProjectOutput, ProjectVisibility, UserRole } from '@/types/database'
+import type { DiffuseProject, DiffuseProjectInput, DiffuseProjectOutput, ProjectVisibility, UserRole, InputType } from '@/types/database'
 
 // Role hierarchy for permissions
 const roleHierarchy = ['viewer', 'editor', 'admin', 'owner'] as const
@@ -57,6 +57,12 @@ export default function ProjectDetailPage() {
   const [deletingProject, setDeletingProject] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showAddInputDropdown, setShowAddInputDropdown] = useState(false)
+  const [uploadingFile, setUploadingFile] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null)
+  const audioInputRef = useRef<HTMLInputElement>(null)
+  const documentInputRef = useRef<HTMLInputElement>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
 
   // Permission helpers
@@ -610,6 +616,159 @@ export default function ProjectDetailPage() {
     }
   }
 
+  // File upload handlers
+  const handleFileUpload = async (files: FileList | null, type: 'audio' | 'document' | 'image') => {
+    if (!files || files.length === 0) return
+
+    setUploadingFile(true)
+    setShowAddInputDropdown(false)
+
+    try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      if (!currentUser) throw new Error('Not authenticated')
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        setUploadProgress(`Processing ${file.name} (${i + 1}/${files.length})...`)
+
+        if (type === 'audio') {
+          // Upload audio to storage first
+          const filePath = `${currentUser.id}/${projectId}/${Date.now()}-${file.name}`
+          const { error: uploadError } = await supabase.storage
+            .from('project-files')
+            .upload(filePath, file)
+
+          if (uploadError) throw uploadError
+
+          // Generate a signed URL for the audio file
+          const { data: signedUrlData } = await supabase.storage
+            .from('project-files')
+            .createSignedUrl(filePath, 60 * 60 * 24 * 365) // 1 year
+
+          setUploadProgress(`Transcribing ${file.name}...`)
+
+          // Send to transcription API
+          const formData = new FormData()
+          formData.append('audio', file)
+
+          const response = await fetch('/api/transcribe', {
+            method: 'POST',
+            body: formData,
+          })
+
+          const result = await response.json()
+
+          if (!response.ok) {
+            throw new Error(result.error || 'Failed to transcribe audio')
+          }
+
+          // Create the input with transcribed text
+          const { error: inputError } = await supabase
+            .from('diffuse_project_inputs')
+            .insert({
+              project_id: projectId,
+              type: 'audio' as InputType,
+              content: result.transcription,
+              file_path: filePath,
+              file_name: file.name,
+              file_size: file.size,
+              metadata: {
+                source: 'upload',
+                original_type: file.type,
+                storage_url: signedUrlData?.signedUrl || null,
+              },
+              created_by: currentUser.id,
+            })
+
+          if (inputError) throw inputError
+
+        } else if (type === 'document') {
+          // Extract text from document
+          setUploadProgress(`Extracting text from ${file.name}...`)
+
+          const formData = new FormData()
+          formData.append('file', file)
+
+          const response = await fetch('/api/extract-text', {
+            method: 'POST',
+            body: formData,
+          })
+
+          const result = await response.json()
+
+          if (!response.ok) {
+            throw new Error(result.error || 'Failed to extract text from document')
+          }
+
+          // Create the input with extracted text
+          const { error: inputError } = await supabase
+            .from('diffuse_project_inputs')
+            .insert({
+              project_id: projectId,
+              type: 'document' as InputType,
+              content: result.text,
+              file_name: file.name,
+              file_size: file.size,
+              metadata: {
+                source: 'upload',
+                original_type: file.type,
+                file_type: result.file_type,
+              },
+              created_by: currentUser.id,
+            })
+
+          if (inputError) throw inputError
+
+        } else if (type === 'image') {
+          // Upload image to storage
+          const filePath = `${currentUser.id}/${projectId}/${Date.now()}-${file.name}`
+          const { error: uploadError } = await supabase.storage
+            .from('project-files')
+            .upload(filePath, file)
+
+          if (uploadError) throw uploadError
+
+          // Generate a signed URL (valid for 1 year)
+          const { data: signedUrlData } = await supabase.storage
+            .from('project-files')
+            .createSignedUrl(filePath, 60 * 60 * 24 * 365) // 1 year
+
+          // Create the input (no text content - processed by workflow)
+          const { error: inputError } = await supabase
+            .from('diffuse_project_inputs')
+            .insert({
+              project_id: projectId,
+              type: 'image' as InputType,
+              content: null,
+              file_path: filePath,
+              file_name: file.name,
+              file_size: file.size,
+              metadata: {
+                source: 'upload',
+                original_type: file.type,
+                storage_url: signedUrlData?.signedUrl || null,
+              },
+              created_by: currentUser.id,
+            })
+
+          if (inputError) throw inputError
+        }
+      }
+
+      fetchProjectData()
+    } catch (error) {
+      console.error('Error uploading file:', error)
+      alert(error instanceof Error ? error.message : 'Failed to upload file')
+    } finally {
+      setUploadingFile(false)
+      setUploadProgress(null)
+      // Reset file inputs
+      if (audioInputRef.current) audioInputRef.current.value = ''
+      if (documentInputRef.current) documentInputRef.current.value = ''
+      if (imageInputRef.current) imageInputRef.current.value = ''
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -724,9 +883,10 @@ export default function ProjectDetailPage() {
       {/* Inputs Tab */}
       {activeTab === 'inputs' && (
         <div>
-          {/* Add Input Buttons - Only visible to editors and above */}
+          {/* Add Input Controls - Only visible to editors and above */}
           {canEdit && (
           <div className="flex flex-col md:flex-row md:justify-end gap-3 mb-4">
+            {/* Settings Button */}
             <button
               onClick={() => {
                 setEditProjectName(project?.name || '')
@@ -742,24 +902,153 @@ export default function ProjectDetailPage() {
               </svg>
               Settings
             </button>
-            <button
-              onClick={() => setShowTextInputModal(true)}
-              className="btn-secondary px-4 py-2 flex items-center justify-center gap-2 text-body-sm w-full md:w-auto"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Add Text Input
-            </button>
-            <button
-              onClick={() => setShowRecordingModal(true)}
-              className="btn-primary px-4 py-2 flex items-center justify-center gap-2 text-body-sm w-full md:w-auto"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-              </svg>
-              Add from Recordings
-            </button>
+
+            {/* Add Input Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowAddInputDropdown(!showAddInputDropdown)}
+                disabled={uploadingFile}
+                className="btn-primary px-4 py-2 flex items-center justify-center gap-2 text-body-sm w-full md:w-auto disabled:opacity-50"
+              >
+                {uploadingFile ? (
+                  <>
+                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    {uploadProgress || 'Processing...'}
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Input
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </>
+                )}
+              </button>
+
+              {/* Dropdown Menu */}
+              {showAddInputDropdown && (
+                <div className="absolute right-0 mt-2 w-56 glass-container py-2 z-50">
+                  {/* Text Input */}
+                  <button
+                    onClick={() => {
+                      setShowAddInputDropdown(false)
+                      setShowTextInputModal(true)
+                    }}
+                    className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-white/10 transition-colors"
+                  >
+                    <svg className="w-5 h-5 text-pale-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <div>
+                      <p className="text-body-sm text-secondary-white">Text</p>
+                      <p className="text-caption text-medium-gray">Type or paste text</p>
+                    </div>
+                  </button>
+
+                  {/* Recording */}
+                  <button
+                    onClick={() => {
+                      setShowAddInputDropdown(false)
+                      setShowRecordingModal(true)
+                    }}
+                    className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-white/10 transition-colors"
+                  >
+                    <svg className="w-5 h-5 text-cosmic-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                    <div>
+                      <p className="text-body-sm text-secondary-white">Recording</p>
+                      <p className="text-caption text-medium-gray">From your recordings</p>
+                    </div>
+                  </button>
+
+                  <div className="border-t border-white/10 my-2" />
+
+                  {/* Audio File */}
+                  <button
+                    onClick={() => {
+                      setShowAddInputDropdown(false)
+                      audioInputRef.current?.click()
+                    }}
+                    className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-white/10 transition-colors"
+                  >
+                    <svg className="w-5 h-5 text-accent-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                    </svg>
+                    <div>
+                      <p className="text-body-sm text-secondary-white">Audio File</p>
+                      <p className="text-caption text-medium-gray">MP3, WAV</p>
+                    </div>
+                  </button>
+
+                  {/* Document */}
+                  <button
+                    onClick={() => {
+                      setShowAddInputDropdown(false)
+                      documentInputRef.current?.click()
+                    }}
+                    className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-white/10 transition-colors"
+                  >
+                    <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    <div>
+                      <p className="text-body-sm text-secondary-white">Document</p>
+                      <p className="text-caption text-medium-gray">PDF, DOCX, TXT</p>
+                    </div>
+                  </button>
+
+                  {/* Image */}
+                  <button
+                    onClick={() => {
+                      setShowAddInputDropdown(false)
+                      imageInputRef.current?.click()
+                    }}
+                    className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-white/10 transition-colors"
+                  >
+                    <svg className="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <div>
+                      <p className="text-body-sm text-secondary-white">Image</p>
+                      <p className="text-caption text-medium-gray">JPG, PNG</p>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Hidden File Inputs */}
+            <input
+              ref={audioInputRef}
+              type="file"
+              accept=".mp3,.wav,audio/mpeg,audio/wav"
+              multiple
+              className="hidden"
+              onChange={(e) => handleFileUpload(e.target.files, 'audio')}
+            />
+            <input
+              ref={documentInputRef}
+              type="file"
+              accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+              multiple
+              className="hidden"
+              onChange={(e) => handleFileUpload(e.target.files, 'document')}
+            />
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+              multiple
+              className="hidden"
+              onChange={(e) => handleFileUpload(e.target.files, 'image')}
+            />
           </div>
           )}
 
@@ -776,12 +1065,53 @@ export default function ProjectDetailPage() {
                 </svg>
               }
               title="No Inputs Yet"
-              description="Add recordings or text as inputs to generate your article."
+              description="Add recordings, text, documents, or images as inputs to generate your article."
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {inputs.map((input) => {
                 const isFromRecording = input.metadata?.source === 'recording'
+                const isFromUpload = input.metadata?.source === 'upload'
+                
+                // Determine input type label and color
+                const getTypeInfo = () => {
+                  if (isFromRecording) {
+                    return { label: 'RECORDING', color: 'text-cosmic-orange', icon: (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                      </svg>
+                    )}
+                  }
+                  switch (input.type) {
+                    case 'audio':
+                      return { label: 'AUDIO', color: 'text-accent-purple', icon: (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                        </svg>
+                      )}
+                    case 'document':
+                      return { label: 'DOCUMENT', color: 'text-green-400', icon: (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                      )}
+                    case 'image':
+                      return { label: 'IMAGE', color: 'text-yellow-400', icon: (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      )}
+                    default:
+                      return { label: 'TEXT', color: 'text-pale-blue', icon: (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      )}
+                  }
+                }
+                
+                const typeInfo = getTypeInfo()
+                const defaultTitle = isFromRecording ? 'Recording' : input.type === 'image' ? 'Image' : input.type === 'document' ? 'Document' : input.type === 'audio' ? 'Audio' : 'Text Input'
                 
                 return (
                   <div
@@ -789,39 +1119,50 @@ export default function ProjectDetailPage() {
                     onClick={() => setSelectedInput(input)}
                     className="glass-container p-6 hover:bg-white/10 transition-colors cursor-pointer"
                   >
-                    {/* Title */}
-                    <h3 className="text-heading-md text-secondary-white font-medium mb-2 truncate">
-                      {input.file_name || (isFromRecording ? 'Recording' : 'Text Input')}
-                    </h3>
+                    {/* Header with Icon */}
+                    <div className="flex items-start gap-3">
+                      <div className={`p-2 rounded-lg bg-white/5 ${typeInfo.color}`}>
+                        {typeInfo.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        {/* Title */}
+                        <h3 className="text-heading-md text-secondary-white font-medium mb-1 truncate">
+                          {input.file_name || defaultTitle}
+                        </h3>
+                        
+                        {/* Type Badge */}
+                        <div className={`text-caption uppercase tracking-wider ${typeInfo.color}`}>
+                          {typeInfo.label}
+                          {isFromRecording && input.metadata?.recording_duration && (
+                            <>
+                              <span className="text-medium-gray"> • </span>
+                              <span>{formatDuration(input.metadata.recording_duration)}</span>
+                            </>
+                          )}
+                          {isFromUpload && input.file_size && (
+                            <>
+                              <span className="text-medium-gray"> • </span>
+                              <span className="text-medium-gray">{(input.file_size / 1024).toFixed(0)} KB</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                     
                     {/* Content Preview */}
-                    {input.content && (
-                      <p className="text-body-sm text-secondary-white/70 mb-3 line-clamp-2">
+                    {input.content ? (
+                      <p className="text-body-sm text-secondary-white/70 mt-3 line-clamp-2">
                         {input.content}
                       </p>
-                    )}
+                    ) : input.type === 'image' ? (
+                      <p className="text-body-sm text-medium-gray mt-3 italic">
+                        Image will be processed by the workflow
+                      </p>
+                    ) : null}
                     
-                    {/* Details */}
-                    <div className="space-y-2">
-                      {/* Type */}
-                      <div className="text-caption text-accent-purple uppercase tracking-wider">
-                        {isFromRecording ? (
-                          <>
-                            RECORDING
-                            {input.metadata?.recording_duration && (
-                              <>
-                                <span className="text-medium-gray"> • </span>
-                                <span className="text-cosmic-orange">{formatDuration(input.metadata.recording_duration)}</span>
-                              </>
-                            )}
-                          </>
-                        ) : 'TEXT'}
-                        </div>
-                      
-                      {/* Date */}
-                      <div className="text-caption text-medium-gray uppercase tracking-wider">
-                        {new Date(input.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
-                      </div>
+                    {/* Date */}
+                    <div className="text-caption text-medium-gray uppercase tracking-wider mt-3">
+                      {new Date(input.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
                     </div>
                   </div>
                 )

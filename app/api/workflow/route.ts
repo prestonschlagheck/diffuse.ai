@@ -97,13 +97,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare payload for n8n
+    // For images, include the storage URL instead of content
+    // For text/audio/document, include the text content
     const n8nPayload = {
       project_id,
       inputs: inputs.map(input => ({
         id: input.id,
         type: input.type,
         content: input.content || '',
-        file_name: input.file_name || 'Untitled'
+        file_name: input.file_name || 'Untitled',
+        // Include image URL for image inputs so n8n can process them
+        image_url: input.type === 'image' ? input.metadata?.storage_url : undefined,
+        file_path: input.file_path || undefined
       }))
     }
 
