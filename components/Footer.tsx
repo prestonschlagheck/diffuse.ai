@@ -12,7 +12,7 @@ const footerLinks = {
   ],
   solutions: [
     { name: 'For Individuals', href: '#use-cases' },
-    { name: 'For Teams', href: '#enterprise' },
+    { name: 'For Teams', href: '#pricing' },
     { name: 'Spring-Ford Press', href: 'https://springford.press', external: true },
   ],
   company: [

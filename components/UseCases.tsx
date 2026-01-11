@@ -73,7 +73,7 @@ export default function UseCases() {
               Built For You
             </span>
             <h2 className="text-2xl sm:text-3xl md:text-heading-xl lg:text-display-sm font-bold mb-6">
-              From Freelancers to <span className="gradient-text">Enterprise Newsrooms</span>
+              From Freelancers to <span className="gradient-text">News Teams</span>
             </h2>
             <p className="text-base sm:text-lg md:text-body-md text-medium-gray max-w-3xl mx-auto">
               Whether you&apos;re an independent journalist or managing a multi-publication network, Diffuse scales with you.
@@ -149,29 +149,27 @@ export default function UseCases() {
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="mb-8"
           >
             <div className="glass-container p-6 sm:p-8 md:p-10 lg:p-14 overflow-hidden">
               <div className="grid lg:grid-cols-2 gap-8 md:gap-12 items-stretch">
                 {/* Left Content */}
                 <div>
                   <div className="inline-block px-3 py-1 bg-[#3391af]/20 text-[#3391af] text-xs font-semibold uppercase tracking-wider rounded-full mb-4">
-                    Featured Partner
+                    Live Example
                   </div>
                   <h3 className="text-2xl sm:text-3xl md:text-heading-xl font-bold mb-4 md:mb-6">
                     <span className="text-[#dbdbdb]">Spring-Ford</span> <span className="text-[#3391af]">Press</span>
                   </h3>
                   <p className="text-base sm:text-lg md:text-body-md text-secondary-white mb-6 leading-relaxed">
                     Digital-first local news outlet serving the Spring-Ford area 
-                    of Pennsylvania. AI-driven automated coverage integrated with municipal recording systems.
+                    of Pennsylvania, powered by Diffuse.AI.
                   </p>
 
                   <div className="space-y-4">
                     {[
-                      'Meeting recaps published within hours',
-                      'Enterprise integration with their CMS',
-                      'One-click article import to WordPress',
-                      'Sustainable ad-supported revenue model',
+                      'AI-generated meeting coverage',
+                      'Published articles within hours',
+                      'Consistent local news output',
                     ].map((feature, index) => (
                       <div key={index} className="flex items-start gap-3">
                         <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#3391af]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -195,7 +193,7 @@ export default function UseCases() {
                   <div className="overflow-hidden rounded-t-glass">
                     <div className="bg-[#3391af]/90 group-hover:bg-[#57959f] px-4 py-3 flex items-center justify-center transition-colors duration-300">
                       <span className="text-sm sm:text-base md:text-body-sm font-bold text-white uppercase tracking-wider">
-                        Live Example
+                        See It In Action
                       </span>
                     </div>
                   </div>
@@ -215,80 +213,6 @@ export default function UseCases() {
                     </svg>
                   </div>
                 </a>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Enterprise/Organization Use Cases - PURPLE themed */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="grid sm:grid-cols-2 md:grid-cols-3 gap-6"
-          >
-            {/* Media Networks */}
-            <div className="glass-container overflow-hidden group hover:bg-white/10 transition-colors duration-300">
-              <div className="bg-accent-purple/90 px-4 py-3 flex items-center justify-center">
-                <h3 className="text-base sm:text-lg md:text-body-md font-bold text-white">Media Networks</h3>
-              </div>
-              <div className="p-5">
-                <p className="text-sm md:text-body-sm text-medium-gray leading-relaxed mb-4">
-                  Manage multiple publications from a single dashboard. Share content across your network.
-                </p>
-                <ul className="space-y-2 text-sm text-medium-gray">
-                  <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-accent-purple rounded-full"></span>
-                    Enterprise Pro Max: Unlimited
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-accent-purple rounded-full"></span>
-                    Role-based team access
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Municipalities */}
-            <div className="glass-container overflow-hidden group hover:bg-white/10 transition-colors duration-300">
-              <div className="bg-accent-purple/90 px-4 py-3 flex items-center justify-center">
-                <h3 className="text-base sm:text-lg md:text-body-md font-bold text-white">Municipalities</h3>
-              </div>
-              <div className="p-5">
-                <p className="text-sm md:text-body-sm text-medium-gray leading-relaxed mb-4">
-                  Improve transparency with auto-generated meeting summaries for public access.
-                </p>
-                <ul className="space-y-2 text-sm text-medium-gray">
-                  <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-accent-purple rounded-full"></span>
-                    Public records compliance
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-accent-purple rounded-full"></span>
-                    Citizen engagement
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Nonprofits */}
-            <div className="glass-container overflow-hidden group hover:bg-white/10 transition-colors duration-300">
-              <div className="bg-accent-purple/90 px-4 py-3 flex items-center justify-center">
-                <h3 className="text-base sm:text-lg md:text-body-md font-bold text-white">Nonprofits</h3>
-              </div>
-              <div className="p-5">
-                <p className="text-sm md:text-body-sm text-medium-gray leading-relaxed mb-4">
-                  Deploy Diffuse to serve underrepresented communities with local news coverage.
-                </p>
-                <ul className="space-y-2 text-sm text-medium-gray">
-                  <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-accent-purple rounded-full"></span>
-                    Community impact focus
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-accent-purple rounded-full"></span>
-                    Grant-friendly pricing
-                  </li>
-                </ul>
               </div>
             </div>
           </motion.div>

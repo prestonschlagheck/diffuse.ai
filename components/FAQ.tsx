@@ -6,35 +6,35 @@ import { useRef, useState } from 'react'
 const faqs = [
   {
     question: 'What is Diffuse.AI?',
-    answer: 'Diffuse.AI is an AI-powered workflow automation platform that transforms local government meetings into publication-ready news articles. Our technology uses advanced transcription and natural language processing to automate local journalism while maintaining accuracy and editorial standards.',
+    answer: 'Diffuse.AI is an AI-powered tool that transforms audio recordings into publication-ready news articles. Record or upload audio from meetings, interviews, or events, and our AI generates structured articles with headlines, excerpts, and SEO metadata.',
   },
   {
     question: 'How does Diffuse.AI work?',
-    answer: 'Diffuse.AI follows a 4-step process: (1) Capture - Record meetings using any audio/video device, (2) Process - Our AI transcribes and analyzes the content, (3) Generate - Create factually accurate articles, (4) Publish - Human editors refine and publish quickly. The entire process takes minutes instead of hours.',
+    answer: 'Diffuse.AI follows a simple 4-step process: (1) Record - Capture audio in-app or upload existing files, (2) Transcribe - AI automatically transcribes with high accuracy, (3) Generate - Create articles from your transcription and other inputs, (4) Copy & Publish - Edit if needed, then copy to your publishing platform.',
   },
   {
-    question: 'Can I use Diffuse as an independent contractor?',
-    answer: 'Absolutely! Diffuse works perfectly for independent journalists, freelancers, and solo content creators. You don\'t need an organization or team account. Just sign up for a free account to get started with 3 projects, or upgrade to Pro ($20/mo) for 15 projects.',
+    question: 'Can I use Diffuse as an individual?',
+    answer: 'Absolutely! Diffuse works perfectly for independent journalists, freelancers, and content creators. You don\'t need to create an organization. Just sign up for a free account to get started with 3 projects, or upgrade to Pro ($20/mo) for 15 projects.',
   },
   {
-    question: 'How do I integrate with my existing CMS?',
-    answer: 'Enterprise accounts can connect their Diffuse accounts to branch sites like WordPress. Admins on your publication site can link their Diffuse credentials and import AI-written articles directly into your CMS with one click. Contact our enterprise team for custom integration options.',
+    question: 'What file types can I upload?',
+    answer: 'Diffuse supports audio files (MP3, WAV, M4A), documents (PDF, DOCX, TXT), and images (JPG, PNG). You can combine multiple input types in a single project to generate comprehensive articles.',
   },
   {
     question: 'What\'s included in the free tier?',
-    answer: 'The free tier includes up to 3 projects, full AI article generation, transcription, audio upload support, and basic support. No credit card required. It\'s perfect for trying out Diffuse before committing to a paid plan.',
+    answer: 'The free tier includes up to 3 projects, full AI article generation, audio transcription, and file uploads. No credit card required. It\'s perfect for trying out Diffuse before committing to a paid plan.',
   },
   {
     question: 'How accurate is the AI-generated content?',
-    answer: 'Diffuse.AI generates factually accurate, publication-ready articles using advanced AI. Our system is specifically trained for journalism standards. However, we always recommend a quick human review before publishing to catch any edge cases and add local context.',
+    answer: 'Diffuse.AI generates publication-ready articles using advanced AI. The output includes headlines, subtitles, excerpts, and full article content. We always recommend reviewing and editing before publishing to add your own voice and verify accuracy.',
   },
   {
-    question: 'What audio formats are supported?',
-    answer: 'Diffuse supports all major audio and video formats including MP3, WAV, M4A, MP4, MOV, and more. You can also record directly within the app using your device\'s microphone.',
+    question: 'Can I edit the generated articles?',
+    answer: 'Yes! All generated content is fully editable. You can modify the transcription before generating, and then edit all parts of the output article including title, subtitle, excerpt, content, and SEO fields.',
   },
   {
-    question: 'How is team collaboration handled?',
-    answer: 'Enterprise accounts support full team collaboration with role-based access. Owners have full control, Admins can manage members and projects, Editors can create and modify content, and Viewers have read-only access. Teams join via invite codes for easy onboarding.',
+    question: 'How does team collaboration work?',
+    answer: 'Team plans let you create an organization and invite members with role-based access. Owners have full control, Admins can manage members, Editors can create and modify content, and Viewers have read-only access. Teams join via invite codes.',
   },
 ]
 

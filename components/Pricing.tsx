@@ -13,8 +13,8 @@ const individualPlans = [
     features: [
       'Up to 3 projects',
       'AI article generation',
-      'Transcription included',
-      'Audio upload support',
+      'Audio transcription',
+      'File uploads (audio, docs, images)',
     ],
     cta: 'Start Free',
     highlight: false,
@@ -28,8 +28,8 @@ const individualPlans = [
     features: [
       'Up to 15 projects',
       'Everything in Free',
-      'Priority transcription',
       'In-app recording',
+      'Email support',
     ],
     cta: 'Get Pro',
     highlight: true,
@@ -44,8 +44,7 @@ const individualPlans = [
     features: [
       'Up to 40 projects',
       'Everything in Pro',
-      'Faster processing',
-      'Priority support',
+      'Priority email support',
     ],
     cta: 'Get Pro Max',
     highlight: false,
@@ -54,32 +53,30 @@ const individualPlans = [
 
 const enterprisePlans = [
   {
-    name: 'Enterprise Pro',
+    name: 'Team',
     price: '$100',
     period: '/month',
     projects: '50',
     description: 'For small newsrooms',
     features: [
       'Up to 50 projects',
-      'Team collaboration',
-      'Role-based access',
-      'CMS integration',
-      'Dedicated support',
+      'Create an organization',
+      'Invite team members',
+      'Role-based access control',
     ],
     cta: 'Get Started',
   },
   {
-    name: 'Enterprise Pro Max',
+    name: 'Team Max',
     price: '$500',
     period: '/month',
     projects: 'Unlimited',
-    description: 'For large organizations',
+    description: 'For large teams',
     features: [
       'Unlimited projects',
-      'Everything in Enterprise Pro',
-      'Multi-publication support',
-      'Custom integrations',
-      'Account manager',
+      'Everything in Team',
+      'Unlimited team members',
+      'Priority support',
     ],
     cta: 'Contact Sales',
   },
@@ -154,7 +151,7 @@ export default function Pricing() {
                     : 'text-medium-gray hover:text-secondary-white'
                 }`}
               >
-                Enterprise
+                Teams
               </button>
             </div>
           </motion.div>
@@ -257,7 +254,7 @@ export default function Pricing() {
                   </ul>
 
                   <a
-                    href={plan.name === 'Enterprise Pro Max' ? 'mailto:enterprise@diffuse.ai' : '/login'}
+                    href={plan.name === 'Team Max' ? 'mailto:support@diffuse.ai' : '/login'}
                     className={`block w-full py-3 text-center font-medium rounded-glass transition-all ${
                       index === 1
                         ? 'bg-accent-purple hover:bg-accent-purple/80 text-black'
