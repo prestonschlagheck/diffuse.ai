@@ -2,7 +2,6 @@
 
 import Navbar from '@/components/Navbar'
 import Hero from '@/components/Hero'
-import SocialProofBar from '@/components/SocialProofBar'
 import HowItWorks from '@/components/HowItWorks'
 import ValueProposition from '@/components/ValueProposition'
 import Features from '@/components/Features'
@@ -37,7 +36,6 @@ export default function Home() {
       <Navbar />
       <main className="relative overflow-hidden">
         <Hero />
-        <SocialProofBar />
         <HowItWorks />
         <ValueProposition />
         <Features />

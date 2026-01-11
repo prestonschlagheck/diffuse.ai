@@ -157,11 +157,8 @@ const SoundwaveToText = () => {
             <br className="hidden sm:block" />
             <span className="text-secondary-white"> in Minutes, Not Hours</span>
           </h1>
-          <p className="text-base sm:text-lg md:text-body-lg text-medium-gray max-w-2xl mx-auto mb-3">
+          <p className="text-base sm:text-lg md:text-body-lg text-medium-gray max-w-2xl mx-auto">
             AI-powered workflow that transforms audio into publication-ready journalism
-          </p>
-          <p className="text-sm sm:text-base md:text-body-md text-cosmic-orange font-semibold">
-            Save 15+ hours per week · Cut content costs by 90%
           </p>
         </motion.div>
 
