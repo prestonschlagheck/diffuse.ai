@@ -27,6 +27,38 @@ interface StructuredArticle {
   meta_description?: string
 }
 
+// Helper to extract field from JSON-like string using regex
+const extractField = (content: string, field: string): string | null => {
+  const regex = new RegExp(`"${field}"\\s*:\\s*"([^"]*(?:\\\\"[^"]*)*)"`, 's')
+  const match = content.match(regex)
+  if (match) {
+    return match[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
+  }
+  return null
+}
+
+// Helper to extract array field
+const extractArrayField = (content: string, field: string): string[] => {
+  const regex = new RegExp(`"${field}"\\s*:\\s*\\[([^\\]]*)\\]`, 's')
+  const match = content.match(regex)
+  if (match) {
+    const arrayContent = match[1]
+    const items = arrayContent.match(/"([^"]*)"/g)
+    if (items) {
+      return items.map(item => item.replace(/"/g, ''))
+    }
+  }
+  return []
+}
+
+// Calculate dynamic rows based on content for auto-expand
+const calculateRows = (text: string, baseRows: number) => {
+  if (!text) return baseRows
+  const lineBreaks = (text.match(/\n/g) || []).length + 1
+  const estimatedWrappedLines = Math.ceil(text.length / 80)
+  return Math.max(baseRows, lineBreaks, estimatedWrappedLines)
+}
+
 export default function OutputDetailModal({ 
   output, 
   onClose, 
@@ -40,40 +72,34 @@ export default function OutputDetailModal({
   const [copied, setCopied] = useState<string | null>(null)
   const [article, setArticle] = useState<StructuredArticle | null>(null)
   const [rawContent, setRawContent] = useState(output.content)
+  const [isEditing, setIsEditing] = useState(false)
   const supabase = createClient()
 
   const showDeleteButton = canDelete && onDelete
 
-  // Try to parse structured content
+  // Try to parse structured content - with fallback to regex extraction
   useEffect(() => {
     const parseContent = (content: string): StructuredArticle | null => {
       try {
         let parsed: Record<string, unknown> | null = null
         
-        // If content is a string, try to parse it
         if (typeof content === 'string') {
-          // Handle double-encoded JSON (string within string)
           let jsonString = content.trim()
           
-          // Try parsing directly first
           try {
             parsed = JSON.parse(jsonString)
           } catch {
-            // If that fails, check if it's double-encoded
             if (jsonString.startsWith('"') && jsonString.endsWith('"')) {
               try {
-                jsonString = JSON.parse(jsonString) // Unwrap the outer quotes
+                jsonString = JSON.parse(jsonString)
                 parsed = JSON.parse(jsonString)
               } catch {
-                return null
+                // Fall through to regex extraction
               }
-            } else {
-              return null
             }
           }
         }
         
-        // Verify it has the expected structure
         if (parsed && typeof parsed === 'object' && (parsed.title || parsed.content)) {
           return {
             title: (parsed.title as string) || '',
@@ -89,6 +115,25 @@ export default function OutputDetailModal({
           }
         }
         
+        // Fallback: Try regex extraction
+        const title = extractField(content, 'title')
+        const articleContent = extractField(content, 'content')
+        
+        if (title || articleContent) {
+          return {
+            title: title || '',
+            author: extractField(content, 'author') || 'Diffuse.AI',
+            subtitle: extractField(content, 'subtitle') || null,
+            excerpt: extractField(content, 'excerpt') || '',
+            content: articleContent || '',
+            suggested_sections: extractArrayField(content, 'suggested_sections'),
+            category: extractField(content, 'category') || undefined,
+            tags: extractArrayField(content, 'tags'),
+            meta_title: extractField(content, 'meta_title') || undefined,
+            meta_description: extractField(content, 'meta_description') || undefined,
+          }
+        }
+        
         return null
       } catch {
         return null
@@ -97,6 +142,7 @@ export default function OutputDetailModal({
     
     const parsedArticle = parseContent(output.content)
     setArticle(parsedArticle)
+    setRawContent(output.content)
   }, [output.content])
 
   const handleSave = async () => {
@@ -114,10 +160,12 @@ export default function OutputDetailModal({
 
       if (updateError) throw updateError
 
+      setIsEditing(false)
       if (onUpdate) onUpdate()
       onClose()
     } catch (error) {
       console.error('Error saving output:', error)
+      alert('Failed to save changes')
     } finally {
       setSaving(false)
     }
@@ -149,7 +197,6 @@ export default function OutputDetailModal({
 
   const handleCopyAll = async () => {
     if (article) {
-      // Copy structured article with clean formatting
       const sections = [
         article.title && `${article.title}`,
         article.subtitle && `${article.subtitle}`,
@@ -167,51 +214,14 @@ export default function OutputDetailModal({
       handleCopy(allContent, 'all')
       return
     }
-
-    // Try to extract and format from raw content
-    try {
-      const extractField = (json: string, field: string): string | null => {
-        const regex = new RegExp(`"${field}"\\s*:\\s*"([^"]*(?:\\\\"[^"]*)*)"`, 's')
-        const match = json.match(regex)
-        if (match) {
-          return match[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
-        }
-        return null
-      }
-      
-      const title = extractField(rawContent, 'title')
-      const subtitle = extractField(rawContent, 'subtitle')
-      const excerpt = extractField(rawContent, 'excerpt')
-      const content = extractField(rawContent, 'content')
-      const category = extractField(rawContent, 'category')
-      const metaTitle = extractField(rawContent, 'meta_title')
-      const metaDesc = extractField(rawContent, 'meta_description')
-
-    const sections = [
-        title,
-        subtitle,
-        excerpt,
-        content,
-        category && `Category: ${category}`,
-        metaTitle && `Meta Title: ${metaTitle}`,
-        metaDesc && `Meta Description: ${metaDesc}`,
-    ].filter(Boolean)
-
-      if (sections.length >= 2) {
-        handleCopy(sections.join('\n\n'), 'all')
-        return
-      }
-    } catch {
-      // Fall through to raw copy
-    }
     
-    // Fallback: copy raw content
     handleCopy(rawContent, 'all')
   }
 
-  const updateArticleField = (field: keyof StructuredArticle, value: any) => {
+  const handleFieldChange = (field: keyof StructuredArticle, value: string | string[]) => {
     if (article) {
-      setArticle({ ...article, [field]: value })
+      setArticle(prev => prev ? { ...prev, [field]: value } : null)
+      if (!isEditing) setIsEditing(true)
     }
   }
 
@@ -221,116 +231,6 @@ export default function OutputDetailModal({
     completed: 'text-green-400',
     failed: 'text-red-400',
   }
-
-  const CopyButton = ({ text, field }: { text: string; field: string }) => (
-    <button
-      onClick={() => handleCopy(text, field)}
-      className="p-1.5 text-medium-gray hover:text-cosmic-orange hover:bg-cosmic-orange/10 rounded transition-colors"
-      title="Copy"
-    >
-      {copied === field ? (
-        <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-        </svg>
-      ) : (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-        </svg>
-      )}
-    </button>
-  )
-
-  const EditableField = ({ 
-    label, 
-    field, 
-    value, 
-    multiline = false,
-    rows = 3,
-    charLimit,
-    autoExpand = false,
-  }: { 
-    label: string
-    field: string
-    value: string
-    multiline?: boolean
-    rows?: number
-    charLimit?: number
-    autoExpand?: boolean
-  }) => {
-    // Calculate dynamic rows based on content for auto-expand
-    const calculateRows = (text: string) => {
-      if (!text) return rows
-      const lineBreaks = (text.match(/\n/g) || []).length + 1
-      const estimatedWrappedLines = Math.ceil(text.length / 80) // Rough estimate for line wrapping
-      return Math.max(rows, lineBreaks, estimatedWrappedLines)
-    }
-
-    return (
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <label className="text-caption text-medium-gray uppercase tracking-wider">
-          {label}
-          {charLimit && <span className="text-medium-gray/60 ml-1">({value?.length || 0}/{charLimit})</span>}
-        </label>
-        <CopyButton text={value || ''} field={field} />
-      </div>
-      {multiline ? (
-        <textarea
-          value={value || ''}
-          onChange={(e) => updateArticleField(field as keyof StructuredArticle, e.target.value)}
-            rows={autoExpand ? calculateRows(value) : rows}
-          readOnly={!canEdit}
-          className={`w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-sm transition-colors resize-none ${
-            canEdit 
-              ? 'focus:outline-none focus:border-cosmic-orange' 
-              : 'cursor-default opacity-75'
-          }`}
-        />
-      ) : (
-        <input
-          type="text"
-          value={value || ''}
-          onChange={(e) => updateArticleField(field as keyof StructuredArticle, e.target.value)}
-          readOnly={!canEdit}
-          className={`w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md transition-colors ${
-            canEdit 
-              ? 'focus:outline-none focus:border-cosmic-orange' 
-              : 'cursor-default opacity-75'
-          }`}
-        />
-      )}
-    </div>
-  )
-  }
-
-  const TagsField = ({ 
-    label, 
-    field, 
-    values,
-    color = 'bg-white/10 text-secondary-white'
-  }: { 
-    label: string
-    field: string
-    values: string[]
-    color?: string
-  }) => (
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <label className="text-caption text-medium-gray uppercase tracking-wider">{label}</label>
-        <CopyButton text={values?.join(', ') || ''} field={field} />
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {values?.map((item, i) => (
-          <span key={i} className={`px-3 py-1 ${color} text-caption rounded-full`}>
-            {item}
-          </span>
-        ))}
-        {(!values || values.length === 0) && (
-          <span className="text-caption text-medium-gray">None</span>
-        )}
-      </div>
-    </div>
-  )
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
@@ -342,6 +242,11 @@ export default function OutputDetailModal({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             <h2 className="text-heading-lg text-secondary-white">Output Details</h2>
+            {canEdit && (
+              <span className="text-caption text-cosmic-orange bg-cosmic-orange/10 px-2 py-1 rounded">
+                Editable
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {/* Copy All Button */}
@@ -395,252 +300,364 @@ export default function OutputDetailModal({
           </span>
           <span>•</span>
           <span>{formatDateTime(output.created_at)}</span>
+          {isEditing && (
+            <>
+              <span>•</span>
+              <span className="text-cosmic-orange">Unsaved changes</span>
+            </>
+          )}
         </div>
 
         {/* Scrollable Content Area */}
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 -mr-2">
-        {article ? (
-          /* Structured Article View */
-          <div className="space-y-5">
-            {/* Title */}
-            <EditableField label="Title" field="title" value={article.title} />
+          {article ? (
+            /* Structured Article View */
+            <div className="space-y-5">
+              {/* Title */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-caption text-medium-gray uppercase tracking-wider">Title</label>
+                  <button
+                    onClick={() => handleCopy(article.title || '', 'title')}
+                    className="p-1.5 text-medium-gray hover:text-cosmic-orange hover:bg-cosmic-orange/10 rounded transition-colors"
+                  >
+                    {copied === 'title' ? (
+                      <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={article.title}
+                  onChange={(e) => handleFieldChange('title', e.target.value)}
+                  readOnly={!canEdit}
+                  className={`w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md transition-colors ${
+                    canEdit ? 'focus:outline-none focus:border-cosmic-orange cursor-text' : 'cursor-default opacity-75'
+                  }`}
+                />
+              </div>
 
-            {/* Author */}
-            <EditableField label="Author" field="author" value={article.author} />
+              {/* Author */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-caption text-medium-gray uppercase tracking-wider">Author</label>
+                  <button
+                    onClick={() => handleCopy(article.author || '', 'author')}
+                    className="p-1.5 text-medium-gray hover:text-cosmic-orange hover:bg-cosmic-orange/10 rounded transition-colors"
+                  >
+                    {copied === 'author' ? (
+                      <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={article.author}
+                  onChange={(e) => handleFieldChange('author', e.target.value)}
+                  readOnly={!canEdit}
+                  className={`w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md transition-colors ${
+                    canEdit ? 'focus:outline-none focus:border-cosmic-orange cursor-text' : 'cursor-default opacity-75'
+                  }`}
+                />
+              </div>
 
-            {/* Subtitle */}
-            <EditableField label="Subtitle" field="subtitle" value={article.subtitle || ''} />
+              {/* Subtitle */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-caption text-medium-gray uppercase tracking-wider">Subtitle</label>
+                  <button
+                    onClick={() => handleCopy(article.subtitle || '', 'subtitle')}
+                    className="p-1.5 text-medium-gray hover:text-cosmic-orange hover:bg-cosmic-orange/10 rounded transition-colors"
+                  >
+                    {copied === 'subtitle' ? (
+                      <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={article.subtitle || ''}
+                  onChange={(e) => handleFieldChange('subtitle', e.target.value)}
+                  readOnly={!canEdit}
+                  className={`w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md transition-colors ${
+                    canEdit ? 'focus:outline-none focus:border-cosmic-orange cursor-text' : 'cursor-default opacity-75'
+                  }`}
+                />
+              </div>
 
-            {/* Excerpt */}
-            <EditableField label="Excerpt" field="excerpt" value={article.excerpt} multiline rows={3} />
+              {/* Excerpt */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-caption text-medium-gray uppercase tracking-wider">Excerpt</label>
+                  <button
+                    onClick={() => handleCopy(article.excerpt || '', 'excerpt')}
+                    className="p-1.5 text-medium-gray hover:text-cosmic-orange hover:bg-cosmic-orange/10 rounded transition-colors"
+                  >
+                    {copied === 'excerpt' ? (
+                      <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                <textarea
+                  value={article.excerpt}
+                  onChange={(e) => handleFieldChange('excerpt', e.target.value)}
+                  rows={3}
+                  readOnly={!canEdit}
+                  className={`w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-sm transition-colors resize-none ${
+                    canEdit ? 'focus:outline-none focus:border-cosmic-orange cursor-text' : 'cursor-default opacity-75'
+                  }`}
+                />
+              </div>
 
-            {/* Content */}
-            <EditableField label="Article Content" field="content" value={article.content} multiline rows={3} autoExpand />
+              {/* Content */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-caption text-medium-gray uppercase tracking-wider">Article Content</label>
+                  <button
+                    onClick={() => handleCopy(article.content || '', 'content')}
+                    className="p-1.5 text-medium-gray hover:text-cosmic-orange hover:bg-cosmic-orange/10 rounded transition-colors"
+                  >
+                    {copied === 'content' ? (
+                      <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                <textarea
+                  value={article.content}
+                  onChange={(e) => handleFieldChange('content', e.target.value)}
+                  rows={calculateRows(article.content, 8)}
+                  readOnly={!canEdit}
+                  className={`w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-sm transition-colors resize-none ${
+                    canEdit ? 'focus:outline-none focus:border-cosmic-orange cursor-text' : 'cursor-default opacity-75'
+                  }`}
+                />
+              </div>
 
               {/* Category */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-caption text-medium-gray uppercase tracking-wider">Category</label>
-                  <CopyButton text={article.category || ''} field="category" />
+                  <button
+                    onClick={() => handleCopy(article.category || '', 'category')}
+                    className="p-1.5 text-medium-gray hover:text-cosmic-orange hover:bg-cosmic-orange/10 rounded transition-colors"
+                  >
+                    {copied === 'category' ? (
+                      <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
                 <input
                   type="text"
                   value={article.category || ''}
-                  onChange={(e) => updateArticleField('category', e.target.value)}
+                  onChange={(e) => handleFieldChange('category', e.target.value)}
                   readOnly={!canEdit}
                   className={`w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md transition-colors ${
-                    canEdit 
-                      ? 'focus:outline-none focus:border-cosmic-orange' 
-                      : 'cursor-default opacity-75'
+                    canEdit ? 'focus:outline-none focus:border-cosmic-orange cursor-text' : 'cursor-default opacity-75'
                   }`}
                 />
               </div>
 
               {/* Suggested Sections */}
-              <TagsField 
-                label="Suggested Sections" 
-                field="sections" 
-                values={article.suggested_sections || []} 
-                color="bg-pale-blue/20 text-pale-blue"
-              />
-
-            {/* Tags */}
-            <TagsField 
-              label="Tags" 
-              field="tags" 
-              values={article.tags || []} 
-            />
-
-            {/* SEO Section */}
-            <div className="pt-4 border-t border-white/10 space-y-5">
-              <h3 className="text-body-md text-secondary-white font-medium">SEO Settings</h3>
-              
-              <EditableField 
-                label="Meta Title" 
-                field="meta_title" 
-                value={article.meta_title || ''} 
-                charLimit={60}
-              />
-              
-              <EditableField 
-                label="Meta Description" 
-                field="meta_description" 
-                value={article.meta_description || ''} 
-                multiline 
-                rows={2}
-                charLimit={160}
-              />
-            </div>
-          </div>
-        ) : (
-          /* Raw Content View (fallback) - Try to extract fields from JSON-like content */
-          <div className="space-y-5">
-            {(() => {
-              // Try to extract fields even if formal parsing failed
-              try {
-                const extractField = (json: string, field: string): string | null => {
-                  const regex = new RegExp(`"${field}"\\s*:\\s*"([^"]*(?:\\\\"[^"]*)*)"`, 's')
-                  const match = json.match(regex)
-                  if (match) {
-                    return match[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
-                  }
-                  return null
-                }
-
-                // Extract array fields like tags and suggested_sections
-                const extractArrayField = (json: string, field: string): string[] => {
-                  const regex = new RegExp(`"${field}"\\s*:\\s*\\[([^\\]]*)\\]`, 's')
-                  const match = json.match(regex)
-                  if (match) {
-                    const arrayContent = match[1]
-                    const items = arrayContent.match(/"([^"]*)"/g)
-                    if (items) {
-                      return items.map(item => item.replace(/"/g, ''))
-                    }
-                  }
-                  return []
-                }
-                
-                // Main content fields
-                const mainFields = [
-                  { key: 'title', label: 'Title', multiline: false, autoExpand: false },
-                  { key: 'subtitle', label: 'Subtitle', multiline: false, autoExpand: false },
-                  { key: 'excerpt', label: 'Excerpt', multiline: true, rows: 3, autoExpand: false },
-                  { key: 'content', label: 'Article Content', multiline: true, rows: 3, autoExpand: true },
-                  { key: 'category', label: 'Category', multiline: false, autoExpand: false },
-                ]
-
-                // SEO fields (displayed after sections/tags)
-                const seoFields = [
-                  { key: 'meta_title', label: 'Meta Title', multiline: false, autoExpand: false },
-                  { key: 'meta_description', label: 'Meta Description', multiline: true, rows: 2, autoExpand: false },
-                ]
-
-                // Helper to calculate rows for auto-expand
-                const calcRows = (text: string, baseRows: number) => {
-                  if (!text) return baseRows
-                  const lineBreaks = (text.match(/\n/g) || []).length + 1
-                  const estimatedWrappedLines = Math.ceil(text.length / 80)
-                  return Math.max(baseRows, lineBreaks, estimatedWrappedLines)
-                }
-                
-                const extractedMainFields = mainFields.map(f => ({
-                  ...f,
-                  value: extractField(rawContent, f.key)
-                })).filter(f => f.value)
-
-                const extractedSeoFields = seoFields.map(f => ({
-                  ...f,
-                  value: extractField(rawContent, f.key)
-                })).filter(f => f.value)
-
-                // Extract array fields
-                const suggestedSections = extractArrayField(rawContent, 'suggested_sections')
-                const tags = extractArrayField(rawContent, 'tags')
-
-                // Helper to render a field
-                const renderField = (f: { key: string; label: string; value?: string | null; multiline: boolean; rows?: number; autoExpand: boolean }) => (
-                  <div key={f.key}>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-caption text-medium-gray uppercase tracking-wider">{f.label}</label>
-                      <CopyButton text={f.value || ''} field={f.key} />
-                    </div>
-                    {f.multiline ? (
-                      <textarea
-                        value={f.value || ''}
-                        readOnly
-                        rows={f.autoExpand ? calcRows(f.value || '', f.rows || 3) : f.rows}
-                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-sm resize-none cursor-default opacity-75"
-                      />
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-caption text-medium-gray uppercase tracking-wider">Suggested Sections</label>
+                  <button
+                    onClick={() => handleCopy(article.suggested_sections?.join(', ') || '', 'sections')}
+                    className="p-1.5 text-medium-gray hover:text-cosmic-orange hover:bg-cosmic-orange/10 rounded transition-colors"
+                  >
+                    {copied === 'sections' ? (
+                      <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
                     ) : (
-                      <input
-                        type="text"
-                        value={f.value || ''}
-                        readOnly
-                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md cursor-default opacity-75"
-                      />
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
                     )}
-                  </div>
-                )
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={article.suggested_sections?.join(', ') || ''}
+                  onChange={(e) => handleFieldChange('suggested_sections', e.target.value.split(',').map(t => t.trim()).filter(Boolean))}
+                  placeholder="Enter comma-separated sections"
+                  readOnly={!canEdit}
+                  className={`w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-sm transition-colors ${
+                    canEdit ? 'focus:outline-none focus:border-cosmic-orange cursor-text' : 'cursor-default opacity-75'
+                  }`}
+                />
+              </div>
+
+              {/* Tags */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-caption text-medium-gray uppercase tracking-wider">Tags</label>
+                  <button
+                    onClick={() => handleCopy(article.tags?.join(', ') || '', 'tags')}
+                    className="p-1.5 text-medium-gray hover:text-cosmic-orange hover:bg-cosmic-orange/10 rounded transition-colors"
+                  >
+                    {copied === 'tags' ? (
+                      <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={article.tags?.join(', ') || ''}
+                  onChange={(e) => handleFieldChange('tags', e.target.value.split(',').map(t => t.trim()).filter(Boolean))}
+                  placeholder="Enter comma-separated tags"
+                  readOnly={!canEdit}
+                  className={`w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-sm transition-colors ${
+                    canEdit ? 'focus:outline-none focus:border-cosmic-orange cursor-text' : 'cursor-default opacity-75'
+                  }`}
+                />
+              </div>
+
+              {/* SEO Section */}
+              <div className="pt-4 border-t border-white/10 space-y-5">
+                <h3 className="text-body-md text-secondary-white font-medium">SEO Settings</h3>
                 
-                // If we extracted at least 2 fields, show them individually
-                if (extractedMainFields.length >= 2) {
-                  return (
-                    <>
-                      {/* Main fields: Title, Subtitle, Excerpt, Content, Category */}
-                      {extractedMainFields.map(renderField)}
-
-                      {/* Suggested Sections - right after category */}
-                      {suggestedSections.length > 0 && (
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <label className="text-caption text-medium-gray uppercase tracking-wider">Suggested Sections</label>
-                            <CopyButton text={suggestedSections.join(', ')} field="sections" />
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {suggestedSections.map((section, i) => (
-                              <span key={i} className="px-3 py-1 bg-pale-blue/20 text-pale-blue text-caption rounded-full">
-                                {section}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
+                {/* Meta Title */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-caption text-medium-gray uppercase tracking-wider">
+                      Meta Title <span className="text-medium-gray/60">({article.meta_title?.length || 0}/60)</span>
+                    </label>
+                    <button
+                      onClick={() => handleCopy(article.meta_title || '', 'meta_title')}
+                      className="p-1.5 text-medium-gray hover:text-cosmic-orange hover:bg-cosmic-orange/10 rounded transition-colors"
+                    >
+                      {copied === 'meta_title' ? (
+                        <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
                       )}
-
-                      {/* Tags - after sections */}
-                      {tags.length > 0 && (
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <label className="text-caption text-medium-gray uppercase tracking-wider">Tags</label>
-                            <CopyButton text={tags.join(', ')} field="tags" />
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {tags.map((tag, i) => (
-                              <span key={i} className="px-3 py-1 bg-white/10 text-secondary-white text-caption rounded-full">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={article.meta_title || ''}
+                    onChange={(e) => handleFieldChange('meta_title', e.target.value)}
+                    readOnly={!canEdit}
+                    className={`w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md transition-colors ${
+                      canEdit ? 'focus:outline-none focus:border-cosmic-orange cursor-text' : 'cursor-default opacity-75'
+                    }`}
+                  />
+                </div>
+                
+                {/* Meta Description */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-caption text-medium-gray uppercase tracking-wider">
+                      Meta Description <span className="text-medium-gray/60">({article.meta_description?.length || 0}/160)</span>
+                    </label>
+                    <button
+                      onClick={() => handleCopy(article.meta_description || '', 'meta_description')}
+                      className="p-1.5 text-medium-gray hover:text-cosmic-orange hover:bg-cosmic-orange/10 rounded transition-colors"
+                    >
+                      {copied === 'meta_description' ? (
+                        <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
                       )}
-
-                      {/* SEO fields: Meta Title, Meta Description */}
-                      {extractedSeoFields.length > 0 && (
-                        <div className="pt-4 border-t border-white/10 space-y-5">
-                          <h3 className="text-body-md text-secondary-white font-medium">SEO Settings</h3>
-                          {extractedSeoFields.map(renderField)}
-                        </div>
-                      )}
-                    </>
-                  )
-                }
-              } catch {
-                // Fall through to raw view
-              }
-              
-              // Ultimate fallback: show raw content
-              return (
+                    </button>
+                  </div>
+                  <textarea
+                    value={article.meta_description || ''}
+                    onChange={(e) => handleFieldChange('meta_description', e.target.value)}
+                    rows={2}
+                    readOnly={!canEdit}
+                    className={`w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-sm transition-colors resize-none ${
+                      canEdit ? 'focus:outline-none focus:border-cosmic-orange cursor-text' : 'cursor-default opacity-75'
+                    }`}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Raw Content View (fallback) */
             <div>
               <div className="flex items-center justify-between mb-2">
-                    <label className="text-caption text-medium-gray uppercase tracking-wider">Raw Content</label>
-                <CopyButton text={rawContent} field="raw" />
+                <label className="text-caption text-medium-gray uppercase tracking-wider">Raw Content</label>
+                <button
+                  onClick={() => handleCopy(rawContent, 'raw')}
+                  className="p-1.5 text-medium-gray hover:text-cosmic-orange hover:bg-cosmic-orange/10 rounded transition-colors"
+                >
+                  {copied === 'raw' ? (
+                    <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                </button>
               </div>
               <textarea
                 value={rawContent}
-                onChange={(e) => setRawContent(e.target.value)}
-                rows={15}
+                onChange={(e) => {
+                  setRawContent(e.target.value)
+                  if (!isEditing) setIsEditing(true)
+                }}
+                rows={20}
                 readOnly={!canEdit}
                 className={`w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-sm transition-colors resize-none ${
-                  canEdit 
-                    ? 'focus:outline-none focus:border-cosmic-orange' 
-                    : 'cursor-default opacity-75'
+                  canEdit ? 'focus:outline-none focus:border-cosmic-orange cursor-text' : 'cursor-default opacity-75'
                 }`}
               />
             </div>
-              )
-            })()}
-          </div>
-        )}
+          )}
         </div>
 
         {/* Action Buttons */}
@@ -650,7 +667,7 @@ export default function OutputDetailModal({
             className="btn-secondary flex-1 py-3"
             disabled={saving}
           >
-            Close
+            {isEditing ? 'Discard Changes' : 'Close'}
           </button>
           {canEdit && (
             <button 
