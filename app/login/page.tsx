@@ -1,9 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+
+// Production site URL for email redirects
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://diffuse-ai-blush.vercel.app'
 
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login')
@@ -15,8 +18,28 @@ export default function LoginPage() {
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null)
+  const [verificationPending, setVerificationPending] = useState(false)
+  const [pendingEmail, setPendingEmail] = useState('')
   const router = useRouter()
   const supabase = createClient()
+
+  // Poll for email verification
+  useEffect(() => {
+    if (!verificationPending) return
+
+    const checkVerification = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user?.email_confirmed_at) {
+        setVerificationPending(false)
+        router.push('/dashboard')
+      }
+    }
+
+    // Check every 3 seconds
+    const interval = setInterval(checkVerification, 3000)
+    
+    return () => clearInterval(interval)
+  }, [verificationPending, router, supabase.auth])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -78,7 +101,7 @@ export default function LoginPage() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+          emailRedirectTo: `${SITE_URL}/api/auth/callback`,
           data: {
             full_name: fullName,
           },
@@ -87,12 +110,10 @@ export default function LoginPage() {
 
       if (error) throw error
 
-      setMessage({
-        type: 'success',
-        text: 'Account created! Please check your email to verify your account.',
-      })
+      // Show verification pending screen
+      setPendingEmail(email)
+      setVerificationPending(true)
       setFullName('')
-      setEmail('')
       setPassword('')
       setConfirmPassword('')
       setAcceptTerms(false)
@@ -104,6 +125,142 @@ export default function LoginPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Verification Pending Screen
+  if (verificationPending) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center px-6 py-12">
+        <div className="w-full max-w-md">
+          {/* Logo */}
+          <Link href="/" className="block text-center mb-8">
+            <h1 className="text-3xl font-bold">
+              diffuse<span className="text-cosmic-orange">.ai</span>
+            </h1>
+          </Link>
+
+          {/* Verification Pending Card */}
+          <div className="glass-container p-8 text-center">
+            {/* Animated Mail Icon */}
+            <div className="mb-6 relative">
+              <div className="w-20 h-20 mx-auto rounded-full bg-cosmic-orange/10 flex items-center justify-center">
+                <svg 
+                  className="w-10 h-10 text-cosmic-orange animate-pulse" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={1.5} 
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" 
+                  />
+                </svg>
+              </div>
+              {/* Pulsing ring animation */}
+              <div className="absolute inset-0 w-20 h-20 mx-auto rounded-full border-2 border-cosmic-orange/30 animate-ping" style={{ animationDuration: '2s' }} />
+            </div>
+
+            <h2 className="text-xl font-semibold text-secondary-white mb-2">
+              Check your email
+            </h2>
+            
+            <p className="text-medium-gray text-body-md mb-6">
+              We&apos;ve sent a verification link to
+            </p>
+            
+            <p className="text-cosmic-orange font-medium text-body-md mb-6 break-all">
+              {pendingEmail}
+            </p>
+
+            {/* Loading indicator */}
+            <div className="flex items-center justify-center gap-3 mb-6 py-4 px-6 bg-white/5 rounded-glass border border-white/10">
+              <div className="flex gap-1">
+                <span className="w-2 h-2 bg-cosmic-orange rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-2 h-2 bg-cosmic-orange rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-2 h-2 bg-cosmic-orange rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+              <span className="text-body-sm text-secondary-white">
+                Waiting for verification...
+              </span>
+            </div>
+
+            <p className="text-caption text-medium-gray mb-6">
+              Click the link in your email to verify your account. This page will automatically redirect once verified.
+            </p>
+
+            {/* Actions */}
+            <div className="space-y-3">
+              <button
+                onClick={async () => {
+                  setLoading(true)
+                  try {
+                    await supabase.auth.resend({
+                      type: 'signup',
+                      email: pendingEmail,
+                      options: {
+                        emailRedirectTo: `${SITE_URL}/api/auth/callback`,
+                      },
+                    })
+                    setMessage({
+                      type: 'success',
+                      text: 'Verification email resent!',
+                    })
+                  } catch {
+                    setMessage({
+                      type: 'error',
+                      text: 'Failed to resend email. Please try again.',
+                    })
+                  } finally {
+                    setLoading(false)
+                  }
+                }}
+                disabled={loading}
+                className="w-full py-3 text-body-md text-cosmic-orange border border-cosmic-orange/30 rounded-glass hover:bg-cosmic-orange/10 transition-colors disabled:opacity-50"
+              >
+                {loading ? 'Sending...' : 'Resend verification email'}
+              </button>
+              
+              <button
+                onClick={() => {
+                  setVerificationPending(false)
+                  setEmail('')
+                  setPendingEmail('')
+                  setMessage(null)
+                }}
+                className="w-full py-3 text-body-md text-medium-gray hover:text-secondary-white transition-colors"
+              >
+                Use a different email
+              </button>
+            </div>
+
+            {/* Message */}
+            {message && (
+              <div
+                className={`mt-6 p-4 rounded-glass border ${
+                  message.type === 'error'
+                    ? 'bg-red-500/10 border-red-500/30 text-red-400'
+                    : 'bg-cosmic-orange/10 border-cosmic-orange/30 text-cosmic-orange'
+                }`}
+              >
+                <p className="text-body-sm">{message.text}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Back to Home */}
+          <div className="mt-6 text-center">
+            <Link
+              href="/"
+              className="text-body-sm text-medium-gray hover:text-cosmic-orange transition-colors"
+            >
+              ← Back to Home
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
