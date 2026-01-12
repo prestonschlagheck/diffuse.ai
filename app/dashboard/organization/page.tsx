@@ -16,7 +16,7 @@ const planDetails = {
 
 export default function OrganizationPage() {
   const router = useRouter()
-  const { user, currentWorkspace, workspaces } = useAuth()
+  const { user, currentWorkspace, workspaces, setCurrentWorkspace, fetchWorkspaces } = useAuth()
   const [loading, setLoading] = useState(false)
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -96,6 +96,10 @@ export default function OrganizationPage() {
         throw new Error(`Failed to join: ${memberError.message}`)
       }
 
+      // Refresh workspaces list and set the joined org as current
+      await fetchWorkspaces()
+      setCurrentWorkspace(org)
+
       setMessage({ type: 'success', text: `Successfully joined ${org.name}!` })
       setJoinCode('')
       setShowJoinModal(false)
@@ -146,6 +150,10 @@ export default function OrganizationPage() {
         })
 
       if (memberError) throw memberError
+
+      // Refresh workspaces list and set the new org as current
+      await fetchWorkspaces()
+      setCurrentWorkspace(newOrg)
 
       setMessage({ 
         type: 'success', 

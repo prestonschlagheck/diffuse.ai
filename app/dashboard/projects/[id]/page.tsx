@@ -48,6 +48,7 @@ export default function ProjectDetailPage() {
   const [editProjectDescription, setEditProjectDescription] = useState('')
   const [visibility, setVisibility] = useState<ProjectVisibility>('private')
   const [selectedOrgs, setSelectedOrgs] = useState<string[]>([])
+  const [selectedHomeOrg, setSelectedHomeOrg] = useState<string | null>(null)
   const [savingVisibility, setSavingVisibility] = useState(false)
   const [userProjectRole, setUserProjectRole] = useState<string>('viewer')
   const [generatingArticle, setGeneratingArticle] = useState(false)
@@ -160,6 +161,7 @@ export default function ProjectDetailPage() {
       setProject(projectData)
       setVisibility(projectData.visibility || 'private')
       setSelectedOrgs(projectData.visible_to_orgs || [])
+      setSelectedHomeOrg(projectData.workspace_id || null)
 
       // Determine user's role for this project
       const { data: { user: currentUser } } = await supabase.auth.getUser()
@@ -559,6 +561,7 @@ export default function ProjectDetailPage() {
       const { error } = await supabase
         .from('diffuse_projects')
         .update({ 
+          workspace_id: selectedHomeOrg,
           visibility: visibility,
           visible_to_orgs: visibility === 'public' ? selectedOrgs : []
         })
@@ -1282,6 +1285,44 @@ export default function ProjectDetailPage() {
       {/* Visibility Tab */}
       {activeTab === 'visibility' && (
         <div>
+          {/* Home Organization Selector */}
+          <div className="mb-8">
+            <h3 className="text-body-md text-secondary-white mb-2">Home Organization</h3>
+            <p className="text-caption text-medium-gray mb-4">
+              Select which organization this project belongs to. You can move it to a different organization anytime.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setSelectedHomeOrg(null)}
+                className={`px-4 py-2 rounded-glass border transition-colors ${
+                  selectedHomeOrg === null
+                    ? 'bg-accent-purple/20 border-accent-purple/30 text-accent-purple'
+                    : 'bg-white/5 border-white/10 text-secondary-white hover:bg-white/10'
+                }`}
+              >
+                No Organization (Personal)
+              </button>
+              {workspaces.map(({ workspace }) => (
+                <button
+                  key={workspace.id}
+                  onClick={() => setSelectedHomeOrg(workspace.id)}
+                  className={`px-4 py-2 rounded-glass border transition-colors ${
+                    selectedHomeOrg === workspace.id
+                      ? 'bg-accent-purple/20 border-accent-purple/30 text-accent-purple'
+                      : 'bg-white/5 border-white/10 text-secondary-white hover:bg-white/10'
+                  }`}
+                >
+                  {workspace.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Visibility Options */}
+          <h3 className="text-body-md text-secondary-white mb-2">Visibility</h3>
+          <p className="text-caption text-medium-gray mb-4">
+            Choose who can see this project.
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             {/* Private Option - Left Side */}
               <button
