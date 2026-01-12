@@ -30,7 +30,8 @@ export default function CreateProjectModal({ workspaceId, onClose, onSuccess }: 
         workspace_id: workspaceId || null,
         name,
         description: description || null,
-        visibility,
+        visibility: workspaceId ? 'public' : visibility,  // Auto-public when in org
+        visible_to_orgs: workspaceId ? [workspaceId] : [], // Auto-add org to visible list
         status: 'active',
         created_by: user.id,
       })
