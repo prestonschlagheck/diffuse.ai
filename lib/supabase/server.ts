@@ -1,6 +1,14 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
+// Cookie configuration for long-term session persistence (30 days)
+const COOKIE_OPTIONS: Partial<CookieOptions> = {
+  path: '/',
+  sameSite: 'lax',
+  secure: process.env.NODE_ENV === 'production',
+  maxAge: 60 * 60 * 24 * 30, // 30 days in seconds
+}
+
 export async function createClient() {
   const cookieStore = await cookies()
 
@@ -14,7 +22,9 @@ export async function createClient() {
         },
         set(name: string, value: string, options: CookieOptions) {
           try {
-            cookieStore.set({ name, value, ...options })
+            // Merge our persistence options with Supabase's options
+            const mergedOptions = { ...COOKIE_OPTIONS, ...options }
+            cookieStore.set({ name, value, ...mergedOptions })
           } catch (error) {
             // The `set` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing
@@ -23,7 +33,8 @@ export async function createClient() {
         },
         remove(name: string, options: CookieOptions) {
           try {
-            cookieStore.set({ name, value: '', ...options })
+            const mergedOptions = { ...COOKIE_OPTIONS, ...options, maxAge: 0 }
+            cookieStore.set({ name, value: '', ...mergedOptions })
           } catch (error) {
             // The `delete` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing

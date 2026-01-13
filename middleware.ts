@@ -2,15 +2,11 @@ import { updateSession } from '@/lib/supabase/middleware'
 import { type NextRequest, NextResponse } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  // Update session
-  const response = await updateSession(request)
+  // Update session and get user in one go (uses same client/cookie context)
+  const { response, user } = await updateSession(request)
 
   // Check if the user is accessing a protected route
   if (request.nextUrl.pathname.startsWith('/dashboard')) {
-    // Get the updated response with session
-    const supabase = await import('@/lib/supabase/server').then(m => m.createClient())
-    const { data: { user } } = await (await supabase).auth.getUser()
-
     if (!user) {
       // Redirect to login if not authenticated
       const redirectUrl = new URL('/login', request.url)
