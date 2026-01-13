@@ -40,16 +40,15 @@ export default function CreateProjectModal({ workspaceId, projectType = 'project
       // - If created from within an org context (workspaceId), auto-public to that org
       // - If public selected, share with ALL user's organizations
       // - If private, share with none
-      const finalVisibility = workspaceId ? 'public' : visibility
-      const finalVisibleOrgs = workspaceId 
-        ? [workspaceId] 
-        : (visibility === 'public' ? allWorkspaceIds : [])
+      // User's visibility selection determines visible_to_orgs
+      // Private = empty array (only creator can see), Public = all user's workspaces
+      const finalVisibleOrgs = visibility === 'public' ? allWorkspaceIds : []
 
       const { error: insertError } = await supabase.from('diffuse_projects').insert({
         workspace_id: workspaceId || null,
         name,
         description: description || null,
-        visibility: finalVisibility,
+        visibility: visibility,
         visible_to_orgs: finalVisibleOrgs,
         status: 'active',
         project_type: projectType,
