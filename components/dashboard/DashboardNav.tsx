@@ -35,6 +35,7 @@ interface RecentProject {
   id: string
   name: string
   viewedAt: string
+  projectType?: 'project' | 'advertisement'
 }
 
 // Function to add a recent project to the database
@@ -93,6 +94,29 @@ export default function DashboardNav() {
     }
   }, [showUserMenu])
 
+  // Remove a project from recent projects
+  const removeFromRecent = async (e: React.MouseEvent, projectId: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (!user) return
+    
+    try {
+      const { error } = await supabase
+        .from('user_recent_projects')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('project_id', projectId)
+      
+      if (error) throw error
+      
+      // Update local state immediately for responsiveness
+      setRecentProjects(prev => prev.filter(p => p.id !== projectId))
+    } catch (error) {
+      console.error('Error removing recent project:', error)
+    }
+  }
+
   // Load recent projects from database and validate they still exist
   const loadRecentProjects = useCallback(async () => {
     if (!user) return
@@ -118,14 +142,14 @@ export default function DashboardNav() {
       // Check which projects still exist (RLS will filter out inaccessible ones)
       const { data: existingProjects, error: projectsError } = await supabase
         .from('diffuse_projects')
-        .select('id, name')
+        .select('id, name, project_type')
         .in('id', projectIds)
       
       if (projectsError) throw projectsError
       
-      // Create a map of existing project IDs to their current names
+      // Create a map of existing project IDs to their details
       const existingProjectMap = new Map(
-        (existingProjects || []).map(p => [p.id, p.name])
+        (existingProjects || []).map(p => [p.id, { name: p.name, projectType: p.project_type }])
       )
       
       // Filter to only include projects that still exist
@@ -150,11 +174,15 @@ export default function DashboardNav() {
       }
       
       // Update state with valid projects (use current name from database)
-      const newProjects = validProjects.map(item => ({
-        id: item.project_id,
-        name: existingProjectMap.get(item.project_id) || item.project_name,
-        viewedAt: item.viewed_at
-      }))
+      const newProjects = validProjects.map(item => {
+        const projectDetails = existingProjectMap.get(item.project_id)
+        return {
+          id: item.project_id,
+          name: projectDetails?.name || item.project_name,
+          viewedAt: item.viewed_at,
+          projectType: projectDetails?.projectType || 'project'
+        }
+      })
       
       setRecentProjects(newProjects)
     } catch (error) {
@@ -190,10 +218,47 @@ export default function DashboardNav() {
   useEffect(() => {
     loadRecentProjects()
     
-    // Listen for updates
+    // Listen for updates from window events
     window.addEventListener('recentProjectsUpdated', loadRecentProjects)
-    return () => window.removeEventListener('recentProjectsUpdated', loadRecentProjects)
-  }, [loadRecentProjects])
+    
+    // Supabase Realtime subscription for recent projects
+    const recentProjectsChannel = supabase
+      .channel('recent-projects-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_recent_projects',
+        },
+        () => {
+          loadRecentProjects()
+        }
+      )
+      .subscribe()
+
+    // Also listen for project name changes
+    const projectNamesChannel = supabase
+      .channel('project-names-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'diffuse_projects',
+        },
+        () => {
+          loadRecentProjects()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      window.removeEventListener('recentProjectsUpdated', loadRecentProjects)
+      supabase.removeChannel(recentProjectsChannel)
+      supabase.removeChannel(projectNamesChannel)
+    }
+  }, [loadRecentProjects, supabase])
 
   // Get display name - use full_name if available, otherwise email prefix
   const displayName = userProfile?.full_name || user?.email?.split('@')[0] || 'User'
@@ -214,6 +279,15 @@ export default function DashboardNav() {
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+        </svg>
+      )
+    },
+    { 
+      name: 'Advertisements', 
+      href: '/dashboard/advertisements', 
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
         </svg>
       )
     },
@@ -286,7 +360,7 @@ export default function DashboardNav() {
       }`}>
         {/* Logo - Hidden on mobile since toggle button shows it */}
         <div className="p-6 hidden md:block">
-          <Link href="/dashboard" className="text-xl font-bold">
+          <Link href="/" className="text-xl font-bold hover:text-cosmic-orange transition-colors">
             diffuse<span className="text-cosmic-orange">.ai</span>
           </Link>
         </div>
@@ -340,27 +414,53 @@ export default function DashboardNav() {
             <div className="space-y-1">
               {recentProjects.map((project, index) => {
                 const isActive = pathname === `/dashboard/projects/${project.id}`
+                const isAd = project.projectType === 'advertisement'
                 
                 return (
-                  <Link
+                  <div
                     key={project.id}
-                    href={`/dashboard/projects/${project.id}`}
-                    className={`flex items-center gap-3 px-4 py-2 rounded-glass text-body-sm transition-all duration-200 ease-out ${
-                      isActive
-                        ? 'bg-cosmic-orange/20 text-cosmic-orange'
-                        : 'text-secondary-white hover:bg-white/10'
-                    }`}
+                    className="group relative"
                     style={{
                       transform: recentExpanded ? 'translateY(0)' : 'translateY(-8px)',
                       opacity: recentExpanded ? 1 : 0,
                       transitionDelay: recentExpanded ? `${index * 25}ms` : '0ms',
                     }}
                   >
-                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span className="truncate">{project.name}</span>
-                  </Link>
+                    <Link
+                      href={`/dashboard/projects/${project.id}`}
+                      className={`flex items-center gap-3 px-4 py-2 rounded-glass text-body-sm transition-all duration-200 ease-out ${
+                        isActive
+                          ? 'bg-cosmic-orange/20 text-cosmic-orange'
+                          : 'text-secondary-white hover:bg-white/10'
+                      }`}
+                    >
+                      {isAd ? (
+                        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      )}
+                      <span className="truncate pr-6">{project.name}</span>
+                    </Link>
+                    {/* Remove button - appears on hover */}
+                    <button
+                      onClick={(e) => removeFromRecent(e, project.id)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                      title="Remove from recent"
+                    >
+                      <svg 
+                        className="w-3.5 h-3.5 text-medium-gray hover:text-red-500 transition-colors" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
                 )
               })}
             </div>

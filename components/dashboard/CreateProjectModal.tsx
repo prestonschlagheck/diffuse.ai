@@ -2,20 +2,30 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useAuth } from '@/contexts/AuthContext'
+import type { ProjectType } from '@/types/database'
 
 interface CreateProjectModalProps {
   workspaceId?: string | null
+  projectType?: ProjectType
   onClose: () => void
   onSuccess: () => void
 }
 
-export default function CreateProjectModal({ workspaceId, onClose, onSuccess }: CreateProjectModalProps) {
+export default function CreateProjectModal({ workspaceId, projectType = 'project', onClose, onSuccess }: CreateProjectModalProps) {
+  const { workspaces } = useAuth()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [visibility, setVisibility] = useState<'private' | 'public'>('private')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const supabase = createClient()
+  
+  const isAdvertisement = projectType === 'advertisement'
+  const typeLabel = isAdvertisement ? 'Advertisement' : 'Project'
+  
+  // Get all workspace IDs the user belongs to
+  const allWorkspaceIds = workspaces?.map(({ workspace }) => workspace.id) || []
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -26,13 +36,23 @@ export default function CreateProjectModal({ workspaceId, onClose, onSuccess }: 
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
+      // Determine visibility settings:
+      // - If created from within an org context (workspaceId), auto-public to that org
+      // - If public selected, share with ALL user's organizations
+      // - If private, share with none
+      const finalVisibility = workspaceId ? 'public' : visibility
+      const finalVisibleOrgs = workspaceId 
+        ? [workspaceId] 
+        : (visibility === 'public' ? allWorkspaceIds : [])
+
       const { error: insertError } = await supabase.from('diffuse_projects').insert({
         workspace_id: workspaceId || null,
         name,
         description: description || null,
-        visibility: workspaceId ? 'public' : visibility,  // Auto-public when in org
-        visible_to_orgs: workspaceId ? [workspaceId] : [], // Auto-add org to visible list
+        visibility: finalVisibility,
+        visible_to_orgs: finalVisibleOrgs,
         status: 'active',
+        project_type: projectType,
         created_by: user.id,
       })
 
@@ -50,7 +70,7 @@ export default function CreateProjectModal({ workspaceId, onClose, onSuccess }: 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-6">
       <div className="glass-container p-8 max-w-md w-full">
-        <h2 className="text-heading-lg text-secondary-white mb-6">Create New Project</h2>
+        <h2 className="text-heading-lg text-secondary-white mb-6">Create New {typeLabel}</h2>
 
         {error && (
           <div className="mb-6 p-4 rounded-glass border border-red-500/30 bg-red-500/10 text-red-400 text-body-sm">
@@ -61,7 +81,7 @@ export default function CreateProjectModal({ workspaceId, onClose, onSuccess }: 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="name" className="block text-body-sm text-secondary-white mb-2">
-              Project Name *
+              {typeLabel} Name *
             </label>
             <input
               id="name"
@@ -70,7 +90,7 @@ export default function CreateProjectModal({ workspaceId, onClose, onSuccess }: 
               onChange={(e) => setName(e.target.value)}
               required
               className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md focus:outline-none focus:border-cosmic-orange transition-colors"
-              placeholder="My Project"
+              placeholder={isAdvertisement ? "My Ad Campaign" : "My Project"}
             />
           </div>
 
@@ -84,14 +104,14 @@ export default function CreateProjectModal({ workspaceId, onClose, onSuccess }: 
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md focus:outline-none focus:border-cosmic-orange transition-colors resize-none"
-              placeholder="Describe your project..."
+              placeholder={isAdvertisement ? "Describe the product or service to promote..." : "Describe your project..."}
             />
           </div>
 
           <div>
             <label className="block text-body-sm text-secondary-white mb-2">Visibility</label>
             <p className="text-caption text-medium-gray mb-3">
-              Public projects are visible to all organization members. Private projects are only visible to you.
+              Public projects are shared with all your organizations. Private projects are only visible to you.
             </p>
             <div className="flex gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -141,7 +161,7 @@ export default function CreateProjectModal({ workspaceId, onClose, onSuccess }: 
               className="btn-primary flex-1 py-3"
               disabled={loading}
             >
-              {loading ? 'Creating...' : 'Create Project'}
+              {loading ? 'Creating...' : `Create ${typeLabel}`}
             </button>
           </div>
         </form>

@@ -4,7 +4,11 @@ export type ProjectStatus = 'active' | 'archived' | 'draft'
 
 export type ProjectVisibility = 'private' | 'public'
 
+export type ProjectType = 'project' | 'advertisement'
+
 export type InputType = 'text' | 'audio' | 'image' | 'document'
+
+export type OutputType = 'article' | 'ad'
 
 export type WorkflowStatus = 'pending' | 'processing' | 'completed' | 'failed'
 
@@ -40,6 +44,7 @@ export interface DiffuseProject {
   visibility: ProjectVisibility
   visible_to_orgs?: string[]
   status: ProjectStatus
+  project_type: ProjectType
   created_at: string
   updated_at: string
   created_by: string
@@ -64,6 +69,7 @@ export interface DiffuseProjectOutput {
   project_id: string
   input_id?: string
   content: string
+  output_type: OutputType
   structured_data?: Record<string, any>
   workflow_status: WorkflowStatus
   workflow_metadata?: Record<string, any>

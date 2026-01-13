@@ -11,7 +11,7 @@ import InputDetailModal from '@/components/dashboard/InputDetailModal'
 import OutputDetailModal from '@/components/dashboard/OutputDetailModal'
 import SelectRecordingModal from '@/components/dashboard/SelectRecordingModal'
 import { addRecentProject } from '@/components/dashboard/DashboardNav'
-import type { DiffuseProject, DiffuseProjectInput, DiffuseProjectOutput, ProjectVisibility, UserRole, InputType } from '@/types/database'
+import type { DiffuseProject, DiffuseProjectInput, DiffuseProjectOutput, ProjectVisibility, UserRole, InputType, OutputType } from '@/types/database'
 
 // Role hierarchy for permissions
 const roleHierarchy = ['viewer', 'editor', 'admin', 'owner'] as const
@@ -59,6 +59,7 @@ export default function ProjectDetailPage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showAddInputDropdown, setShowAddInputDropdown] = useState(false)
+  const [showGenerateDropdown, setShowGenerateDropdown] = useState(false)
   const [uploadingFile, setUploadingFile] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<string | null>(null)
   const audioInputRef = useRef<HTMLInputElement>(null)
@@ -259,6 +260,69 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     fetchProjectData()
   }, [fetchProjectData])
+
+  // Supabase Realtime subscriptions for instant updates
+  useEffect(() => {
+    if (!projectId) return
+
+    // Subscribe to this project's changes
+    const projectChannel = supabase
+      .channel(`project-${projectId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'diffuse_projects',
+          filter: `id=eq.${projectId}`,
+        },
+        () => {
+          fetchProjectData()
+        }
+      )
+      .subscribe()
+
+    // Subscribe to inputs changes for this project
+    const inputsChannel = supabase
+      .channel(`project-inputs-${projectId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'diffuse_project_inputs',
+          filter: `project_id=eq.${projectId}`,
+        },
+        () => {
+          fetchProjectData()
+        }
+      )
+      .subscribe()
+
+    // Subscribe to outputs changes for this project
+    const outputsChannel = supabase
+      .channel(`project-outputs-${projectId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'diffuse_project_outputs',
+          filter: `project_id=eq.${projectId}`,
+        },
+        () => {
+          fetchProjectData()
+        }
+      )
+      .subscribe()
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      supabase.removeChannel(projectChannel)
+      supabase.removeChannel(inputsChannel)
+      supabase.removeChannel(outputsChannel)
+    }
+  }, [projectId, supabase, fetchProjectData])
 
   // Sync active tab with URL parameter changes
   useEffect(() => {
@@ -561,7 +625,6 @@ export default function ProjectDetailPage() {
       const { error } = await supabase
         .from('diffuse_projects')
         .update({ 
-          workspace_id: selectedHomeOrg,
           visibility: visibility,
           visible_to_orgs: visibility === 'public' ? selectedOrgs : []
         })
@@ -585,26 +648,27 @@ export default function ProjectDetailPage() {
     )
   }
 
-  const handleGenerateArticle = async () => {
+  const handleGenerate = async (outputType: OutputType) => {
     if (inputs.length === 0) {
-      alert('Please add at least one input before generating an article')
+      alert('Please add at least one input before generating')
       return
     }
 
     setGeneratingArticle(true)
+    setShowGenerateDropdown(false)
     try {
       const response = await fetch('/api/workflow', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ project_id: projectId }),
+        body: JSON.stringify({ project_id: projectId, output_type: outputType }),
       })
 
       const result = await response.json()
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to generate article')
+        throw new Error(result.error || 'Failed to generate')
       }
 
       // Refresh data to show new output
@@ -612,8 +676,8 @@ export default function ProjectDetailPage() {
       // Switch to outputs tab to show the result
       setActiveTab('outputs')
     } catch (error) {
-      console.error('Error generating article:', error)
-      alert(error instanceof Error ? error.message : 'Failed to generate article')
+      console.error('Error generating:', error)
+      alert(error instanceof Error ? error.message : 'Failed to generate')
     } finally {
       setGeneratingArticle(false)
     }
@@ -1178,44 +1242,75 @@ export default function ProjectDetailPage() {
       {/* Outputs Tab */}
       {activeTab === 'outputs' && (
         <div>
-          {/* Generate Button - Same position as Inputs buttons */}
+          {/* Generate Dropdown - Same position as Inputs buttons */}
           {canEdit && inputs.length > 0 && (
             <div className="flex justify-end gap-3 mb-4">
-              <button
-                onClick={handleGenerateArticle}
-                disabled={generatingArticle || outputs.length > 0}
-                className={`px-4 py-2 flex items-center gap-2 text-body-sm rounded-glass transition-colors ${
-                  outputs.length > 0
-                    ? 'bg-white/5 border border-white/10 text-medium-gray cursor-not-allowed'
-                    : generatingArticle
-                    ? 'btn-primary opacity-50 cursor-not-allowed'
-                    : 'btn-primary'
-                }`}
-              >
-                {generatingArticle ? (
-                  <>
-                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Generating
-                  </>
-                ) : outputs.length > 0 ? (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Generated with diffuse.ai
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    Generate with diffuse.ai
-                  </>
+              <div className="relative">
+                <button
+                  onClick={() => setShowGenerateDropdown(!showGenerateDropdown)}
+                  disabled={generatingArticle}
+                  className={`px-4 py-2 flex items-center gap-2 text-body-sm rounded-glass transition-colors ${
+                    generatingArticle
+                      ? 'btn-primary opacity-50 cursor-not-allowed'
+                      : 'btn-primary'
+                  }`}
+                >
+                  {generatingArticle ? (
+                    <>
+                      <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      Generate with diffuse.ai
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </>
+                  )}
+                </button>
+
+                {/* Generate Dropdown Menu */}
+                {showGenerateDropdown && (
+                  <div className="absolute right-0 mt-2 w-56 glass-container py-2 z-50">
+                    {/* Generate Article */}
+                    <button
+                      onClick={() => handleGenerate('article')}
+                      className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-white/10 transition-colors"
+                    >
+                      <svg className="w-5 h-5 text-accent-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <div>
+                        <p className="text-body-sm text-secondary-white">Generate Article</p>
+                        <p className="text-caption text-medium-gray">Standard news article</p>
+                      </div>
+                    </button>
+
+                    <div className="border-t border-white/10 my-2" />
+
+                    {/* Generate Ad */}
+                    <button
+                      onClick={() => handleGenerate('ad')}
+                      className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-white/10 transition-colors"
+                    >
+                      <svg className="w-5 h-5 text-cosmic-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                      </svg>
+                      <div>
+                        <p className="text-body-sm text-secondary-white">Generate Ad</p>
+                        <p className="text-caption text-medium-gray">Sponsored content article</p>
+                      </div>
+                    </button>
+                  </div>
                 )}
-              </button>
+              </div>
             </div>
           )}
 
@@ -1285,39 +1380,6 @@ export default function ProjectDetailPage() {
       {/* Visibility Tab */}
       {activeTab === 'visibility' && (
         <div>
-          {/* Home Organization Selector */}
-          <div className="mb-8">
-            <h3 className="text-body-md text-secondary-white mb-2">Home Organization</h3>
-            <p className="text-caption text-medium-gray mb-4">
-              Select which organization this project belongs to. You can move it to a different organization anytime.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setSelectedHomeOrg(null)}
-                className={`px-4 py-2 rounded-glass border transition-colors ${
-                  selectedHomeOrg === null
-                    ? 'bg-accent-purple/20 border-accent-purple/30 text-accent-purple'
-                    : 'bg-white/5 border-white/10 text-secondary-white hover:bg-white/10'
-                }`}
-              >
-                No Organization (Personal)
-              </button>
-              {workspaces.map(({ workspace }) => (
-                <button
-                  key={workspace.id}
-                  onClick={() => setSelectedHomeOrg(workspace.id)}
-                  className={`px-4 py-2 rounded-glass border transition-colors ${
-                    selectedHomeOrg === workspace.id
-                      ? 'bg-accent-purple/20 border-accent-purple/30 text-accent-purple'
-                      : 'bg-white/5 border-white/10 text-secondary-white hover:bg-white/10'
-                  }`}
-                >
-                  {workspace.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Visibility Options */}
           <h3 className="text-body-md text-secondary-white mb-2">Visibility</h3>
           <p className="text-caption text-medium-gray mb-4">

@@ -1,8 +1,10 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
+import type { User } from '@supabase/supabase-js'
 
 const navLinks = [
   { name: 'How It Works', href: '#how-it-works' },
@@ -13,6 +15,22 @@ const navLinks = [
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
+  const supabase = createClient()
+
+  useEffect(() => {
+    // Check if user is logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+    })
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [supabase.auth])
 
   const scrollToSection = (href: string) => {
     const element = document.querySelector(href)
@@ -36,12 +54,12 @@ export default function Navbar() {
           <div className="container-padding">
             <div className="max-w-7xl mx-auto flex items-center justify-between py-4">
               {/* Logo */}
-              <button
-                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              <Link
+                href="/"
                 className="text-lg sm:text-xl md:text-2xl font-bold hover:text-cosmic-orange transition-colors"
               >
                 diffuse<span className="text-cosmic-orange">.ai</span>
-              </button>
+              </Link>
 
               {/* Desktop Navigation */}
               <div className="hidden md:flex items-center gap-6 lg:gap-8">
@@ -54,9 +72,15 @@ export default function Navbar() {
                     {link.name}
                   </button>
                 ))}
-                <Link href="/login" className="btn-primary px-5 py-2.5 text-sm md:text-body-sm whitespace-nowrap">
-                  Start Free
-                </Link>
+                {user ? (
+                  <Link href="/dashboard" className="btn-primary px-5 py-2.5 text-sm md:text-body-sm whitespace-nowrap">
+                    Dashboard
+                  </Link>
+                ) : (
+                  <Link href="/login" className="btn-primary px-5 py-2.5 text-sm md:text-body-sm whitespace-nowrap">
+                    Start Free
+                  </Link>
+                )}
               </div>
 
               {/* Mobile Menu Button */}
@@ -116,9 +140,15 @@ export default function Navbar() {
                   {link.name}
                 </button>
               ))}
-              <Link href="/login" className="btn-primary w-full py-3 text-sm md:text-body-sm text-center">
-                Start Free
-              </Link>
+              {user ? (
+                <Link href="/dashboard" className="btn-primary w-full py-3 text-sm md:text-body-sm text-center">
+                  Dashboard
+                </Link>
+              ) : (
+                <Link href="/login" className="btn-primary w-full py-3 text-sm md:text-body-sm text-center">
+                  Start Free
+                </Link>
+              )}
             </div>
           </div>
         </div>

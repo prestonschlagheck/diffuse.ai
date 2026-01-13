@@ -73,10 +73,15 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { project_id } = body
+    const { project_id, output_type = 'article' } = body
 
     if (!project_id) {
       return NextResponse.json({ error: 'project_id is required' }, { status: 400 })
+    }
+
+    // Validate output_type
+    if (output_type !== 'article' && output_type !== 'ad') {
+      return NextResponse.json({ error: 'output_type must be "article" or "ad"' }, { status: 400 })
     }
 
     // Fetch all inputs for this project
@@ -101,6 +106,7 @@ export async function POST(request: NextRequest) {
     // For text/audio/document, include the text content
     const n8nPayload = {
       project_id,
+      output_type, // 'article' or 'ad' - n8n will branch based on this
       inputs: inputs.map(input => ({
         id: input.id,
         type: input.type,
@@ -150,6 +156,7 @@ export async function POST(request: NextRequest) {
         project_id,
         input_id: inputs[0].id,
         content: finalContent,
+        output_type, // 'article' or 'ad'
         workflow_status: 'completed',
       })
       .select()

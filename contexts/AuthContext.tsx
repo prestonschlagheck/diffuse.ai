@@ -91,11 +91,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
       if (session?.user) {
-        fetchWorkspaces(session.user.id)
-        fetchUserProfile(session.user.id)
+        // Only refetch on initial sign in, not on token refresh
+        if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+          fetchWorkspaces(session.user.id)
+          fetchUserProfile(session.user.id)
+        }
       } else {
         setWorkspaces([])
         setCurrentWorkspace(null)
@@ -104,7 +107,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false)
     })
 
-    return () => subscription.unsubscribe()
+    // Periodic session refresh every 10 minutes to keep tokens fresh
+    // This ensures the user stays logged in even during long periods of inactivity
+    const refreshInterval = setInterval(async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        // Attempt to refresh the session
+        await supabase.auth.refreshSession()
+      }
+    }, 10 * 60 * 1000) // 10 minutes
+
+    return () => {
+      subscription.unsubscribe()
+      clearInterval(refreshInterval)
+    }
   }, [])
 
   const fetchWorkspaces = async (userId: string) => {

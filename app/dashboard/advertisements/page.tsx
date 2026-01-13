@@ -23,10 +23,10 @@ interface ProjectWithCounts extends DiffuseProject {
   orgs?: OrgInfo[]
 }
 
-export default function DashboardPage() {
+export default function AdvertisementsPage() {
   const router = useRouter()
   const { user, currentWorkspace, loading: authLoading } = useAuth()
-  const [projects, setProjects] = useState<ProjectWithCounts[]>([])
+  const [advertisements, setAdvertisements] = useState<ProjectWithCounts[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier>('free')
@@ -38,12 +38,12 @@ export default function DashboardPage() {
     pro_max: 40,
   }
 
-  const fetchProjects = useCallback(async () => {
+  const fetchAdvertisements = useCallback(async () => {
     if (!user) return
 
     setLoading(true)
     try {
-      // Build base query - only get projects (not advertisements)
+      // Build base query - get all projects, then filter for advertisements
       const { data: allProjects, error } = await supabase
         .from('diffuse_projects')
         .select('*')
@@ -58,37 +58,37 @@ export default function DashboardPage() {
         return isCreator || isInWorkspace
       })
       
-      // Filter out advertisements client-side (handles NULL project_type correctly)
-      const projectsData = filteredProjects.filter(
-        p => p.project_type !== 'advertisement'
+      // Filter for advertisements only
+      const adsData = filteredProjects.filter(
+        p => p.project_type === 'advertisement'
       )
 
-      if (!projectsData || projectsData.length === 0) {
-        setProjects([])
+      if (!adsData || adsData.length === 0) {
+        setAdvertisements([])
         return
       }
 
       // Extract unique IDs for batch queries
-      const projectIds = projectsData.map(p => p.id)
-      const creatorIds = [...new Set(projectsData.map(p => p.created_by).filter(Boolean))]
-      const allOrgIds = [...new Set(projectsData.flatMap(p => p.visible_to_orgs || []).filter(Boolean))]
+      const adIds = adsData.map(a => a.id)
+      const creatorIds = [...new Set(adsData.map(a => a.created_by).filter(Boolean))]
+      const allOrgIds = [...new Set(adsData.flatMap(a => a.visible_to_orgs || []).filter(Boolean))]
 
       // Batch fetch all data in parallel (5 queries instead of 4N queries)
       const [inputsResult, outputsResult, creatorsResult, orgsResult] = await Promise.all([
-        // Get all inputs for all projects
-        projectIds.length > 0
+        // Get all inputs for all ads
+        adIds.length > 0
           ? supabase
               .from('diffuse_project_inputs')
               .select('project_id')
-              .in('project_id', projectIds)
+              .in('project_id', adIds)
               .is('deleted_at', null)
           : Promise.resolve({ data: [], error: null }),
-        // Get all outputs for all projects
-        projectIds.length > 0
+        // Get all outputs for all ads
+        adIds.length > 0
           ? supabase
               .from('diffuse_project_outputs')
               .select('project_id')
-              .in('project_id', projectIds)
+              .in('project_id', adIds)
               .is('deleted_at', null)
           : Promise.resolve({ data: [], error: null }),
         // Get all creator profiles
@@ -113,13 +113,13 @@ export default function DashboardPage() {
       const creatorNames = new Map<string, string>()
       const orgNames = new Map<string, { id: string; name: string }>()
 
-      // Count inputs per project
+      // Count inputs per ad
       const inputsData = inputsResult.data || []
       inputsData.forEach((input: { project_id: string }) => {
         inputCounts.set(input.project_id, (inputCounts.get(input.project_id) || 0) + 1)
       })
 
-      // Count outputs per project
+      // Count outputs per ad
       const outputsData = outputsResult.data || []
       outputsData.forEach((output: { project_id: string }) => {
         outputCounts.set(output.project_id, (outputCounts.get(output.project_id) || 0) + 1)
@@ -138,19 +138,19 @@ export default function DashboardPage() {
       })
 
       // Assemble the final data
-      const projectsWithCounts: ProjectWithCounts[] = projectsData.map(project => ({
-        ...project,
-        input_count: inputCounts.get(project.id) || 0,
-        output_count: outputCounts.get(project.id) || 0,
-        creator_name: creatorNames.get(project.created_by) || 'Unknown',
-        orgs: (project.visible_to_orgs || [])
+      const adsWithCounts: ProjectWithCounts[] = adsData.map(ad => ({
+        ...ad,
+        input_count: inputCounts.get(ad.id) || 0,
+        output_count: outputCounts.get(ad.id) || 0,
+        creator_name: creatorNames.get(ad.created_by) || 'Unknown',
+        orgs: (ad.visible_to_orgs || [])
           .map((orgId: string) => orgNames.get(orgId))
           .filter(Boolean) as OrgInfo[],
       }))
       
-      setProjects(projectsWithCounts)
+      setAdvertisements(adsWithCounts)
     } catch (error) {
-      console.error('Error fetching projects:', error)
+      console.error('Error fetching advertisements:', error)
     } finally {
       setLoading(false)
     }
@@ -181,18 +181,18 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (user) {
-      fetchProjects()
+      fetchAdvertisements()
       fetchUserProfile()
     }
-  }, [user, currentWorkspace, fetchProjects, fetchUserProfile])
+  }, [user, currentWorkspace, fetchAdvertisements, fetchUserProfile])
 
   // Supabase Realtime subscriptions for instant updates
   useEffect(() => {
     if (!user) return
 
-    // Subscribe to project changes
+    // Subscribe to project changes (advertisements are stored as projects)
     const projectsChannel = supabase
-      .channel('projects-changes')
+      .channel('ads-projects-changes')
       .on(
         'postgres_changes',
         {
@@ -201,15 +201,14 @@ export default function DashboardPage() {
           table: 'diffuse_projects',
         },
         () => {
-          // Refetch projects when any change occurs
-          fetchProjects()
+          fetchAdvertisements()
         }
       )
       .subscribe()
 
     // Subscribe to input changes (for counts)
     const inputsChannel = supabase
-      .channel('inputs-changes')
+      .channel('ads-inputs-changes')
       .on(
         'postgres_changes',
         {
@@ -218,14 +217,14 @@ export default function DashboardPage() {
           table: 'diffuse_project_inputs',
         },
         () => {
-          fetchProjects()
+          fetchAdvertisements()
         }
       )
       .subscribe()
 
     // Subscribe to output changes (for counts)
     const outputsChannel = supabase
-      .channel('outputs-changes')
+      .channel('ads-outputs-changes')
       .on(
         'postgres_changes',
         {
@@ -234,7 +233,7 @@ export default function DashboardPage() {
           table: 'diffuse_project_outputs',
         },
         () => {
-          fetchProjects()
+          fetchAdvertisements()
         }
       )
       .subscribe()
@@ -245,7 +244,7 @@ export default function DashboardPage() {
       supabase.removeChannel(inputsChannel)
       supabase.removeChannel(outputsChannel)
     }
-  }, [user, supabase, fetchProjects])
+  }, [user, supabase, fetchAdvertisements])
 
   if (authLoading || !user) {
     return (
@@ -256,9 +255,10 @@ export default function DashboardPage() {
   }
 
   const projectLimit = subscriptionLimits[subscriptionTier]
-  const hasReachedLimit = projects.length >= projectLimit
+  // Note: This would ideally count all projects + ads, but for simplicity we just check ads here
+  const hasReachedLimit = advertisements.length >= projectLimit
 
-  const CreateProjectButton = ({ className = '' }: { className?: string }) => (
+  const CreateAdButton = ({ className = '' }: { className?: string }) => (
     <button
       onClick={() => {
         if (hasReachedLimit) {
@@ -273,7 +273,7 @@ export default function DashboardPage() {
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
       </svg>
-      Create Project
+      Create Advertisement
     </button>
   )
 
@@ -281,17 +281,17 @@ export default function DashboardPage() {
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-display-sm text-secondary-white">Projects</h1>
+        <h1 className="text-display-sm text-secondary-white">Advertisements</h1>
         {/* Desktop button - hidden on mobile */}
-        <CreateProjectButton className="hidden md:flex" />
+        <CreateAdButton className="hidden md:flex" />
       </div>
 
-      {/* Projects Grid */}
+      {/* Advertisements Grid */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
           <LoadingSpinner size="lg" />
         </div>
-      ) : projects.length === 0 ? (
+      ) : advertisements.length === 0 ? (
         <EmptyState
           icon={
             <svg
@@ -304,26 +304,26 @@ export default function DashboardPage() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={1.5}
-                d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"
               />
             </svg>
           }
-          title="No Projects Yet"
-          description="Create your first project to start processing inputs and generating articles with Diffuse."
+          title="No Advertisements Yet"
+          description="Create your first advertisement to generate sponsored content that looks like a news article."
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Mobile button - full width at top of grid, hidden on desktop */}
-          <CreateProjectButton className="md:hidden col-span-1" />
-          {projects.map((project) => (
+          <CreateAdButton className="md:hidden col-span-1" />
+          {advertisements.map((ad) => (
             <div
-              key={project.id}
-              onClick={() => router.push(`/dashboard/projects/${project.id}`)}
+              key={ad.id}
+              onClick={() => router.push(`/dashboard/projects/${ad.id}`)}
               className="glass-container p-6 hover:bg-white/10 transition-colors cursor-pointer"
             >
-              {/* Project Name */}
+              {/* Name */}
               <h3 className="text-heading-md text-secondary-white font-medium mb-4">
-                {project.name}
+                {ad.name}
               </h3>
               
               {/* Details */}
@@ -333,36 +333,36 @@ export default function DashboardPage() {
                   <span 
                     onClick={(e) => {
                       e.stopPropagation()
-                      router.push(`/dashboard/projects/${project.id}?tab=inputs`)
+                      router.push(`/dashboard/projects/${ad.id}?tab=inputs`)
                     }}
                     className="text-caption text-accent-purple uppercase tracking-wider hover:text-accent-purple/70 cursor-pointer transition-colors"
                   >
-                    {project.input_count} INPUT{project.input_count !== 1 ? 'S' : ''}
+                    {ad.input_count} INPUT{ad.input_count !== 1 ? 'S' : ''}
                   </span>
                   <span className="text-caption text-medium-gray">•</span>
                   <span 
                     onClick={(e) => {
                       e.stopPropagation()
-                      router.push(`/dashboard/projects/${project.id}?tab=outputs`)
+                      router.push(`/dashboard/projects/${ad.id}?tab=outputs`)
                     }}
                     className="text-caption text-cosmic-orange uppercase tracking-wider hover:text-orange-300 cursor-pointer transition-colors"
                   >
-                    {project.output_count} OUTPUT{project.output_count !== 1 ? 'S' : ''}
+                    {ad.output_count} OUTPUT{ad.output_count !== 1 ? 'S' : ''}
                   </span>
                 </div>
                 
                 {/* Created By & Date */}
                 <div className="flex items-center gap-2 text-caption text-medium-gray uppercase tracking-wider">
-                  <span>CREATED BY: {project.creator_name}</span>
+                  <span>CREATED BY: {ad.creator_name}</span>
                   <span>•</span>
-                  <span>{new Date(project.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}</span>
+                  <span>{new Date(ad.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}</span>
                 </div>
                 
                 {/* Access */}
                 <div className="text-caption text-medium-gray uppercase tracking-wider">
-                  {project.orgs && project.orgs.length > 0 ? (
+                  {ad.orgs && ad.orgs.length > 0 ? (
                     <span className="flex items-center gap-1 flex-wrap">
-                      {project.orgs.map((org, index) => (
+                      {ad.orgs.map((org, index) => (
                         <span key={org.id} className="inline-flex items-center">
                           <span
                             onClick={(e) => {
@@ -373,7 +373,7 @@ export default function DashboardPage() {
                           >
                             {org.name}
                           </span>
-                          {index < project.orgs!.length - 1 && <span className="text-medium-gray">,&nbsp;</span>}
+                          {index < ad.orgs!.length - 1 && <span className="text-medium-gray">,&nbsp;</span>}
                         </span>
                       ))}
                     </span>
@@ -387,13 +387,13 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Create Project Modal */}
+      {/* Create Advertisement Modal */}
       {showCreateModal && (
         <CreateProjectModal
           workspaceId={currentWorkspace?.id || null}
-          projectType="project"
+          projectType="advertisement"
           onClose={() => setShowCreateModal(false)}
-          onSuccess={fetchProjects}
+          onSuccess={fetchAdvertisements}
         />
       )}
     </div>

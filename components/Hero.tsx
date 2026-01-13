@@ -2,6 +2,8 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import type { User } from '@supabase/supabase-js'
 
 // Mock news story about Diffuse.AI
 const mockArticle = {
@@ -641,6 +643,23 @@ const WorkflowDemo = () => {
 }
 
 export default function Hero() {
+  const [user, setUser] = useState<User | null>(null)
+  const supabase = createClient()
+
+  useEffect(() => {
+    // Check if user is logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+    })
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [supabase.auth])
+
   return (
     <section className="relative min-h-screen flex items-center justify-center pt-20 sm:pt-24 md:pt-28 pb-12 md:pb-16">
       {/* Animated Grid Background */}
@@ -683,8 +702,8 @@ export default function Hero() {
           className="w-full max-w-4xl mx-auto mt-6"
         >
           <div className="flex gap-3">
-            <a href="/login" className="btn-secondary text-center text-sm sm:text-base py-3 md:py-4 flex-1">
-              Start Free
+            <a href={user ? "/dashboard" : "/login"} className="btn-secondary text-center text-sm sm:text-base py-3 md:py-4 flex-1">
+              {user ? "Go to Dashboard" : "Start Free"}
             </a>
             <a href="#how-it-works" className="btn-secondary text-center text-sm sm:text-base py-3 md:py-4 flex-1">
               See How It Works
