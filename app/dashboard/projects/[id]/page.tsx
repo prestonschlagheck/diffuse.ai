@@ -699,31 +699,57 @@ export default function ProjectDetailPage() {
         setUploadProgress(`Processing ${file.name} (${i + 1}/${files.length})...`)
 
         if (type === 'audio') {
+          // Check file size (200MB limit for audio files)
+          const maxSize = 200 * 1024 * 1024 // 200MB
+          if (file.size > maxSize) {
+            throw new Error(`Audio file is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 200MB.`)
+          }
+          
           // Upload audio to storage first
+          setUploadProgress(`Uploading ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)...`)
           const filePath = `${currentUser.id}/${projectId}/${Date.now()}-${file.name}`
           const { error: uploadError } = await supabase.storage
             .from('project-files')
             .upload(filePath, file)
 
-          if (uploadError) throw uploadError
+          if (uploadError) {
+            if (uploadError.message?.includes('Payload too large') || uploadError.message?.includes('413')) {
+              throw new Error('Audio file is too large. Try compressing it or using a shorter recording.')
+            }
+            throw uploadError
+          }
 
           // Generate a signed URL for the audio file
-          const { data: signedUrlData } = await supabase.storage
+          const { data: signedUrlData, error: signedUrlError } = await supabase.storage
             .from('project-files')
             .createSignedUrl(filePath, 60 * 60 * 24 * 365) // 1 year
 
-          setUploadProgress(`Transcribing ${file.name}...`)
+          if (signedUrlError || !signedUrlData?.signedUrl) {
+            throw new Error('Failed to get audio URL for transcription')
+          }
 
-          // Send to transcription API
-          const formData = new FormData()
-          formData.append('audio', file)
+          setUploadProgress(`Transcribing ${file.name}... (this may take a few minutes for longer files)`)
 
+          // Send signed URL to transcription API
           const response = await fetch('/api/transcribe', {
             method: 'POST',
-            body: formData,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              audioUrl: signedUrlData.signedUrl,
+              // No recordingId - this is a project input, not a recording
+            }),
           })
 
-          const result = await response.json()
+          // Handle non-JSON responses (e.g., timeout errors, server errors)
+          let result
+          const contentType = response.headers.get('content-type')
+          if (contentType && contentType.includes('application/json')) {
+            result = await response.json()
+          } else {
+            const text = await response.text()
+            console.error('Non-JSON response from transcription API:', text)
+            throw new Error('Transcription service returned an unexpected response. The file may be too large or the service timed out.')
+          }
 
           if (!response.ok) {
             throw new Error(result.error || 'Failed to transcribe audio')
@@ -750,6 +776,12 @@ export default function ProjectDetailPage() {
           if (inputError) throw inputError
 
         } else if (type === 'document') {
+          // Check file size (50MB limit for documents)
+          const maxDocSize = 50 * 1024 * 1024 // 50MB
+          if (file.size > maxDocSize) {
+            throw new Error(`Document is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 50MB.`)
+          }
+          
           // Extract text from document
           setUploadProgress(`Extracting text from ${file.name}...`)
 
@@ -787,6 +819,12 @@ export default function ProjectDetailPage() {
           if (inputError) throw inputError
 
         } else if (type === 'image') {
+          // Check file size (20MB limit for images)
+          const maxImgSize = 20 * 1024 * 1024 // 20MB
+          if (file.size > maxImgSize) {
+            throw new Error(`Image is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 20MB.`)
+          }
+          
           // Upload image to storage
           const filePath = `${currentUser.id}/${projectId}/${Date.now()}-${file.name}`
           const { error: uploadError } = await supabase.storage
@@ -1050,7 +1088,7 @@ export default function ProjectDetailPage() {
                     </svg>
                     <div>
                       <p className="text-body-sm text-secondary-white">Audio File</p>
-                      <p className="text-caption text-medium-gray">MP3, WAV, M4A</p>
+                      <p className="text-caption text-medium-gray">MP3, WAV, M4A · Max 200MB</p>
                     </div>
                   </button>
 
@@ -1067,7 +1105,7 @@ export default function ProjectDetailPage() {
                     </svg>
                     <div>
                       <p className="text-body-sm text-secondary-white">Document</p>
-                      <p className="text-caption text-medium-gray">PDF, DOCX, TXT</p>
+                      <p className="text-caption text-medium-gray">PDF, DOCX, TXT · Max 50MB</p>
                     </div>
                   </button>
 
@@ -1084,7 +1122,7 @@ export default function ProjectDetailPage() {
                     </svg>
                     <div>
                       <p className="text-body-sm text-secondary-white">Image</p>
-                      <p className="text-caption text-medium-gray">JPG, PNG</p>
+                      <p className="text-caption text-medium-gray">JPG, PNG · Max 20MB</p>
                     </div>
                   </button>
                 </div>

@@ -3,6 +3,16 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "functions": {
+    "app/api/transcribe/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/workflow/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/workflow/quick/route.ts": {
+      "maxDuration": 300
+    }
+  }
 }
-

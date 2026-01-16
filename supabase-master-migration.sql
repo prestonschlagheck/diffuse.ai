@@ -558,15 +558,15 @@ GROUP BY created_by;
 -- SECTION 10: STORAGE BUCKETS
 -- ============================================
 
--- 10.1 Recordings bucket
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('recordings', 'recordings', false)
-ON CONFLICT (id) DO UPDATE SET public = false;
-
--- 10.2 Project files bucket (50MB limit)
+-- 10.1 Recordings bucket (200MB limit for long recordings)
 INSERT INTO storage.buckets (id, name, public, file_size_limit)
-VALUES ('project-files', 'project-files', false, 52428800)
-ON CONFLICT (id) DO NOTHING;
+VALUES ('recordings', 'recordings', false, 209715200)
+ON CONFLICT (id) DO UPDATE SET file_size_limit = 209715200;
+
+-- 10.2 Project files bucket (200MB limit for long audio files)
+INSERT INTO storage.buckets (id, name, public, file_size_limit)
+VALUES ('project-files', 'project-files', false, 209715200)
+ON CONFLICT (id) DO UPDATE SET file_size_limit = 209715200;
 
 
 -- ============================================

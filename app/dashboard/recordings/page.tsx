@@ -125,6 +125,11 @@ export default function RecordingsPage() {
   const audioChunksRef = useRef<Blob[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const uploadInputRef = useRef<HTMLInputElement | null>(null)
+  
+  // Upload state
+  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null)
   
   const supabase = createClient()
 
@@ -336,6 +341,126 @@ export default function RecordingsPage() {
         .update({ status: 'recorded', title: title || 'Untitled Recording' })
         .eq('id', newRecording.id)
       await fetchRecordings()
+    }
+  }
+
+  // Handle file upload
+  const handleFileUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0 || !user) return
+
+    const file = files[0]
+    
+    // Validate file type
+    const validTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/mp4', 'audio/x-m4a', 'audio/m4a', 'audio/webm']
+    const validExtensions = ['.mp3', '.wav', '.m4a', '.webm']
+    const fileExt = file.name.toLowerCase().slice(file.name.lastIndexOf('.'))
+    
+    if (!validTypes.includes(file.type) && !validExtensions.includes(fileExt)) {
+      alert('Please upload a valid audio file (MP3, WAV, M4A, or WebM)')
+      return
+    }
+
+    // Check file size (200MB limit)
+    const maxSize = 200 * 1024 * 1024
+    if (file.size > maxSize) {
+      alert(`File is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 200MB.`)
+      return
+    }
+
+    setUploading(true)
+    setUploadProgress(`Uploading ${file.name}...`)
+
+    try {
+      // Determine file extension for storage
+      const ext = fileExt || '.mp3'
+      const fileName = `${user.id}/${Date.now()}${ext}`
+      
+      const { error: uploadError } = await supabase.storage
+        .from('recordings')
+        .upload(fileName, file)
+
+      if (uploadError) throw uploadError
+
+      setUploadProgress('Creating recording entry...')
+
+      // Create recording entry with placeholder title
+      const { data: newRecording, error: dbError } = await supabase
+        .from('diffuse_recordings')
+        .insert({
+          user_id: user.id,
+          title: 'Processing...',
+          duration: 0, // Will be updated if we can detect duration
+          file_path: fileName,
+          status: 'generating',
+        })
+        .select()
+        .single()
+
+      if (dbError) throw dbError
+
+      // Show the recording detail
+      setSelectedRecording(newRecording)
+      await fetchRecordings()
+
+      setUploadProgress('Transcribing audio... (this may take a few minutes)')
+
+      // Start transcription
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+        .from('recordings')
+        .createSignedUrl(newRecording.file_path, 3600)
+
+      if (signedUrlError || !signedUrlData?.signedUrl) {
+        throw new Error('Failed to get audio URL for transcription')
+      }
+
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recordingId: newRecording.id,
+          audioUrl: signedUrlData.signedUrl,
+          autoSave: true,
+          currentTitle: '', // Let it auto-generate from transcription
+        }),
+      })
+
+      // Handle non-JSON responses
+      let data
+      const contentType = response.headers.get('content-type')
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json()
+      } else {
+        const text = await response.text()
+        console.error('Non-JSON response:', text)
+        throw new Error('Transcription service returned an unexpected response. The file may be too large or the service timed out.')
+      }
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Transcription failed')
+      }
+
+      // Refresh to show the updated recording
+      await fetchRecordings()
+      
+      // Update selected recording
+      const { data: updatedRecording } = await supabase
+        .from('diffuse_recordings')
+        .select('*')
+        .eq('id', newRecording.id)
+        .single()
+      
+      if (updatedRecording) {
+        setSelectedRecording(updatedRecording)
+      }
+
+      setUploadProgress(null)
+    } catch (error) {
+      console.error('Upload error:', error)
+      alert(error instanceof Error ? error.message : 'Failed to upload recording')
+      setUploadProgress(null)
+    } finally {
+      setUploading(false)
+      if (uploadInputRef.current) uploadInputRef.current.value = ''
     }
   }
 
@@ -678,10 +803,43 @@ export default function RecordingsPage() {
 
   return (
     <div>
+      {/* Hidden file input for uploads */}
+      <input
+        ref={uploadInputRef}
+        type="file"
+        accept=".mp3,.wav,.m4a,.webm,audio/mpeg,audio/wav,audio/mp4,audio/x-m4a,audio/webm"
+        onChange={(e) => handleFileUpload(e.target.files)}
+        className="hidden"
+      />
+      
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-display-sm text-secondary-white">Recordings</h1>
-        <RecordingButton className="hidden md:flex" />
+        <div className="hidden md:flex items-center gap-3">
+          <button
+            onClick={() => uploadInputRef.current?.click()}
+            disabled={uploading}
+            className="px-4 py-2 flex items-center justify-center gap-2 text-body-sm rounded-glass-sm border border-white/20 text-secondary-white hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            {uploading ? 'Uploading...' : 'Upload Recording'}
+          </button>
+          <RecordingButton />
+        </div>
       </div>
+
+      {/* Upload Progress Banner */}
+      {uploadProgress && (
+        <div className="mb-6 p-4 glass-container border border-cosmic-orange/30 bg-cosmic-orange/5">
+          <div className="flex items-center gap-3">
+            <svg className="w-5 h-5 text-cosmic-orange animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span className="text-body-sm text-secondary-white">{uploadProgress}</span>
+          </div>
+        </div>
+      )}
 
       {/* Recordings Grid */}
       {loading ? (
@@ -696,12 +854,48 @@ export default function RecordingsPage() {
             </svg>
           }
           title="No Recordings Yet"
-          description="Start recording audio to create transcriptions for your projects."
+          description="Start recording or upload an audio file to create transcriptions for your projects."
+          action={
+            <div className="flex flex-col sm:flex-row items-center gap-3 mt-4">
+              <button
+                onClick={() => uploadInputRef.current?.click()}
+                disabled={uploading}
+                className="px-4 py-2 flex items-center justify-center gap-2 text-body-sm rounded-glass-sm border border-white/20 text-secondary-white hover:bg-white/10 transition-colors disabled:opacity-50"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                Upload Recording
+              </button>
+              <span className="text-medium-gray text-caption">or</span>
+              <button
+                onClick={() => setShowRecordingModal(true)}
+                className="btn-primary px-4 py-2 flex items-center justify-center gap-2 text-body-sm"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+                Start Recording
+              </button>
+            </div>
+          }
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Mobile Recording Button - full width at top of grid */}
-          <RecordingButton className="md:hidden col-span-1" />
+          {/* Mobile Buttons - full width at top of grid */}
+          <div className="md:hidden col-span-1 flex gap-2">
+            <button
+              onClick={() => uploadInputRef.current?.click()}
+              disabled={uploading}
+              className="flex-1 px-4 py-2 flex items-center justify-center gap-2 text-body-sm rounded-glass-sm border border-white/20 text-secondary-white hover:bg-white/10 transition-colors disabled:opacity-50"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              Upload
+            </button>
+            <RecordingButton className="flex-1" />
+          </div>
           {recordings.map((rec) => (
             <div
               key={rec.id}

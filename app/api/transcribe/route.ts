@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { AssemblyAI } from 'assemblyai'
 import { createClient } from '@/lib/supabase/server'
 
+// Increase timeout for long audio files (up to 5 minutes)
+// Note: Vercel Pro required for >60s, Vercel Hobby max is 10s
+export const maxDuration = 300
+
 const assemblyai = new AssemblyAI({
   apiKey: process.env.ASSEMBLYAI_API_KEY!,
 })
@@ -34,16 +38,29 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
     
-    const { recordingId, audioUrl, autoSave, currentTitle } = await request.json()
-
-    if (!recordingId || !audioUrl) {
+    // Parse request body with error handling
+    let requestBody
+    try {
+      requestBody = await request.json()
+    } catch (parseError) {
+      console.error('Failed to parse request body:', parseError)
       return NextResponse.json(
-        { error: 'Missing recordingId or audioUrl' },
+        { error: 'Invalid request body. Please send JSON with audioUrl.' },
+        { status: 400 }
+      )
+    }
+    
+    const { recordingId, audioUrl, autoSave, currentTitle } = requestBody
+
+    // audioUrl is required, recordingId is optional (not provided for project file uploads)
+    if (!audioUrl) {
+      return NextResponse.json(
+        { error: 'Missing audioUrl' },
         { status: 400 }
       )
     }
 
-    console.log('Starting transcription for recording:', recordingId)
+    console.log('Starting transcription' + (recordingId ? ` for recording: ${recordingId}` : ' for file upload'))
     console.log('Audio URL:', audioUrl.substring(0, 100) + '...')
 
     // Transcribe using AssemblyAI with auto_chapters for smart title generation
@@ -55,11 +72,13 @@ export async function POST(request: NextRequest) {
 
     if (transcript.status === 'error') {
       console.error('AssemblyAI transcription error:', transcript.error)
-      // Reset status back to 'recorded' on failure
-      await supabase
-        .from('diffuse_recordings')
-        .update({ status: 'recorded' })
-        .eq('id', recordingId)
+      // Reset status back to 'recorded' on failure (only if this is a recording)
+      if (recordingId) {
+        await supabase
+          .from('diffuse_recordings')
+          .update({ status: 'recorded' })
+          .eq('id', recordingId)
+      }
       return NextResponse.json(
         { error: transcript.error || 'Transcription failed' },
         { status: 500 }
@@ -73,8 +92,8 @@ export async function POST(request: NextRequest) {
     const shouldAutoGenerateTitle = !currentTitle || currentTitle === 'Processing...' || currentTitle === ''
     const finalTitle = shouldAutoGenerateTitle ? suggestedTitle : currentTitle
 
-    // If autoSave is true, save directly to the database
-    if (autoSave) {
+    // If autoSave is true and we have a recordingId, save directly to the database
+    if (autoSave && recordingId) {
       console.log('Auto-saving transcription to database for recording:', recordingId)
       console.log('Final title:', finalTitle)
       
@@ -107,10 +126,22 @@ export async function POST(request: NextRequest) {
       finalTitle: finalTitle,
       chapters: transcript.chapters || [],
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Transcription error:', error)
+    
+    // Provide more helpful error messages
+    let errorMessage = 'Internal server error'
+    
+    if (error.message?.includes('timeout') || error.message?.includes('TIMEOUT')) {
+      errorMessage = 'Transcription timed out. The audio file may be too long. Try a shorter file or contact support.'
+    } else if (error.message?.includes('Invalid audio')) {
+      errorMessage = 'Invalid audio file. Please ensure the file is a valid MP3, WAV, or M4A file.'
+    } else if (error.message) {
+      errorMessage = error.message
+    }
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: errorMessage },
       { status: 500 }
     )
   }
