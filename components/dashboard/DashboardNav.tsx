@@ -14,17 +14,6 @@ const MobileMenuContext = createContext<{
 
 export const useMobileMenu = () => useContext(MobileMenuContext)
 
-// All plans ranked by cost (highest first)
-const planRankings: Record<string, { name: string; rank: number }> = {
-  // Enterprise plans (highest)
-  enterprise_pro_max: { name: 'Enterprise Pro Max', rank: 100 },
-  enterprise_pro: { name: 'Enterprise Pro', rank: 90 },
-  // Individual plans
-  pro_max: { name: 'Pro Max', rank: 30 },
-  pro: { name: 'Pro', rank: 20 },
-  free: { name: 'Free', rank: 0 },
-}
-
 const subscriptionNames: Record<string, string> = {
   free: 'Free',
   pro: 'Pro',
@@ -67,7 +56,7 @@ export default function DashboardNav() {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([])
   const [recentExpanded, setRecentExpanded] = useState(true)
-  const [highestPlan, setHighestPlan] = useState<{ name: string; rank: number }>({ name: 'Free', rank: 0 })
+  const [subscriptionTier, setSubscriptionTier] = useState<string>('Free')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
@@ -190,30 +179,11 @@ export default function DashboardNav() {
     }
   }, [user, supabase])
 
-  // Compute the highest plan across individual subscription and org memberships
+  // Get user's individual subscription tier
   useEffect(() => {
-    const computeHighestPlan = () => {
-      // Start with user's individual plan
-      const individualTier = userProfile?.subscription_tier || 'free'
-      let highest = planRankings[individualTier] || { name: 'Free', rank: 0 }
-      
-      // Check organization plans
-      if (workspaces && workspaces.length > 0) {
-        for (const { workspace } of workspaces) {
-          if (workspace.plan && planRankings[workspace.plan]) {
-            const orgPlan = planRankings[workspace.plan]
-            if (orgPlan.rank > highest.rank) {
-              highest = orgPlan
-            }
-          }
-        }
-      }
-      
-      setHighestPlan(highest)
-    }
-    
-    computeHighestPlan()
-  }, [userProfile, workspaces])
+    const tier = userProfile?.subscription_tier || 'free'
+    setSubscriptionTier(subscriptionNames[tier] || 'Free')
+  }, [userProfile])
 
   useEffect(() => {
     loadRecentProjects()
@@ -481,8 +451,8 @@ export default function DashboardNav() {
           >
             <div className="truncate">
               <div className="font-medium truncate">{displayName}</div>
-              <div className={`text-caption uppercase tracking-wider ${highestPlan.rank >= 90 ? 'text-accent-purple' : 'text-cosmic-orange'}`}>
-                {highestPlan.name}
+              <div className="text-caption uppercase tracking-wider text-cosmic-orange">
+                {subscriptionTier}
               </div>
             </div>
           </button>

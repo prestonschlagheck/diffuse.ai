@@ -1050,7 +1050,7 @@ export default function ProjectDetailPage() {
                     </svg>
                     <div>
                       <p className="text-body-sm text-secondary-white">Audio File</p>
-                      <p className="text-caption text-medium-gray">MP3, WAV</p>
+                      <p className="text-caption text-medium-gray">MP3, WAV, M4A</p>
                     </div>
                   </button>
 
@@ -1095,7 +1095,7 @@ export default function ProjectDetailPage() {
             <input
               ref={audioInputRef}
               type="file"
-              accept=".mp3,.wav,audio/mpeg,audio/wav"
+              accept=".mp3,.wav,.m4a,audio/mpeg,audio/wav,audio/mp4,audio/x-m4a"
               multiple
               className="hidden"
               onChange={(e) => handleFileUpload(e.target.files, 'audio')}

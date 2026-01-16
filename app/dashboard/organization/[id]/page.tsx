@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import LoadingSpinner from '@/components/dashboard/LoadingSpinner'
 import EmptyState from '@/components/dashboard/EmptyState'
+import CreateProjectModal from '@/components/dashboard/CreateProjectModal'
 import type { DiffuseWorkspace, DiffuseProject, OrganizationPlan } from '@/types/database'
 
 const planDetails = {
@@ -60,6 +61,7 @@ export default function OrganizationDetailPage() {
   const [copiedCode, setCopiedCode] = useState(false)
   const [editingMemberRole, setEditingMemberRole] = useState<string | null>(null)
   const [savingRole, setSavingRole] = useState(false)
+  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false)
   const supabase = createClient()
 
   const fetchOrganizationData = useCallback(async () => {
@@ -476,7 +478,18 @@ export default function OrganizationDetailPage() {
       </div>
 
       {/* Projects */}
-      <h2 className="text-heading-lg text-secondary-white mb-4">Projects</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-heading-lg text-secondary-white">Projects</h2>
+        <button
+          onClick={() => setShowCreateProjectModal(true)}
+          className="btn-primary px-4 py-2 flex items-center gap-2 text-body-sm"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Create Project
+        </button>
+      </div>
       
       {projects.length === 0 ? (
         <EmptyState
@@ -744,6 +757,21 @@ export default function OrganizationDetailPage() {
           </button>
         </div>
       </div>
+
+      {/* Create Project Modal */}
+      {showCreateProjectModal && workspace && (
+        <CreateProjectModal
+          workspaceId={workspace.id}
+          projectType="project"
+          shareWithOrgId={workspace.id}
+          shareWithOrgName={workspace.name}
+          onClose={() => setShowCreateProjectModal(false)}
+          onSuccess={() => {
+            setShowCreateProjectModal(false)
+            fetchOrganizationData()
+          }}
+        />
+      )}
     </div>
   )
 }
