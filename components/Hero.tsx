@@ -680,7 +680,7 @@ export default function Hero() {
             <br className="hidden sm:block" />
             <span className="text-secondary-white"> in Minutes, Not Hours</span>
           </h1>
-          <p className="text-base sm:text-lg md:text-body-lg text-medium-gray max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg md:text-body-lg text-medium-gray max-w-2xl mx-auto md:whitespace-nowrap">
             AI-powered workflow that transforms audio into publication-ready journalism
           </p>
         </motion.div>
