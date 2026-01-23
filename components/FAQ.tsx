@@ -131,28 +131,6 @@ export default function FAQ() {
               </div>
             ))}
           </motion.div>
-
-          {/* Still have questions */}
-          <motion.div
-            variants={itemVariants}
-            className="mt-12 glass-container p-6 md:p-8 text-center"
-          >
-            <h3 className="text-xl font-bold text-secondary-white mb-2">
-              Still have questions?
-            </h3>
-            <p className="text-medium-gray mb-4">
-              We&apos;re here to help. Reach out to our team anytime.
-            </p>
-            <a
-              href="mailto:support@diffuse.ai"
-              className="inline-flex items-center gap-2 text-cosmic-orange hover:text-rich-orange transition-colors font-medium"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              support@diffuse.ai
-            </a>
-          </motion.div>
         </motion.div>
       </div>
 

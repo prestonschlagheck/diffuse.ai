@@ -62,6 +62,7 @@ export default function OrganizationDetailPage() {
   const [editingMemberRole, setEditingMemberRole] = useState<string | null>(null)
   const [savingRole, setSavingRole] = useState(false)
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false)
+  const [deletingOrg, setDeletingOrg] = useState(false)
   const supabase = createClient()
 
   const fetchOrganizationData = useCallback(async () => {
@@ -223,6 +224,50 @@ export default function OrganizationDetailPage() {
     } catch (error) {
       console.error('Error leaving organization:', error)
       alert('Failed to leave organization')
+    }
+  }
+
+  const handleDeleteOrganization = async () => {
+    if (!user || !workspace || !userRole) return
+    
+    // Only admins and owners can delete
+    if (userRole !== 'admin' && userRole !== 'owner') return
+    
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete "${workspace.name}"? This action cannot be undone. All members will be removed and all shared projects will become personal projects.`
+    )
+    
+    if (!confirmDelete) return
+    
+    setDeletingOrg(true)
+    try {
+      // First, set workspace_id to NULL for all projects in this workspace
+      // This converts them to personal projects before deleting the workspace
+      const { error: projectsError } = await supabase
+        .from('diffuse_projects')
+        .update({ workspace_id: null })
+        .eq('workspace_id', workspace.id)
+
+      if (projectsError) {
+        console.error('Error updating projects:', projectsError)
+        // Continue anyway - the workspace deletion will handle it via CASCADE
+      }
+      
+      // Delete the workspace - this will cascade delete members
+      const { error: deleteError } = await supabase
+        .from('diffuse_workspaces')
+        .delete()
+        .eq('id', workspace.id)
+
+      if (deleteError) throw deleteError
+      
+      // Redirect to organizations page
+      router.push('/dashboard/organization')
+    } catch (error: any) {
+      console.error('Error deleting organization:', error)
+      alert(`Failed to delete organization: ${error.message || 'Unknown error'}`)
+    } finally {
+      setDeletingOrg(false)
     }
   }
 
@@ -740,22 +785,46 @@ export default function OrganizationDetailPage() {
         </div>
       )}
 
-      {/* Leave Organization */}
-      <div className="glass-container p-6 mt-8 border border-red-500/20">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-body-md text-secondary-white mb-1">Leave Organization</h3>
-            <p className="text-body-sm text-medium-gray">
-              Remove yourself from this organization. You&apos;ll lose access to shared projects.
-            </p>
+      {/* Leave Organization / Delete Organization */}
+      <div className="space-y-4 mt-8">
+        {/* Leave Organization */}
+        <div className="glass-container p-6 border border-red-500/20">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-body-md text-secondary-white mb-1">Leave Organization</h3>
+              <p className="text-body-sm text-medium-gray break-words">
+                Remove yourself from this organization. You&apos;ll lose access to shared projects.
+              </p>
+            </div>
+            <button
+              onClick={handleLeaveOrganization}
+              className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-glass border border-red-500/30 transition-colors text-body-sm font-medium whitespace-nowrap flex-shrink-0"
+            >
+              Leave Organization
+            </button>
           </div>
-          <button
-            onClick={handleLeaveOrganization}
-            className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-glass border border-red-500/30 transition-colors text-body-sm font-medium"
-          >
-            Leave Organization
-          </button>
         </div>
+
+        {/* Delete Organization - Only for admins/owners */}
+        {(userRole === 'admin' || userRole === 'owner') && (
+          <div className="glass-container p-6 border border-red-500/30">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex-1 min-w-0 pr-0 sm:pr-4">
+                <h3 className="text-body-md text-secondary-white mb-1">Delete Organization</h3>
+                <p className="text-body-sm text-medium-gray break-words">
+                  Permanently delete this organization. All members will be removed and shared projects will become personal projects. This action cannot be undone.
+                </p>
+              </div>
+              <button
+                onClick={handleDeleteOrganization}
+                disabled={deletingOrg}
+                className="px-4 py-2 bg-red-500/30 hover:bg-red-500/40 text-red-400 rounded-glass border border-red-500/40 transition-colors text-body-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
+              >
+                {deletingOrg ? 'Deleting...' : 'Delete Organization'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Create Project Modal */}
