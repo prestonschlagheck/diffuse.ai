@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import mammoth from 'mammoth'
+import { checkRateLimit, getRateLimitHeaders } from '@/lib/security/rate-limit'
+import { requireAuth, unauthorizedResponse } from '@/lib/security/authorization'
+import { validateFileType, validateFileSize, validateFileName } from '@/lib/security/validation'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -30,6 +33,19 @@ function extractFromTXT(buffer: Buffer): string {
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting - file upload
+    const rateLimitResponse = await checkRateLimit(request, 'fileUpload')
+    if (rateLimitResponse) {
+      return rateLimitResponse
+    }
+
+    // Authentication check
+    try {
+      await requireAuth()
+    } catch {
+      return unauthorizedResponse()
+    }
+
     const formData = await request.formData()
     const file = formData.get('file') as File | null
 
@@ -40,15 +56,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get file extension
-    const fileName = file.name.toLowerCase()
-    const extension = fileName.split('.').pop()
-
-    // Validate file type
-    const allowedExtensions = ['pdf', 'docx', 'txt']
-    if (!extension || !allowedExtensions.includes(extension)) {
+    // Validate file name
+    let sanitizedFileName
+    try {
+      sanitizedFileName = validateFileName(file.name)
+    } catch (error: any) {
       return NextResponse.json(
-        { error: `Unsupported file type. Allowed: ${allowedExtensions.join(', ')}` },
+        { error: 'Invalid file name', message: error.message },
+        { status: 400 }
+      )
+    }
+
+    // Validate file type and size
+    const allowedExtensions = ['pdf', 'docx', 'txt']
+    let fileType
+    try {
+      const validation = validateFileType(sanitizedFileName, allowedExtensions)
+      fileType = validation.type
+      
+      // Validate file size based on type
+      if (fileType === 'pdf' || fileType === 'docx') {
+        validateFileSize(file.size, 'pdf')
+      } else {
+        validateFileSize(file.size, 'txt')
+      }
+    } catch (error: any) {
+      return NextResponse.json(
+        { error: 'File validation failed', message: error.message },
         { status: 400 }
       )
     }
@@ -60,7 +94,7 @@ export async function POST(request: NextRequest) {
     let extractedText = ''
 
     // Extract text based on file type
-    switch (extension) {
+    switch (fileType) {
       case 'pdf':
         try {
           extractedText = await extractFromPDF(buffer)
@@ -100,16 +134,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       text: extractedText,
-      file_name: file.name,
+      file_name: sanitizedFileName,
       file_size: file.size,
-      file_type: extension
+      file_type: fileType
     })
 
-  } catch (error) {
+    // Add rate limit headers
+    const rateLimitHeaders = getRateLimitHeaders(request, 'fileUpload')
+    Object.entries(rateLimitHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value)
+    })
+
+    return response
+
+  } catch (error: any) {
     console.error('Error extracting text:', error)
+    
+    // Don't expose internal error details
     return NextResponse.json(
       { error: 'Failed to extract text from file' },
       { status: 500 }

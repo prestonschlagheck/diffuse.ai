@@ -1,7 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { checkRateLimit, getRateLimitHeaders } from '@/lib/security/rate-limit'
+import { requireAuth, requireProjectOwnership, unauthorizedResponse, forbiddenResponse } from '@/lib/security/authorization'
+import { validateSchema, validateProjectId, validateOutputType } from '@/lib/security/validation'
 
-const N8N_WEBHOOK_URL = 'https://ushealthconnect.app.n8n.cloud/webhook/diffuse-workflow'
+// N8N webhook URL from environment variable (never hardcode API endpoints)
+const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL
+if (!N8N_WEBHOOK_URL) {
+  throw new Error('N8N_WEBHOOK_URL environment variable is required')
+}
 
 // Helper to extract the actual article JSON from various n8n/OpenAI response formats
 function extractArticleContent(n8nResult: any): string {
@@ -64,24 +71,61 @@ function extractArticleContent(n8nResult: any): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    
-    // Verify user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Rate limiting - expensive operation
+    const rateLimitResponse = await checkRateLimit(request, 'expensive')
+    if (rateLimitResponse) {
+      return rateLimitResponse
     }
 
-    const body = await request.json()
-    const { project_id, output_type = 'article' } = body
+    // Authentication check
+    let authResult
+    try {
+      authResult = await requireAuth()
+    } catch {
+      return unauthorizedResponse()
+    }
+    const { user, supabase } = authResult
 
-    if (!project_id) {
-      return NextResponse.json({ error: 'project_id is required' }, { status: 400 })
+    // Parse and validate request body
+    let body
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid request body. Expected JSON.' },
+        { status: 400 }
+      )
     }
 
-    // Validate output_type
-    if (output_type !== 'article' && output_type !== 'ad') {
-      return NextResponse.json({ error: 'output_type must be "article" or "ad"' }, { status: 400 })
+    // Strict input validation - only allow expected fields
+    let validatedData
+    try {
+      validatedData = validateSchema(body, {
+        project_id: {
+          required: true,
+          type: 'string',
+          validator: validateProjectId,
+        },
+        output_type: {
+          required: false,
+          type: 'string',
+          validator: (val) => val === undefined ? 'article' : validateOutputType(val),
+        },
+      })
+    } catch (error: any) {
+      return NextResponse.json(
+        { error: 'Validation failed', message: error.message },
+        { status: 400 }
+      )
+    }
+
+    const { project_id, output_type } = validatedData
+
+    // Authorization check - verify user owns the project
+    try {
+      await requireProjectOwnership(project_id, user.id, supabase)
+    } catch (error: any) {
+      return forbiddenResponse(error.message)
     }
 
     // Fetch all inputs for this project
@@ -107,7 +151,7 @@ export async function POST(request: NextRequest) {
     const n8nPayload = {
       project_id,
       output_type, // 'article' or 'ad' - n8n will branch based on this
-      inputs: inputs.map(input => ({
+      inputs: inputs.map((input: any) => ({
         id: input.id,
         type: input.type,
         content: input.content || '',
@@ -119,6 +163,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Call n8n webhook
+    if (!N8N_WEBHOOK_URL) {
+      return NextResponse.json(
+        { error: 'Workflow service unavailable' },
+        { status: 503 }
+      )
+    }
+    
     const n8nResponse = await fetch(N8N_WEBHOOK_URL, {
       method: 'POST',
       headers: {
@@ -167,14 +218,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to save output' }, { status: 500 })
     }
 
-    return NextResponse.json({ 
+    const response = NextResponse.json({ 
       success: true, 
       output,
       message: 'Article generated successfully'
     })
 
-  } catch (error) {
+    // Add rate limit headers
+    const rateLimitHeaders = getRateLimitHeaders(request, 'expensive')
+    Object.entries(rateLimitHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value)
+    })
+
+    return response
+
+  } catch (error: any) {
     console.error('Workflow API error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    
+    // Don't expose internal error details
+    if (error.message && (error.message.includes('Unauthorized') || error.message.includes('Forbidden'))) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.message.includes('Unauthorized') ? 401 : 403 }
+      )
+    }
+    
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
 }

@@ -1,21 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { createClient } from '@/lib/supabase/server'
+import { checkRateLimit, getRateLimitHeaders } from '@/lib/security/rate-limit'
+import { requireAuth, unauthorizedResponse } from '@/lib/security/authorization'
+import { validateSchema, validateFilePath } from '@/lib/security/validation'
 
 export async function POST(request: NextRequest) {
   try {
-    const { filePath } = await request.json()
+    // Rate limiting
+    const rateLimitResponse = await checkRateLimit(request, 'authenticated')
+    if (rateLimitResponse) {
+      return rateLimitResponse
+    }
 
-    if (!filePath) {
+    // Authentication check
+    let authResult
+    try {
+      authResult = await requireAuth()
+    } catch {
+      return unauthorizedResponse()
+    }
+    const { supabase } = authResult
+
+    // Parse and validate request body
+    let body
+    try {
+      body = await request.json()
+    } catch {
       return NextResponse.json(
-        { error: 'Missing filePath' },
+        { error: 'Invalid request body. Expected JSON.' },
         { status: 400 }
       )
     }
+
+    // Strict input validation
+    let validatedData
+    try {
+      validatedData = validateSchema(body, {
+        filePath: {
+          required: true,
+          type: 'string',
+          validator: validateFilePath,
+        },
+      })
+    } catch (error: any) {
+      return NextResponse.json(
+        { error: 'Validation failed', message: error.message },
+        { status: 400 }
+      )
+    }
+
+    const { filePath } = validatedData
 
     // Get a signed URL for the audio file (valid for 1 hour)
     const { data, error } = await supabase.storage
@@ -30,11 +64,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       signedUrl: data.signedUrl,
     })
-  } catch (error) {
+
+    // Add rate limit headers
+    const rateLimitHeaders = getRateLimitHeaders(request, 'authenticated')
+    Object.entries(rateLimitHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value)
+    })
+
+    return response
+  } catch (error: any) {
     console.error('Signed URL error:', error)
+    
+    // Don't expose internal error details
+    if (error.message && error.message.includes('Unauthorized')) {
+      return unauthorizedResponse()
+    }
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -1,7 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { checkRateLimit, getRateLimitHeaders } from '@/lib/security/rate-limit'
+import { requireAuth, requireRecordingOwnership, unauthorizedResponse, forbiddenResponse } from '@/lib/security/authorization'
+import { validateSchema, validateRecordingId, validateTranscription, validateRecordingTitle } from '@/lib/security/validation'
 
-const N8N_WEBHOOK_URL = 'https://ushealthconnect.app.n8n.cloud/webhook/diffuse-workflow'
+// N8N webhook URL from environment variable (never hardcode API endpoints)
+const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL
+if (!N8N_WEBHOOK_URL) {
+  throw new Error('N8N_WEBHOOK_URL environment variable is required')
+}
 
 interface QuickWorkflowResponse {
   project_title: string
@@ -224,21 +231,66 @@ function extractQuickWorkflowContent(n8nResult: any): {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    
-    // Verify user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Rate limiting - expensive operation
+    const rateLimitResponse = await checkRateLimit(request, 'expensive')
+    if (rateLimitResponse) {
+      return rateLimitResponse
     }
 
-    const body = await request.json()
-    const { recording_id, recording_title, transcription } = body
+    // Authentication check
+    let authResult
+    try {
+      authResult = await requireAuth()
+    } catch {
+      return unauthorizedResponse()
+    }
+    const { user, supabase } = authResult
 
-    console.log('Quick workflow request:', { recording_id, recording_title, transcription_length: transcription?.length })
+    // Parse and validate request body
+    let body
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid request body. Expected JSON.' },
+        { status: 400 }
+      )
+    }
 
-    if (!recording_id || !transcription) {
-      return NextResponse.json({ error: 'recording_id and transcription are required' }, { status: 400 })
+    // Strict input validation - only allow expected fields
+    let validatedData
+    try {
+      validatedData = validateSchema(body, {
+        recording_id: {
+          required: true,
+          type: 'string',
+          validator: validateRecordingId,
+        },
+        recording_title: {
+          required: false,
+          type: 'string',
+          validator: (val) => val === undefined ? 'Recording' : validateRecordingTitle(val),
+        },
+        transcription: {
+          required: true,
+          type: 'string',
+          validator: validateTranscription,
+        },
+      })
+    } catch (error: any) {
+      return NextResponse.json(
+        { error: 'Validation failed', message: error.message },
+        { status: 400 }
+      )
+    }
+
+    const { recording_id, recording_title, transcription } = validatedData
+
+    // Authorization check - verify user owns the recording
+    try {
+      await requireRecordingOwnership(recording_id, user.id, supabase)
+    } catch (error: any) {
+      return forbiddenResponse(error.message)
     }
 
     // Call n8n webhook with quick mode
@@ -249,6 +301,13 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Calling n8n webhook...')
+    if (!N8N_WEBHOOK_URL) {
+      return NextResponse.json(
+        { error: 'Workflow service unavailable' },
+        { status: 503 }
+      )
+    }
+    
     const n8nResponse = await fetch(N8N_WEBHOOK_URL, {
       method: 'POST',
       headers: {
@@ -365,7 +424,7 @@ export async function POST(request: NextRequest) {
     console.log('Created output:', output.id)
     console.log('Quick workflow completed successfully for project:', project.id)
 
-    return NextResponse.json({ 
+    const response = NextResponse.json({ 
       success: true, 
       project_id: project.id,
       project: project,
@@ -374,9 +433,29 @@ export async function POST(request: NextRequest) {
       message: 'Project and article created successfully'
     })
 
-  } catch (error) {
+    // Add rate limit headers
+    const rateLimitHeaders = getRateLimitHeaders(request, 'expensive')
+    Object.entries(rateLimitHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value)
+    })
+
+    return response
+
+  } catch (error: any) {
     console.error('Quick workflow API error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    
+    // Don't expose internal error details
+    if (error.message && (error.message.includes('Unauthorized') || error.message.includes('Forbidden'))) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.message.includes('Unauthorized') ? 401 : 403 }
+      )
+    }
+    
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
 }
 

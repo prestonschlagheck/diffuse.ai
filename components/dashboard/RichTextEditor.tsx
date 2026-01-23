@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { sanitizeHTML } from '@/lib/security/sanitize'
 
 interface RichTextEditorProps {
   value: string
@@ -19,14 +20,27 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
 
   const handleInput = () => {
     if (editorRef.current) {
-      onChange(editorRef.current.innerHTML)
+      // Sanitize HTML before storing to prevent XSS
+      const sanitized = sanitizeHTML(editorRef.current.innerHTML)
+      onChange(sanitized)
     }
   }
 
   const insertLink = () => {
     const url = prompt('Enter URL:')
     if (url) {
-      execCommand('createLink', url)
+      // Validate URL before inserting
+      try {
+        const urlObj = new URL(url)
+        // Only allow http/https URLs
+        if (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') {
+          execCommand('createLink', url)
+        } else {
+          alert('Only HTTP and HTTPS URLs are allowed')
+        }
+      } catch {
+        alert('Invalid URL format')
+      }
     }
   }
 
@@ -140,7 +154,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
           onInput={handleInput}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          dangerouslySetInnerHTML={{ __html: value }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHTML(value) }}
           className={`min-h-[200px] p-4 bg-white/5 rounded-glass text-secondary-white text-body-md focus:outline-none transition-colors ${
             isFocused ? 'ring-2 ring-cosmic-orange' : ''
           }`}
