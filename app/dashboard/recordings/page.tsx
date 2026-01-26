@@ -9,6 +9,7 @@ import LoadingSpinner from '@/components/dashboard/LoadingSpinner'
 import EmptyState from '@/components/dashboard/EmptyState'
 import AudioPlayer from '@/components/dashboard/AudioPlayer'
 import RecordingModal from '@/components/dashboard/RecordingModal'
+// tus-js-client will be dynamically imported when needed
 
 type RecordingStatus = 'recorded' | 'generating' | 'transcribed'
 
@@ -360,36 +361,167 @@ export default function RecordingsPage() {
       return
     }
 
-    // Check file size (200MB limit)
-    const maxSize = 200 * 1024 * 1024
+    // Check file size (500MB limit to match bucket limit)
+    const maxSize = 500 * 1024 * 1024
     if (file.size > maxSize) {
-      alert(`File is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 200MB.`)
+      alert(`File is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 500MB.`)
       return
     }
 
     setUploading(true)
-    setUploadProgress(`Uploading ${file.name}...`)
+    setUploadProgress(`Uploading ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)...`)
 
     try {
       // Determine file extension for storage
       const ext = fileExt || '.mp3'
       const fileName = `${user.id}/${Date.now()}${ext}`
       
-      const { error: uploadError } = await supabase.storage
-        .from('recordings')
-        .upload(fileName, file)
+      // For files over 6MB, use resumable uploads (TUS protocol)
+      // For smaller files, use standard upload
+      const useResumable = file.size > 6 * 1024 * 1024 // 6MB threshold
+      
+      if (useResumable) {
+        // Get Supabase URL and extract project ref
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+        const urlMatch = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)
+        if (!urlMatch) {
+          throw new Error('Invalid Supabase URL configuration')
+        }
+        const projectRef = urlMatch[1]
+        
+        // Get session token
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
+          throw new Error('Not authenticated')
+        }
+        
+        // Use resumable upload for large files (use direct storage hostname for better performance)
+        const uploadUrl = `https://${projectRef}.storage.supabase.co/storage/v1/upload/resumable`
+        
+        // Dynamically import tus-js-client for client-side usage
+        const tusModule = await import('tus-js-client')
+        // Handle both default and named exports
+        const TusUpload = tusModule.Upload || tusModule.default?.Upload || tusModule.default
+        
+        await new Promise<void>((resolve, reject) => {
+          const upload = new TusUpload(file, {
+            endpoint: uploadUrl,
+            retryDelays: [0, 3000, 5000, 10000, 20000],
+            uploadDataDuringCreation: true,
+            removeFingerprintOnSuccess: true,
+            metadata: {
+              bucketName: 'recordings',
+              objectName: fileName,
+              contentType: file.type || 'audio/mpeg',
+              cacheControl: '3600',
+            },
+            headers: {
+              authorization: `Bearer ${session.access_token}`,
+            },
+            chunkSize: 6 * 1024 * 1024, // Must be exactly 6MB for Supabase
+            onError: (error) => {
+              console.error('Resumable upload error:', error)
+              reject(error)
+            },
+            onProgress: (bytesUploaded, bytesTotal) => {
+              const percent = ((bytesUploaded / bytesTotal) * 100).toFixed(1)
+              setUploadProgress(`Uploading ${file.name}... ${percent}% (${(bytesUploaded / 1024 / 1024).toFixed(1)}MB / ${(bytesTotal / 1024 / 1024).toFixed(1)}MB)`)
+            },
+            onSuccess: () => {
+              resolve()
+            },
+          })
+          
+          // Check for previous uploads to resume
+          upload.findPreviousUploads().then((previousUploads) => {
+            if (previousUploads.length) {
+              upload.resumeFromPreviousUpload(previousUploads[0])
+            }
+            upload.start()
+          }).catch((error) => {
+            // If findPreviousUploads fails, just start the upload
+            upload.start()
+          })
+        })
+      } else {
+        // Standard upload for smaller files
+        const { error: uploadError } = await supabase.storage
+          .from('recordings')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false,
+            contentType: file.type || 'audio/mpeg',
+          })
 
-      if (uploadError) throw uploadError
+        if (uploadError) {
+          // Provide more helpful error messages
+          if (uploadError.message?.includes('exceeded the maximum allowed size')) {
+            throw new Error('File is too large. The storage bucket limit may need to be increased.')
+          }
+          if (uploadError.message?.includes('Payload too large') || uploadError.message?.includes('413')) {
+            throw new Error('File is too large. Try compressing it or using a shorter recording.')
+          }
+          throw uploadError
+        }
+      }
+
+      setUploadProgress('Extracting audio duration...')
+
+      // Get signed URL to extract duration
+      const { data: signedUrlForDuration, error: durationUrlError } = await supabase.storage
+        .from('recordings')
+        .createSignedUrl(fileName, 3600)
+
+      let detectedDuration = 0
+      if (!durationUrlError && signedUrlForDuration?.signedUrl) {
+        try {
+          // Extract duration from the uploaded audio file
+          detectedDuration = await new Promise<number>((resolve) => {
+            const audio = new Audio()
+            audio.preload = 'metadata'
+            
+            const handleLoadedMetadata = () => {
+              if (audio.duration && isFinite(audio.duration) && audio.duration !== Infinity) {
+                resolve(Math.round(audio.duration))
+              } else {
+                resolve(0)
+              }
+              audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
+              audio.removeEventListener('error', handleError)
+            }
+            
+            const handleError = () => {
+              resolve(0)
+              audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
+              audio.removeEventListener('error', handleError)
+            }
+            
+            audio.addEventListener('loadedmetadata', handleLoadedMetadata)
+            audio.addEventListener('error', handleError)
+            audio.src = signedUrlForDuration.signedUrl
+            
+            // Timeout after 10 seconds if duration can't be detected
+            setTimeout(() => {
+              audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
+              audio.removeEventListener('error', handleError)
+              resolve(0)
+            }, 10000)
+          })
+        } catch (error) {
+          console.warn('Failed to extract duration:', error)
+          detectedDuration = 0
+        }
+      }
 
       setUploadProgress('Creating recording entry...')
 
-      // Create recording entry with placeholder title
+      // Create recording entry with detected duration
       const { data: newRecording, error: dbError } = await supabase
         .from('diffuse_recordings')
         .insert({
           user_id: user.id,
           title: 'Processing...',
-          duration: 0, // Will be updated if we can detect duration
+          duration: detectedDuration,
           file_path: fileName,
           status: 'generating',
         })
@@ -402,7 +534,7 @@ export default function RecordingsPage() {
       setSelectedRecording(newRecording)
       await fetchRecordings()
 
-      setUploadProgress('Transcribing audio... (this may take a few minutes)')
+      setUploadProgress('Transcribing audio... (this may take a few minutes for large files)')
 
       // Start transcription
       const { data: signedUrlData, error: signedUrlError } = await supabase.storage
@@ -413,30 +545,45 @@ export default function RecordingsPage() {
         throw new Error('Failed to get audio URL for transcription')
       }
 
-      const response = await fetch('/api/transcribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recordingId: newRecording.id,
-          audioUrl: signedUrlData.signedUrl,
-          autoSave: true,
-          currentTitle: '', // Let it auto-generate from transcription
-        }),
-      })
+      // Create AbortController for timeout handling (10 minutes max for very large files)
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10 * 60 * 1000) // 10 minutes
 
-      // Handle non-JSON responses
-      let data
-      const contentType = response.headers.get('content-type')
-      if (contentType && contentType.includes('application/json')) {
-        data = await response.json()
-      } else {
-        const text = await response.text()
-        console.error('Non-JSON response:', text)
-        throw new Error('Transcription service returned an unexpected response. The file may be too large or the service timed out.')
-      }
+      try {
+        const response = await fetch('/api/transcribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recordingId: newRecording.id,
+            audioUrl: signedUrlData.signedUrl,
+            autoSave: true,
+            currentTitle: '', // Let it auto-generate from transcription
+          }),
+          signal: controller.signal,
+        })
+        
+        clearTimeout(timeoutId)
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Transcription failed')
+        // Handle non-JSON responses
+        let data
+        const contentType = response.headers.get('content-type')
+        if (contentType && contentType.includes('application/json')) {
+          data = await response.json()
+        } else {
+          const text = await response.text()
+          console.error('Non-JSON response:', text)
+          throw new Error('Transcription service returned an unexpected response. The file may be too large or the service timed out.')
+        }
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Transcription failed')
+        }
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId)
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Transcription timed out after 10 minutes. The file may be too large. Please try a shorter recording or contact support.')
+        }
+        throw fetchError
       }
 
       // Refresh to show the updated recording
@@ -451,6 +598,64 @@ export default function RecordingsPage() {
       
       if (updatedRecording) {
         setSelectedRecording(updatedRecording)
+        
+        // If duration is still 0, try to update it from the audio URL
+        if (updatedRecording.duration === 0 && signedUrlData?.signedUrl) {
+          try {
+            const finalDuration = await new Promise<number>((resolve) => {
+              const audio = new Audio()
+              audio.preload = 'metadata'
+              
+              const handleLoadedMetadata = () => {
+                if (audio.duration && isFinite(audio.duration) && audio.duration !== Infinity) {
+                  resolve(Math.round(audio.duration))
+                } else {
+                  resolve(0)
+                }
+                audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
+                audio.removeEventListener('error', handleError)
+              }
+              
+              const handleError = () => {
+                resolve(0)
+                audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
+                audio.removeEventListener('error', handleError)
+              }
+              
+              audio.addEventListener('loadedmetadata', handleLoadedMetadata)
+              audio.addEventListener('error', handleError)
+              audio.src = signedUrlData.signedUrl
+              
+              setTimeout(() => {
+                audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
+                audio.removeEventListener('error', handleError)
+                resolve(0)
+              }, 10000)
+            })
+            
+            // Update duration in database if we detected it
+            if (finalDuration > 0) {
+              await supabase
+                .from('diffuse_recordings')
+                .update({ duration: finalDuration })
+                .eq('id', newRecording.id)
+              
+              // Refresh again to show updated duration
+              await fetchRecordings()
+              const { data: finalRecording } = await supabase
+                .from('diffuse_recordings')
+                .select('*')
+                .eq('id', newRecording.id)
+                .single()
+              
+              if (finalRecording) {
+                setSelectedRecording(finalRecording)
+              }
+            }
+          } catch (error) {
+            console.warn('Failed to update duration after transcription:', error)
+          }
+        }
       }
 
       setUploadProgress(null)

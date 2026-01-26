@@ -12,6 +12,7 @@ import OutputDetailModal from '@/components/dashboard/OutputDetailModal'
 import SelectRecordingModal from '@/components/dashboard/SelectRecordingModal'
 import { addRecentProject } from '@/components/dashboard/DashboardNav'
 import type { DiffuseProject, DiffuseProjectInput, DiffuseProjectOutput, ProjectVisibility, UserRole, InputType, OutputType } from '@/types/database'
+// tus-js-client will be dynamically imported when needed
 
 // Role hierarchy for permissions
 const roleHierarchy = ['viewer', 'editor', 'admin', 'owner'] as const
@@ -699,24 +700,101 @@ export default function ProjectDetailPage() {
         setUploadProgress(`Processing ${file.name} (${i + 1}/${files.length})...`)
 
         if (type === 'audio') {
-          // Check file size (200MB limit for audio files)
-          const maxSize = 200 * 1024 * 1024 // 200MB
+          // Check file size (500MB limit to match bucket limit)
+          const maxSize = 500 * 1024 * 1024 // 500MB
           if (file.size > maxSize) {
-            throw new Error(`Audio file is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 200MB.`)
+            throw new Error(`Audio file is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 500MB.`)
           }
           
           // Upload audio to storage first
           setUploadProgress(`Uploading ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)...`)
           const filePath = `${currentUser.id}/${projectId}/${Date.now()}-${file.name}`
-          const { error: uploadError } = await supabase.storage
-            .from('project-files')
-            .upload(filePath, file)
-
-          if (uploadError) {
-            if (uploadError.message?.includes('Payload too large') || uploadError.message?.includes('413')) {
-              throw new Error('Audio file is too large. Try compressing it or using a shorter recording.')
+          
+          // For files over 6MB, use resumable uploads (TUS protocol)
+          const useResumable = file.size > 6 * 1024 * 1024 // 6MB threshold
+          
+          if (useResumable) {
+            // Get Supabase URL and extract project ref
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+            const urlMatch = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)
+            if (!urlMatch) {
+              throw new Error('Invalid Supabase URL configuration')
             }
-            throw uploadError
+            const projectRef = urlMatch[1]
+            
+            // Get session token
+            const { data: { session } } = await supabase.auth.getSession()
+            if (!session) {
+              throw new Error('Not authenticated')
+            }
+            
+            // Use resumable upload for large files
+            const uploadUrl = `https://${projectRef}.storage.supabase.co/storage/v1/upload/resumable`
+            
+            // Dynamically import tus-js-client for client-side usage
+            const tusModule = await import('tus-js-client')
+            // Handle both default and named exports
+            const TusUpload = tusModule.Upload || tusModule.default?.Upload || tusModule.default
+            
+            await new Promise<void>((resolve, reject) => {
+              const upload = new TusUpload(file, {
+                endpoint: uploadUrl,
+                retryDelays: [0, 3000, 5000, 10000, 20000],
+                uploadDataDuringCreation: true,
+                removeFingerprintOnSuccess: true,
+                metadata: {
+                  bucketName: 'project-files',
+                  objectName: filePath,
+                  contentType: file.type || 'audio/mpeg',
+                  cacheControl: '3600',
+                },
+                headers: {
+                  authorization: `Bearer ${session.access_token}`,
+                },
+                chunkSize: 6 * 1024 * 1024, // Must be exactly 6MB for Supabase
+                onError: (error) => {
+                  console.error('Resumable upload error:', error)
+                  reject(error)
+                },
+                onProgress: (bytesUploaded, bytesTotal) => {
+                  const percent = ((bytesUploaded / bytesTotal) * 100).toFixed(1)
+                  setUploadProgress(`Uploading ${file.name}... ${percent}% (${(bytesUploaded / 1024 / 1024).toFixed(1)}MB / ${(bytesTotal / 1024 / 1024).toFixed(1)}MB)`)
+                },
+                onSuccess: () => {
+                  resolve()
+                },
+              })
+              
+              // Check for previous uploads to resume
+              upload.findPreviousUploads().then((previousUploads) => {
+                if (previousUploads.length) {
+                  upload.resumeFromPreviousUpload(previousUploads[0])
+                }
+                upload.start()
+              }).catch((error) => {
+                // If findPreviousUploads fails, just start the upload
+                upload.start()
+              })
+            })
+          } else {
+            // Standard upload for smaller files
+            const { error: uploadError } = await supabase.storage
+              .from('project-files')
+              .upload(filePath, file, {
+                cacheControl: '3600',
+                upsert: false,
+                contentType: file.type || 'audio/mpeg',
+              })
+
+            if (uploadError) {
+              if (uploadError.message?.includes('exceeded the maximum allowed size')) {
+                throw new Error('File is too large. The storage bucket limit may need to be increased.')
+              }
+              if (uploadError.message?.includes('Payload too large') || uploadError.message?.includes('413')) {
+                throw new Error('Audio file is too large. Try compressing it or using a shorter recording.')
+              }
+              throw uploadError
+            }
           }
 
           // Generate a signed URL for the audio file
