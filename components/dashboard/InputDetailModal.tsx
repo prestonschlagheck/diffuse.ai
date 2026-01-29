@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { formatDateTime, formatDuration } from '@/lib/utils/format'
 import type { DiffuseProjectInput } from '@/types/database'
 
@@ -9,22 +10,28 @@ interface InputDetailModalProps {
   onClose: () => void
   onSave?: (id: string, title: string, content: string) => Promise<void>
   onDelete?: (id: string) => Promise<void>
+  onUpdate?: () => void
   canEdit?: boolean
   canDelete?: boolean
 }
 
-export default function InputDetailModal({ input, onClose, onSave, onDelete, canEdit = true, canDelete = true }: InputDetailModalProps) {
+export default function InputDetailModal({ input, onClose, onSave, onDelete, onUpdate, canEdit = true, canDelete = true }: InputDetailModalProps) {
   const [title, setTitle] = useState(input.file_name || '')
   const [content, setContent] = useState(input.content || '')
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null)
+  const [replacingCover, setReplacingCover] = useState(false)
+  const coverReplaceInputRef = useRef<HTMLInputElement>(null)
+  const supabase = createClient()
 
   const isFromRecording = input.metadata?.source === 'recording'
   const isFromUpload = input.metadata?.source === 'upload'
   const isImage = input.type === 'image'
+  const isCoverPhoto = input.type === 'cover_photo'
   const isDocument = input.type === 'document'
   const isAudio = input.type === 'audio'
-  const showSaveButton = canEdit && onSave && !isImage
+  const showSaveButton = canEdit && onSave && (!isImage || isCoverPhoto)
   const showDeleteButton = canDelete && onDelete
   
   // Get type info for display
@@ -55,6 +62,12 @@ export default function InputDetailModal({ input, onClose, onSave, onDelete, can
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         )}
+      case 'cover_photo':
+        return { label: 'COVER PHOTO', color: 'text-sky-400', icon: (
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        )}
       default:
         return { label: 'TEXT', color: 'text-pale-blue', icon: (
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -65,6 +78,77 @@ export default function InputDetailModal({ input, onClose, onSave, onDelete, can
   }
   
   const typeInfo = getTypeInfo()
+
+  // Sync title when input is updated from parent (e.g. after replace)
+  useEffect(() => {
+    setTitle(input.file_name || '')
+  }, [input.file_name])
+
+  // Signed URL for cover_photo image preview
+  useEffect(() => {
+    if (!isCoverPhoto || !input.file_path) {
+      setCoverImageUrl(null)
+      return
+    }
+    let cancelled = false
+    supabase.storage
+      .from('project-files')
+      .createSignedUrl(input.file_path, 60 * 60)
+      .then(({ data, error }) => {
+        if (!cancelled && !error && data?.signedUrl) setCoverImageUrl(data.signedUrl)
+        else setCoverImageUrl(null)
+      })
+      .catch(() => setCoverImageUrl(null))
+    return () => { cancelled = true }
+  }, [isCoverPhoto, input.file_path, supabase])
+
+  const handleReplaceCoverPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !canEdit || !isCoverPhoto) return
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg']
+    if (!validTypes.includes(file.type)) {
+      alert('Please select a JPG or PNG image.')
+      e.target.value = ''
+      return
+    }
+    const maxSize = 20 * 1024 * 1024
+    if (file.size > maxSize) {
+      alert('Image is too large. Maximum size is 20MB.')
+      e.target.value = ''
+      return
+    }
+    setReplacingCover(true)
+    try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      if (!currentUser) throw new Error('Not authenticated')
+      const filePath = `${currentUser.id}/${input.project_id}/${Date.now()}-${file.name}`
+      const { error: uploadError } = await supabase.storage
+        .from('project-files')
+        .upload(filePath, file, { contentType: file.type, upsert: false })
+      if (uploadError) throw uploadError
+      const { data: signedData } = await supabase.storage
+        .from('project-files')
+        .createSignedUrl(filePath, 60 * 60 * 24 * 365)
+      const { error: updateError } = await supabase
+        .from('diffuse_project_inputs')
+        .update({
+          file_path: filePath,
+          file_name: file.name,
+          file_size: file.size,
+          metadata: { ...input.metadata, source: 'upload', storage_url: signedData?.signedUrl ?? null },
+        })
+        .eq('id', input.id)
+      if (updateError) throw updateError
+      if (signedData?.signedUrl) setCoverImageUrl(signedData.signedUrl)
+      onUpdate?.()
+    } catch (err) {
+      console.error('Replace cover photo failed:', err)
+      alert(err instanceof Error ? err.message : 'Failed to replace cover photo')
+    } finally {
+      setReplacingCover(false)
+      e.target.value = ''
+    }
+  }
 
   const handleSave = async () => {
     if (!onSave) return
@@ -108,12 +192,25 @@ export default function InputDetailModal({ input, onClose, onSave, onDelete, can
           <h2 className="text-heading-lg text-secondary-white">Input Details</h2>
           </div>
           <div className="flex items-center gap-2">
+            {/* Replace (cover photo only) */}
+            {isCoverPhoto && canEdit && (
+              <button
+                onClick={() => coverReplaceInputRef.current?.click()}
+                disabled={replacingCover}
+                className="p-2 rounded-full text-medium-gray hover:text-sky-400 hover:bg-sky-400/10 transition-colors disabled:opacity-50"
+                title="Replace image"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            )}
             {/* Delete Button */}
             {showDeleteButton && (
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="p-2 text-medium-gray hover:text-red-400 hover:bg-red-500/10 rounded-glass transition-colors disabled:opacity-50"
+                className="p-2 rounded-full text-medium-gray hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
                 title="Delete"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -124,7 +221,7 @@ export default function InputDetailModal({ input, onClose, onSave, onDelete, can
             {/* Close Button */}
           <button
             onClick={onClose}
-              className="p-2 text-medium-gray hover:text-secondary-white hover:bg-white/10 rounded-glass transition-colors"
+              className="p-2 rounded-full text-medium-gray hover:text-secondary-white hover:bg-white/10 transition-colors"
           >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -162,8 +259,8 @@ export default function InputDetailModal({ input, onClose, onSave, onDelete, can
               type="text"
               value={title}
               onChange={(e) => canEdit && setTitle(e.target.value)}
-              placeholder={isFromRecording ? 'Recording' : isImage ? 'Image' : isDocument ? 'Document' : isAudio ? 'Audio' : 'Text Input'}
-              readOnly={!canEdit || isImage}
+              placeholder={isFromRecording ? 'Recording' : isCoverPhoto ? 'Cover Photo' : isImage ? 'Image' : isDocument ? 'Document' : isAudio ? 'Audio' : 'Text Input'}
+              readOnly={!canEdit || (isImage && !isCoverPhoto)}
               className={`w-full px-4 py-3 bg-white/5 border border-white/10 rounded-glass text-secondary-white text-body-md transition-colors ${
                 canEdit && !isImage
                   ? 'focus:outline-none focus:border-cosmic-orange' 
@@ -189,8 +286,33 @@ export default function InputDetailModal({ input, onClose, onSave, onDelete, can
             </div>
           )}
 
-          {/* Content Field (not shown for images) */}
-          {!isImage && (
+          {/* Cover Photo: preview only (Replace in header, Delete in header) */}
+          {isCoverPhoto && (
+            <div>
+              <input
+                ref={coverReplaceInputRef}
+                type="file"
+                accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                className="hidden"
+                onChange={handleReplaceCoverPhoto}
+              />
+              <label className="block text-caption text-medium-gray mb-2">Cover photo</label>
+              {coverImageUrl ? (
+                <div className="bg-white/5 border border-white/10 rounded-glass p-4">
+                  <img
+                    src={coverImageUrl}
+                    alt={input.file_name || 'Cover photo'}
+                    className="max-w-full max-h-[300px] rounded-lg mx-auto object-contain"
+                  />
+                </div>
+              ) : (
+                <p className="text-body-sm text-medium-gray italic">No image. Use Replace in the header to add one, or Delete to remove this input.</p>
+              )}
+            </div>
+          )}
+
+          {/* Content Field (not shown for images or cover photo) */}
+          {!isImage && !isCoverPhoto && (
           <div>
             <label className="block text-caption text-medium-gray mb-2">
               {isFromRecording ? 'Transcription' : isAudio ? 'Transcription' : isDocument ? 'Extracted Text' : 'Content'}

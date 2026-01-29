@@ -66,6 +66,7 @@ export default function ProjectDetailPage() {
   const audioInputRef = useRef<HTMLInputElement>(null)
   const documentInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
+  const coverPhotoInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
 
   // Permission helpers
@@ -216,6 +217,11 @@ export default function ProjectDetailPage() {
 
       if (inputsError) throw inputsError
       setInputs(inputsData || [])
+      setSelectedInput(prev => {
+        if (!prev) return null
+        const found = (inputsData || []).find((i: DiffuseProjectInput) => i.id === prev.id)
+        return found ?? prev
+      })
 
       // Fetch trashed inputs
       const { data: trashedData, error: trashedError } = await supabase
@@ -239,6 +245,11 @@ export default function ProjectDetailPage() {
 
       if (outputsError) throw outputsError
       setOutputs(outputsData || [])
+      setSelectedOutput(prev => {
+        if (!prev) return null
+        const found = (outputsData || []).find((o: DiffuseProjectOutput) => o.id === prev.id)
+        return found ?? prev
+      })
 
       // Fetch trashed outputs
       const { data: trashedOutputsData, error: trashedOutputsError } = await supabase
@@ -685,7 +696,7 @@ export default function ProjectDetailPage() {
   }
 
   // File upload handlers
-  const handleFileUpload = async (files: FileList | null, type: 'audio' | 'document' | 'image') => {
+  const handleFileUpload = async (files: FileList | null, type: 'audio' | 'document' | 'image' | 'cover_photo') => {
     if (!files || files.length === 0) return
 
     setUploadingFile(true)
@@ -896,7 +907,7 @@ export default function ProjectDetailPage() {
 
           if (inputError) throw inputError
 
-        } else if (type === 'image') {
+        } else if (type === 'image' || type === 'cover_photo') {
           // Check file size (20MB limit for images)
           const maxImgSize = 20 * 1024 * 1024 // 20MB
           if (file.size > maxImgSize) {
@@ -916,25 +927,70 @@ export default function ProjectDetailPage() {
             .from('project-files')
             .createSignedUrl(filePath, 60 * 60 * 24 * 365) // 1 year
 
-          // Create the input (no text content - processed by workflow)
-          const { error: inputError } = await supabase
-            .from('diffuse_project_inputs')
-            .insert({
-              project_id: projectId,
-              type: 'image' as InputType,
-              content: null,
-              file_path: filePath,
-              file_name: file.name,
-              file_size: file.size,
-              metadata: {
-                source: 'upload',
-                original_type: file.type,
-                storage_url: signedUrlData?.signedUrl || null,
-              },
-              created_by: currentUser.id,
-            })
+          if (type === 'cover_photo') {
+            // Only one cover photo per project: update existing or insert new
+            const { data: existingCover } = await supabase
+              .from('diffuse_project_inputs')
+              .select('id')
+              .eq('project_id', projectId)
+              .eq('type', 'cover_photo')
+              .is('deleted_at', null)
+              .maybeSingle()
 
-          if (inputError) throw inputError
+            if (existingCover) {
+              const { error: updateError } = await supabase
+                .from('diffuse_project_inputs')
+                .update({
+                  file_path: filePath,
+                  file_name: file.name,
+                  file_size: file.size,
+                  metadata: {
+                    source: 'upload',
+                    original_type: file.type,
+                    storage_url: signedUrlData?.signedUrl || null,
+                  },
+                })
+                .eq('id', existingCover.id)
+              if (updateError) throw updateError
+            } else {
+              const { error: inputError } = await supabase
+                .from('diffuse_project_inputs')
+                .insert({
+                  project_id: projectId,
+                  type: 'cover_photo' as InputType,
+                  content: null,
+                  file_path: filePath,
+                  file_name: file.name,
+                  file_size: file.size,
+                  metadata: {
+                    source: 'upload',
+                    original_type: file.type,
+                    storage_url: signedUrlData?.signedUrl || null,
+                  },
+                  created_by: currentUser.id,
+                })
+              if (inputError) throw inputError
+            }
+          } else {
+            // Regular image input
+            const { error: inputError } = await supabase
+              .from('diffuse_project_inputs')
+              .insert({
+                project_id: projectId,
+                type: 'image' as InputType,
+                content: null,
+                file_path: filePath,
+                file_name: file.name,
+                file_size: file.size,
+                metadata: {
+                  source: 'upload',
+                  original_type: file.type,
+                  storage_url: signedUrlData?.signedUrl || null,
+                },
+                created_by: currentUser.id,
+              })
+            if (inputError) throw inputError
+          }
         }
       }
 
@@ -949,6 +1005,7 @@ export default function ProjectDetailPage() {
       if (audioInputRef.current) audioInputRef.current.value = ''
       if (documentInputRef.current) documentInputRef.current.value = ''
       if (imageInputRef.current) imageInputRef.current.value = ''
+      if (coverPhotoInputRef.current) coverPhotoInputRef.current.value = ''
     }
   }
 
@@ -1130,7 +1187,7 @@ export default function ProjectDetailPage() {
                     </svg>
                     <div>
                       <p className="text-body-sm text-secondary-white">Text</p>
-                      <p className="text-caption text-medium-gray">Type or paste text</p>
+                      <p className="text-caption text-medium-gray uppercase tracking-wider">TYPE OR PASTE TEXT</p>
                     </div>
                   </button>
 
@@ -1147,7 +1204,24 @@ export default function ProjectDetailPage() {
                     </svg>
                     <div>
                       <p className="text-body-sm text-secondary-white">Recording</p>
-                      <p className="text-caption text-medium-gray">From your recordings</p>
+                      <p className="text-caption text-medium-gray uppercase tracking-wider">FROM YOUR RECORDINGS</p>
+                    </div>
+                  </button>
+
+                  {/* Cover Photo */}
+                  <button
+                    onClick={() => {
+                      setShowAddInputDropdown(false)
+                      coverPhotoInputRef.current?.click()
+                    }}
+                    className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-white/10 transition-colors"
+                  >
+                    <svg className="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <div>
+                      <p className="text-body-sm text-secondary-white">Cover Photo</p>
+                      <p className="text-caption text-medium-gray uppercase tracking-wider">MAIN ARTICLE PHOTO</p>
                     </div>
                   </button>
 
@@ -1166,7 +1240,7 @@ export default function ProjectDetailPage() {
                     </svg>
                     <div>
                       <p className="text-body-sm text-secondary-white">Audio File</p>
-                      <p className="text-caption text-medium-gray">MP3, WAV, M4A · Max 200MB</p>
+                      <p className="text-caption text-medium-gray uppercase tracking-wider">MP3, WAV, M4A</p>
                     </div>
                   </button>
 
@@ -1183,7 +1257,7 @@ export default function ProjectDetailPage() {
                     </svg>
                     <div>
                       <p className="text-body-sm text-secondary-white">Document</p>
-                      <p className="text-caption text-medium-gray">PDF, DOCX, TXT · Max 50MB</p>
+                      <p className="text-caption text-medium-gray uppercase tracking-wider">PDF, DOCX, TXT</p>
                     </div>
                   </button>
 
@@ -1200,7 +1274,7 @@ export default function ProjectDetailPage() {
                     </svg>
                     <div>
                       <p className="text-body-sm text-secondary-white">Image</p>
-                      <p className="text-caption text-medium-gray">JPG, PNG · Max 20MB</p>
+                      <p className="text-caption text-medium-gray uppercase tracking-wider">JPG, PNG</p>
                     </div>
                   </button>
                 </div>
@@ -1231,6 +1305,13 @@ export default function ProjectDetailPage() {
               multiple
               className="hidden"
               onChange={(e) => handleFileUpload(e.target.files, 'image')}
+            />
+            <input
+              ref={coverPhotoInputRef}
+              type="file"
+              accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+              className="hidden"
+              onChange={(e) => handleFileUpload(e.target.files, 'cover_photo')}
             />
           </div>
           )}
@@ -1284,6 +1365,12 @@ export default function ProjectDetailPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       )}
+                    case 'cover_photo':
+                      return { label: 'COVER PHOTO', color: 'text-sky-400', icon: (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      )}
                     default:
                       return { label: 'TEXT', color: 'text-pale-blue', icon: (
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1294,7 +1381,7 @@ export default function ProjectDetailPage() {
                 }
                 
                 const typeInfo = getTypeInfo()
-                const defaultTitle = isFromRecording ? 'Recording' : input.type === 'image' ? 'Image' : input.type === 'document' ? 'Document' : input.type === 'audio' ? 'Audio' : 'Text Input'
+                const defaultTitle = isFromRecording ? 'Recording' : input.type === 'cover_photo' ? 'Cover Photo' : input.type === 'image' ? 'Image' : input.type === 'document' ? 'Document' : input.type === 'audio' ? 'Audio' : 'Text Input'
                 
                 return (
                   <div
@@ -1309,7 +1396,7 @@ export default function ProjectDetailPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         {/* Title */}
-                        <h3 className="text-heading-md text-secondary-white font-medium mb-1 truncate">
+                        <h3 className="text-heading-md text-secondary-white font-medium mb-1 break-words">
                           {input.file_name || defaultTitle}
                         </h3>
                         
@@ -1340,6 +1427,12 @@ export default function ProjectDetailPage() {
                     ) : input.type === 'image' ? (
                       <p className="text-body-sm text-medium-gray mt-3 italic">
                         Image will be processed by the workflow
+                      </p>
+                    ) : input.type === 'cover_photo' ? (
+                      <p className="text-body-sm text-medium-gray mt-3 italic">
+                        {project?.project_type === 'advertisement'
+                          ? 'Cover photo will appear at the top of your published advertisement.'
+                          : 'Cover photo will appear as the main photo in your published article.'}
                       </p>
                     ) : null}
                     
@@ -1459,7 +1552,7 @@ export default function ProjectDetailPage() {
                     className="glass-container p-6 hover:bg-white/10 transition-colors cursor-pointer"
                   >
                     {/* 1. Title */}
-                    <h3 className="text-heading-md text-secondary-white font-medium mb-2">
+                    <h3 className="text-heading-md text-secondary-white font-medium mb-2 break-words">
                       {info.title}
                     </h3>
                     
@@ -1606,8 +1699,8 @@ export default function ProjectDetailPage() {
                       className="glass-container p-6 opacity-60"
                     >
                       {/* Title */}
-                      <h3 className="text-heading-md text-secondary-white font-medium mb-2 truncate">
-                        {input.file_name || (isFromRecording ? 'Recording' : 'Text Input')}
+                      <h3 className="text-heading-md text-secondary-white font-medium mb-2 break-words">
+                        {input.file_name || (isFromRecording ? 'Recording' : input.type === 'cover_photo' ? 'Cover Photo' : 'Text Input')}
                       </h3>
                       
                       {/* Content Preview */}
@@ -1631,7 +1724,7 @@ export default function ProjectDetailPage() {
                                 </>
                               )}
                             </>
-                          ) : 'TEXT'}
+                          ) : input.type === 'cover_photo' ? 'COVER PHOTO' : 'TEXT'}
                         </div>
                         
                         {/* Deleted Date */}
@@ -1679,7 +1772,7 @@ export default function ProjectDetailPage() {
                       className="glass-container p-6 opacity-60"
                     >
                       {/* 1. Title */}
-                      <h3 className="text-heading-md text-secondary-white font-medium mb-2">
+                      <h3 className="text-heading-md text-secondary-white font-medium mb-2 break-words">
                         {info.title}
                       </h3>
                       
@@ -1747,6 +1840,7 @@ export default function ProjectDetailPage() {
           onClose={() => setSelectedInput(null)}
           onSave={handleSaveInput}
           onDelete={handleDeleteInputFromModal}
+          onUpdate={fetchProjectData}
           canEdit={canEdit}
           canDelete={canDelete}
         />
@@ -1759,6 +1853,7 @@ export default function ProjectDetailPage() {
           onDelete={handleDeleteOutput}
           canEdit={canEdit}
           canDelete={canDelete}
+          fallbackCoverPhotoPath={inputs.find(i => i.type === 'cover_photo')?.file_path ?? null}
         />
       )}
       {showRecordingModal && (

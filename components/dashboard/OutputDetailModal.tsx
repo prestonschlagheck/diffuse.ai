@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { formatDateTime } from '@/lib/utils/format'
 import type { DiffuseProjectOutput } from '@/types/database'
@@ -12,6 +12,8 @@ interface OutputDetailModalProps {
   onDelete?: (id: string) => Promise<void>
   canEdit?: boolean
   canDelete?: boolean
+  /** When output has no cover_photo_path, use project cover photo input so it still displays */
+  fallbackCoverPhotoPath?: string | null
 }
 
 interface StructuredArticle {
@@ -65,7 +67,8 @@ export default function OutputDetailModal({
   onUpdate,
   onDelete,
   canEdit = true,
-  canDelete = true
+  canDelete = true,
+  fallbackCoverPhotoPath = null
 }: OutputDetailModalProps) {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -73,9 +76,81 @@ export default function OutputDetailModal({
   const [article, setArticle] = useState<StructuredArticle | null>(null)
   const [rawContent, setRawContent] = useState(output.content)
   const [isEditing, setIsEditing] = useState(false)
+  const [coverPhotoUrl, setCoverPhotoUrl] = useState<string | null>(null)
+  const [uploadingCover, setUploadingCover] = useState(false)
+  const coverPhotoInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
 
   const showDeleteButton = canDelete && onDelete
+
+  // Resolve signed URL for cover photo: use output's path or project fallback (from cover photo input)
+  const effectiveCoverPath = output.cover_photo_path || fallbackCoverPhotoPath || null
+  useEffect(() => {
+    if (!effectiveCoverPath) {
+      setCoverPhotoUrl(null)
+      return
+    }
+    let cancelled = false
+    supabase.storage
+      .from('project-files')
+      .createSignedUrl(effectiveCoverPath, 60 * 60) // 1 hour
+      .then(({ data, error }) => {
+        if (!cancelled && !error && data?.signedUrl) {
+          setCoverPhotoUrl(data.signedUrl)
+        } else {
+          setCoverPhotoUrl(null)
+        }
+      })
+      .catch(() => setCoverPhotoUrl(null))
+    return () => { cancelled = true }
+  }, [effectiveCoverPath, supabase])
+
+  const handleUploadCoverPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !canEdit) return
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg']
+    if (!validTypes.includes(file.type)) {
+      alert('Please select a JPG or PNG image.')
+      e.target.value = ''
+      return
+    }
+    const maxSize = 20 * 1024 * 1024 // 20MB
+    if (file.size > maxSize) {
+      alert('Image is too large. Maximum size is 20MB.')
+      e.target.value = ''
+      return
+    }
+    setUploadingCover(true)
+    try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      if (!currentUser) throw new Error('Not authenticated')
+      const ext = file.name.split('.').pop() || 'jpg'
+      const filePath = `${currentUser.id}/${output.project_id}/cover-${output.id}-${Date.now()}.${ext}`
+      const { error: uploadError } = await supabase.storage
+        .from('project-files')
+        .upload(filePath, file, { contentType: file.type, upsert: true })
+      if (uploadError) throw uploadError
+      const { error: updateError } = await supabase
+        .from('diffuse_project_outputs')
+        .update({ cover_photo_path: filePath })
+        .eq('id', output.id)
+      if (updateError) {
+        console.error('Output cover_photo_path update failed:', updateError)
+        throw new Error(updateError.message || 'Failed to save cover photo to output. Make sure the database has the cover_photo_path column (run the migration).')
+      }
+      const { data: signedData } = await supabase.storage
+        .from('project-files')
+        .createSignedUrl(filePath, 60 * 60)
+      if (signedData?.signedUrl) setCoverPhotoUrl(signedData.signedUrl)
+      onUpdate?.()
+    } catch (err) {
+      console.error('Cover photo upload failed:', err)
+      alert(err instanceof Error ? err.message : 'Failed to upload cover photo')
+    } finally {
+      setUploadingCover(false)
+      e.target.value = ''
+    }
+  }
 
   // Try to parse structured content - with fallback to regex extraction
   useEffect(() => {
@@ -268,12 +343,25 @@ export default function OutputDetailModal({
                 {copied === 'all' ? 'COPIED' : 'COPY ALL'}
               </span>
             </button>
+            {/* Replace cover photo (when cover present and editable) */}
+            {coverPhotoUrl && canEdit && (
+              <button
+                onClick={() => coverPhotoInputRef.current?.click()}
+                disabled={uploadingCover}
+                className="p-2 rounded-full text-medium-gray hover:text-sky-400 hover:bg-sky-400/10 transition-colors disabled:opacity-50"
+                title="Replace cover image"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            )}
             {/* Delete Button */}
             {showDeleteButton && (
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="p-2 text-medium-gray hover:text-red-400 hover:bg-red-500/10 rounded-glass transition-colors disabled:opacity-50"
+                className="p-2 rounded-full text-medium-gray hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
                 title="Delete"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -284,7 +372,7 @@ export default function OutputDetailModal({
             {/* Close Button */}
             <button
               onClick={onClose}
-              className="p-2 text-medium-gray hover:text-secondary-white hover:bg-white/10 rounded-glass transition-colors"
+              className="p-2 rounded-full text-medium-gray hover:text-secondary-white hover:bg-white/10 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -310,6 +398,53 @@ export default function OutputDetailModal({
 
         {/* Scrollable Content Area */}
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 -mr-2">
+          {/* Hidden file input for Replace (header) and Upload (below) - always in DOM when canEdit */}
+          {canEdit && (
+            <input
+              ref={coverPhotoInputRef}
+              type="file"
+              accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+              className="hidden"
+              onChange={handleUploadCoverPhoto}
+            />
+          )}
+          {/* Cover Photo - at top when present (Replace in header), or upload when missing and editable */}
+          {coverPhotoUrl ? (
+            <div className="w-full rounded-glass overflow-hidden bg-white/5 mb-5">
+              <img
+                src={coverPhotoUrl}
+                alt="Cover"
+                className="w-full max-h-[320px] object-cover object-center"
+              />
+            </div>
+          ) : canEdit ? (
+            <div className="w-full rounded-glass border border-dashed border-white/20 bg-white/5 p-6 mb-5">
+              <button
+                type="button"
+                onClick={() => coverPhotoInputRef.current?.click()}
+                disabled={uploadingCover}
+                className="w-full flex flex-col items-center justify-center gap-2 py-4 text-medium-gray hover:text-secondary-white hover:bg-white/5 rounded-glass transition-colors disabled:opacity-50"
+              >
+                {uploadingCover ? (
+                  <>
+                    <svg className="w-8 h-8 animate-spin text-cosmic-orange" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    <span className="text-caption uppercase tracking-wider">Uploading...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-8 h-8 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-body-sm font-medium">Upload cover photo</span>
+                    <span className="text-caption text-medium-gray uppercase tracking-wider">JPG, PNG</span>
+                  </>
+                )}
+              </button>
+            </div>
+          ) : null}
           {article ? (
             /* Structured Article View */
             <div className="space-y-5">

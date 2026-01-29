@@ -6,7 +6,7 @@ export type ProjectVisibility = 'private' | 'public'
 
 export type ProjectType = 'project' | 'advertisement'
 
-export type InputType = 'text' | 'audio' | 'image' | 'document'
+export type InputType = 'text' | 'audio' | 'image' | 'document' | 'cover_photo'
 
 export type OutputType = 'article' | 'ad'
 
@@ -73,6 +73,7 @@ export interface DiffuseProjectOutput {
   structured_data?: Record<string, any>
   workflow_status: WorkflowStatus
   workflow_metadata?: Record<string, any>
+  cover_photo_path?: string | null
   created_at: string
   updated_at: string
   deleted_at?: string | null

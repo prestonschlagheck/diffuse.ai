@@ -145,19 +145,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No inputs found for this project' }, { status: 400 })
     }
 
-    // Prepare payload for n8n
-    // For images, include the storage URL instead of content
-    // For text/audio/document, include the text content
+    // Cover photo is not sent through the workflow; it is attached to every output when saving
+    const coverPhotoInput = inputs.find((i: any) => i.type === 'cover_photo')
+    const inputsForWorkflow = inputs.filter((input: any) => input.type !== 'cover_photo')
+
+    if (inputsForWorkflow.length === 0) {
+      return NextResponse.json({ error: 'Add at least one content input (text, recording, audio, document, or image) to generate output. Cover photo alone is not enough.' }, { status: 400 })
+    }
+
+    // Prepare payload for n8n - exclude cover_photo from inputs (it is not processed by AI)
     const n8nPayload = {
       project_id,
       output_type, // 'article' or 'ad' - n8n will branch based on this
-      inputs: inputs.map((input: any) => ({
+      inputs: inputsForWorkflow.map((input: any) => ({
         id: input.id,
         type: input.type,
         content: input.content || '',
         file_name: input.file_name || 'Untitled',
-        // Include image URL for image inputs so n8n can process them
-        image_url: input.type === 'image' ? input.metadata?.storage_url : undefined,
+        image_url: input.type === 'image' ? (input.metadata?.storage_url ?? undefined) : undefined,
         file_path: input.file_path || undefined
       }))
     }
@@ -200,15 +205,18 @@ export async function POST(request: NextRequest) {
       // Not valid JSON, use as-is
     }
 
-    // Save the output to Supabase
+    // Save the output to Supabase - attach project cover photo to every output (article or ad)
+    const cover_photo_path = coverPhotoInput?.file_path ?? null
+    const primaryInputId = inputsForWorkflow[0]?.id ?? inputs[0]?.id ?? null
     const { data: output, error: outputError } = await supabase
       .from('diffuse_project_outputs')
       .insert({
         project_id,
-        input_id: inputs[0].id,
+        input_id: primaryInputId,
         content: finalContent,
         output_type, // 'article' or 'ad'
         workflow_status: 'completed',
+        ...(cover_photo_path && { cover_photo_path }),
       })
       .select()
       .single()
