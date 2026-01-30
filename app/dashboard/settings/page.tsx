@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import { useWalkthrough } from '@/contexts/WalkthroughContext'
 import { createClient } from '@/lib/supabase/client'
 import LoadingSpinner from '@/components/dashboard/LoadingSpinner'
 
@@ -38,6 +39,7 @@ const roleLabels: Record<string, string> = {
 export default function SettingsPage() {
   const router = useRouter()
   const { user, workspaces } = useAuth()
+  const { openWalkthrough } = useWalkthrough()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -168,7 +170,7 @@ export default function SettingsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-display-sm text-secondary-white">Settings</h1>
+          <h1 data-walkthrough="page-title" className="text-display-sm text-secondary-white">Settings</h1>
           <p className="text-body-md text-medium-gray mt-1">
             Manage your account and preferences
           </p>
@@ -244,6 +246,29 @@ export default function SettingsPage() {
               {profile?.full_name || <span className="text-medium-gray italic">Not set</span>}
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Help & Support */}
+      <div className="glass-container p-6 mb-6">
+        <h2 className="text-heading-lg text-secondary-white mb-4">Help & Support</h2>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-body-md text-secondary-white mb-1">Platform Walkthrough</p>
+            <p className="text-body-sm text-medium-gray">
+              Learn how to use Diffuse.ai with a quick guided tour
+            </p>
+          </div>
+          <button
+            onClick={openWalkthrough}
+            data-walkthrough="walkthrough-button"
+            className="btn-secondary px-4 py-2 flex items-center gap-2 text-body-sm"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            View Walkthrough
+          </button>
         </div>
       </div>
 

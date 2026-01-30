@@ -281,7 +281,7 @@ export default function AdvertisementsPage() {
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-display-sm text-secondary-white">Advertisements</h1>
+        <h1 data-walkthrough="page-title" className="text-display-sm text-secondary-white">Advertisements</h1>
         {/* Desktop button - hidden on mobile */}
         <CreateAdButton className="hidden md:flex" />
       </div>

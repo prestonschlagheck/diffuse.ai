@@ -1018,7 +1018,7 @@ export default function RecordingsPage() {
       />
       
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-display-sm text-secondary-white">Recordings</h1>
+        <h1 data-walkthrough="page-title" className="text-display-sm text-secondary-white">Recordings</h1>
         <div className="hidden md:flex items-center gap-3">
           <button
             onClick={() => uploadInputRef.current?.click()}

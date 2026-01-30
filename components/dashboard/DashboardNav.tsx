@@ -236,7 +236,8 @@ export default function DashboardNav() {
   const navItems = [
     { 
       name: 'Organizations', 
-      href: '/dashboard/organization', 
+      href: '/dashboard/organization',
+      walkthroughId: 'nav-organizations',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -245,7 +246,8 @@ export default function DashboardNav() {
     },
     { 
       name: 'Projects', 
-      href: '/dashboard', 
+      href: '/dashboard',
+      walkthroughId: 'nav-projects',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
@@ -254,7 +256,8 @@ export default function DashboardNav() {
     },
     { 
       name: 'Advertisements', 
-      href: '/dashboard/advertisements', 
+      href: '/dashboard/advertisements',
+      walkthroughId: 'nav-advertisements',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
@@ -263,7 +266,8 @@ export default function DashboardNav() {
     },
     { 
       name: 'Shared With Me', 
-      href: '/dashboard/shared', 
+      href: '/dashboard/shared',
+      walkthroughId: 'nav-shared',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -272,7 +276,8 @@ export default function DashboardNav() {
     },
     { 
       name: 'Recordings', 
-      href: '/dashboard/recordings', 
+      href: '/dashboard/recordings',
+      walkthroughId: 'nav-recordings',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
@@ -325,9 +330,12 @@ export default function DashboardNav() {
       )}
 
       {/* Navigation Sidebar */}
-      <nav className={`fixed top-0 left-0 bottom-0 w-64 bg-white/5 backdrop-blur-glass border-r border-white/10 flex flex-col z-40 transition-transform duration-300 ease-in-out ${
-        mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-      }`}>
+      <nav 
+        data-walkthrough="sidebar"
+        className={`fixed top-0 left-0 bottom-0 w-64 bg-white/5 backdrop-blur-glass border-r border-white/10 flex flex-col z-40 transition-transform duration-300 ease-in-out ${
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }`}
+      >
         {/* Logo - Hidden on mobile since toggle button shows it */}
         <div className="p-6 hidden md:block">
           <Link href="/" className="text-xl font-bold hover:text-cosmic-orange transition-colors">
@@ -345,6 +353,7 @@ export default function DashboardNav() {
             <Link
               key={item.href}
               href={item.href}
+              data-walkthrough={item.walkthroughId}
               className={`flex items-center gap-3 px-4 py-2 rounded-glass text-body-sm transition-colors ${
                 isActive
                   ? 'bg-cosmic-orange/20 text-cosmic-orange'

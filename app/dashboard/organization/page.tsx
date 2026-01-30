@@ -7,11 +7,18 @@ import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import LoadingSpinner from '@/components/dashboard/LoadingSpinner'
 import EmptyState from '@/components/dashboard/EmptyState'
+import UpgradeCodeModal from '@/components/dashboard/UpgradeCodeModal'
 import type { OrganizationPlan } from '@/types/database'
 
 const planDetails = {
   enterprise_pro: { name: 'Enterprise Pro', projects: 50, price: '$100/mo' },
   enterprise_pro_max: { name: 'Enterprise Pro Max', projects: 'Unlimited', price: '$500/mo' },
+}
+
+// Upgrade codes for enterprise plans
+const ENTERPRISE_CODES: Record<OrganizationPlan, string> = {
+  enterprise_pro: '', // No code needed
+  enterprise_pro_max: 'entpromax',
 }
 
 export default function OrganizationPage() {
@@ -20,10 +27,13 @@ export default function OrganizationPage() {
   const [loading, setLoading] = useState(false)
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [joinCode, setJoinCode] = useState('')
   const [orgName, setOrgName] = useState('')
   const [orgDescription, setOrgDescription] = useState('')
   const [orgPlan, setOrgPlan] = useState<OrganizationPlan>('enterprise_pro')
+  const [selectedPlan, setSelectedPlan] = useState<OrganizationPlan | null>(null)
+  const [pendingOrgData, setPendingOrgData] = useState<{name: string, description: string} | null>(null)
   const [inviteEmail, setInviteEmail] = useState('')
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
@@ -114,20 +124,48 @@ export default function OrganizationPage() {
 
   const handleCreateOrganization = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Enterprise Pro doesn't need code verification
+    if (orgPlan === 'enterprise_pro') {
+      await createOrganizationWithPlan(orgPlan)
+    } else {
+      // Enterprise Pro Max needs code verification
+      setPendingOrgData({ name: orgName, description: orgDescription })
+      setSelectedPlan(orgPlan)
+      setShowUpgradeModal(true)
+    }
+  }
+
+  const handleVerifyPlanCode = async (code: string): Promise<boolean> => {
+    if (!selectedPlan) return false
+
+    const expectedCode = ENTERPRISE_CODES[selectedPlan]
+    if (code.toLowerCase() !== expectedCode.toLowerCase()) {
+      return false
+    }
+
+    // Code is valid, proceed with organization creation
+    await createOrganizationWithPlan(selectedPlan)
+    return true
+  }
+
+  const createOrganizationWithPlan = async (plan: OrganizationPlan) => {
     setLoading(true)
     setMessage(null)
 
     try {
       const inviteCode = generateOrgCode()
+      const name = pendingOrgData?.name || orgName
+      const description = pendingOrgData?.description || orgDescription
 
       // Create organization with plan
       const { data: newOrg, error: orgError } = await supabase
         .from('diffuse_workspaces')
         .insert({
-          name: orgName,
-          description: orgDescription,
+          name,
+          description,
           invite_code: inviteCode,
-          plan: orgPlan,
+          plan,
           owner_id: user?.id,
         })
         .select()
@@ -162,10 +200,14 @@ export default function OrganizationPage() {
       setOrgName('')
       setOrgDescription('')
       setOrgPlan('enterprise_pro')
+      setPendingOrgData(null)
+      setSelectedPlan(null)
       setShowCreateModal(false)
+      setShowUpgradeModal(false)
       router.push(`/dashboard/organization/${newOrg.id}`)
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'Failed to create organization' })
+      throw error
     } finally {
       setLoading(false)
     }
@@ -239,7 +281,7 @@ export default function OrganizationPage() {
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-display-sm text-secondary-white">Organizations</h1>
+        <h1 data-walkthrough="page-title" className="text-display-sm text-secondary-white">Organizations</h1>
         {/* Desktop buttons - hidden on mobile */}
         <div className="hidden md:flex gap-2">
           <JoinButton />
@@ -449,6 +491,21 @@ export default function OrganizationPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Upgrade Code Modal for Enterprise Plans */}
+      {selectedPlan && (
+        <UpgradeCodeModal
+          isOpen={showUpgradeModal}
+          onClose={() => {
+            setShowUpgradeModal(false)
+            setSelectedPlan(null)
+            setPendingOrgData(null)
+          }}
+          onVerify={handleVerifyPlanCode}
+          planName={planDetails[selectedPlan].name}
+          loading={loading}
+        />
       )}
     </div>
   )

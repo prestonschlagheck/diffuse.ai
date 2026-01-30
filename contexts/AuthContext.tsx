@@ -163,8 +163,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         setWorkspaces(workspaceData)
         
-        // Set first workspace as current if none selected
-        if (!currentWorkspace && workspaceData.length > 0) {
+        // Update currentWorkspace with fresh data, or set first if none selected
+        if (currentWorkspace) {
+          // Find the updated workspace data for the current workspace
+          const updatedCurrentWorkspace = workspacesData.find(w => w.id === currentWorkspace.id)
+          if (updatedCurrentWorkspace) {
+            setCurrentWorkspace(updatedCurrentWorkspace)
+          }
+        } else if (workspaceData.length > 0) {
           setCurrentWorkspace(workspaceData[0].workspace)
         }
       } else {

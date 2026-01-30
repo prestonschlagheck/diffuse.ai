@@ -267,6 +267,7 @@ export default function DashboardPage() {
         }
         setShowCreateModal(true)
       }}
+      data-walkthrough="create-project"
       className={`btn-primary px-4 py-2 flex items-center justify-center gap-2 text-body-sm ${hasReachedLimit ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
       disabled={hasReachedLimit}
     >
@@ -281,7 +282,7 @@ export default function DashboardPage() {
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-display-sm text-secondary-white">Projects</h1>
+        <h1 data-walkthrough="page-title" className="text-display-sm text-secondary-white">Projects</h1>
         {/* Desktop button - hidden on mobile */}
         <CreateProjectButton className="hidden md:flex" />
       </div>
