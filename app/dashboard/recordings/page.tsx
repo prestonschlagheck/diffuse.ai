@@ -822,7 +822,7 @@ export default function RecordingsPage() {
     }
   }
 
-  const fetchAudioUrl = async (filePath: string) => {
+  const fetchAudioUrl = useCallback(async (filePath: string) => {
     setLoadingAudio(true)
     setAudioUrl(null)
     
@@ -844,7 +844,7 @@ export default function RecordingsPage() {
     } finally {
       setLoadingAudio(false)
     }
-  }
+  }, [supabase])
 
   useEffect(() => {
     if (selectedRecording) {
@@ -852,7 +852,7 @@ export default function RecordingsPage() {
     } else {
       setAudioUrl(null)
     }
-  }, [selectedRecording])
+  }, [selectedRecording, fetchAudioUrl])
 
   useEffect(() => {
     if (!selectedRecording || selectedRecording.status !== 'generating') return
@@ -877,7 +877,7 @@ export default function RecordingsPage() {
     }, 3000)
 
     return () => clearInterval(pollInterval)
-  }, [selectedRecording?.id, selectedRecording?.status, supabase])
+  }, [selectedRecording, fetchRecordings, supabase])
 
   const cancelTranscription = async (recordingId: string) => {
     try {

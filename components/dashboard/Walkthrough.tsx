@@ -610,7 +610,7 @@ export default function Walkthrough() {
                 onClick={handleNeverShowAgain}
                 className="text-caption text-medium-gray hover:text-secondary-white transition-colors"
               >
-                Don't show this again
+                Don&apos;t show this again
               </button>
             </div>
           )}
