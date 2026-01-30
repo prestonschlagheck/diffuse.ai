@@ -125,6 +125,7 @@ export default function RecordingsPage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const recordingStartTimeRef = useRef<number>(0)
   const streamRef = useRef<MediaStream | null>(null)
   const uploadInputRef = useRef<HTMLInputElement | null>(null)
   
@@ -210,11 +211,13 @@ export default function RecordingsPage() {
       setIsRecording(true)
       setRecordingTime(0)
       setPendingBlob(null)
+      recordingStartTimeRef.current = Date.now()
 
-      // Start timer
+      // Smooth timer: update every 100ms from start time to avoid drift and jagged jumps
       timerRef.current = setInterval(() => {
-        setRecordingTime((prev) => prev + 1)
-      }, 1000)
+        const elapsedMs = Date.now() - recordingStartTimeRef.current
+        setRecordingTime(Math.floor(elapsedMs / 1000))
+      }, 100)
     } catch (err) {
       console.error('Error starting recording:', err)
       throw err

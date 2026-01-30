@@ -17,6 +17,7 @@ export default function AudioPlayer({ src, onError, initialDuration }: AudioPlay
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const rafRef = useRef<number | null>(null)
 
   // Update duration if initialDuration prop changes
   useEffect(() => {
@@ -107,6 +108,25 @@ export default function AudioPlayer({ src, onError, initialDuration }: AudioPlay
       audio.removeEventListener('seeked', handleSeeked)
     }
   }, [onError, isDragging, duration])
+
+  // Smooth playback: use requestAnimationFrame when playing so progress updates at ~60fps
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio || !isPlaying || isDragging) return
+
+    const tick = () => {
+      if (!audioRef.current || audioRef.current.paused) return
+      setCurrentTime(audioRef.current.currentTime)
+      rafRef.current = requestAnimationFrame(tick)
+    }
+    rafRef.current = requestAnimationFrame(tick)
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current)
+        rafRef.current = null
+      }
+    }
+  }, [isPlaying, isDragging])
 
   const togglePlay = () => {
     const audio = audioRef.current
