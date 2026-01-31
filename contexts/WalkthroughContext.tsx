@@ -165,12 +165,12 @@ export function WalkthroughProvider({ children }: { children: ReactNode }) {
 
   const resetWalkthrough = () => {
     if (user) {
-      supabase
-        .from('user_profiles')
-        .update({ walkthrough_dismissed: false })
-        .eq('id', user.id)
-        .then(() => {})
-        .catch(() => {})
+      Promise.resolve(
+        supabase
+          .from('user_profiles')
+          .update({ walkthrough_dismissed: false })
+          .eq('id', user.id)
+      ).then(() => {}).catch(() => {})
     }
     if (typeof window !== 'undefined') {
       try {
