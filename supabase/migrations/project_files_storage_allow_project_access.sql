@@ -17,8 +17,10 @@ USING (
       WHERE p.id = ((storage.foldername(name))[2])::uuid
       AND (
         p.created_by = auth.uid()
+        OR (p.workspace_id IS NOT NULL AND p.workspace_id IN (SELECT get_my_workspace_ids()))
         OR (
           p.visibility = 'public'
+          AND p.visible_to_orgs IS NOT NULL
           AND p.visible_to_orgs && ARRAY(SELECT get_my_workspace_ids())::text[]
         )
       )

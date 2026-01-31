@@ -145,7 +145,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No inputs found for this project' }, { status: 400 })
     }
 
-    // Cover photo: only the explicit cover_photo input (not passed to workflow; attached to output when saving)
+    // Cover photo: one per project, stored in inputs (type cover_photo). Not sent to the workflow.
+    // The workflow pulls every input except the cover photo and produces output. The cover photo
+    // is attached to every output when saving and populates every input/output in the project; when updated, all get the same cover.
     const coverPhotoInput = inputs.find((i: any) => i.type === 'cover_photo')
     const coverPhotoPathFromDb = coverPhotoInput?.file_path ?? null
     const inputsForWorkflow = inputs.filter((input: any) => input.type !== 'cover_photo')

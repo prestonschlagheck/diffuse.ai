@@ -85,23 +85,15 @@ export default function InputDetailModal({ input, onClose, onSave, onDelete, onU
     setTitle(input.file_name || '')
   }, [input.file_name])
 
-  // Signed URL for cover_photo image preview (stable ref so effect does not re-run every render)
+  // Cover photo: use API so anyone with project access can load it (no signed-URL encoding issues)
+  const coverPhotoApiUrl = isCoverPhoto && input.file_path
+    ? `/api/project-file?path=${encodeURIComponent(input.file_path)}`
+    : null
+  const coverDisplayUrl = coverImageUrl ?? coverPhotoApiUrl
+
   useEffect(() => {
-    if (!isCoverPhoto || !input.file_path) {
-      setCoverImageUrl(null)
-      return
-    }
-    let cancelled = false
-    supabaseRef.current.storage
-      .from('project-files')
-      .createSignedUrl(input.file_path, 60 * 60)
-      .then(({ data, error }) => {
-        if (!cancelled && !error && data?.signedUrl) setCoverImageUrl(data.signedUrl)
-        else setCoverImageUrl(null)
-      })
-      .catch(() => setCoverImageUrl(null))
-    return () => { cancelled = true }
-  }, [isCoverPhoto, input.file_path])
+    setCoverImageUrl(null)
+  }, [input.id, input.file_path])
 
   const handleReplaceCoverPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -146,7 +138,7 @@ export default function InputDetailModal({ input, onClose, onSave, onDelete, onU
         .update({ cover_photo_path: filePath })
         .eq('project_id', input.project_id)
         .is('deleted_at', null)
-      if (signedData?.signedUrl) setCoverImageUrl(signedData.signedUrl)
+      setCoverImageUrl(filePath ? `/api/project-file?path=${encodeURIComponent(filePath)}` : null)
       onUpdate?.()
     } catch (err) {
       console.error('Replace cover photo failed:', err)
@@ -304,10 +296,10 @@ export default function InputDetailModal({ input, onClose, onSave, onDelete, onU
                 onChange={handleReplaceCoverPhoto}
               />
               <label className="block text-caption text-medium-gray mb-2">Cover photo</label>
-              {(coverImageUrl ?? input.metadata?.storage_url) ? (
+              {(coverDisplayUrl ?? input.metadata?.storage_url) ? (
                 <div className="bg-white/5 border border-white/10 rounded-glass p-4">
                   <img
-                    src={coverImageUrl ?? input.metadata?.storage_url ?? ''}
+                    src={coverDisplayUrl ?? input.metadata?.storage_url ?? ''}
                     alt={input.file_name || 'Cover photo'}
                     className="max-w-full max-h-[300px] rounded-lg mx-auto object-contain"
                   />

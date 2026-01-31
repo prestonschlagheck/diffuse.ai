@@ -76,7 +76,7 @@ export default function OutputDetailModal({
   const [article, setArticle] = useState<StructuredArticle | null>(null)
   const [rawContent, setRawContent] = useState(output.content)
   const [isEditing, setIsEditing] = useState(false)
-  const [coverPhotoUrl, setCoverPhotoUrl] = useState<string | null>(null)
+  const [uploadedCoverPath, setUploadedCoverPath] = useState<string | null>(null)
   const [uploadingCover, setUploadingCover] = useState(false)
   const coverPhotoInputRef = useRef<HTMLInputElement>(null)
   const supabaseRef = useRef(createClient())
@@ -84,27 +84,14 @@ export default function OutputDetailModal({
 
   const showDeleteButton = canDelete && onDelete
 
-  // Resolve signed URL for cover photo: use output's path or project fallback (from cover photo input) — stable ref so effect does not re-run every render
+  // Cover photo: one per project, sourced from DB. Use API so anyone with project access can load it (no signed-URL encoding issues).
   const effectiveCoverPath = output.cover_photo_path || fallbackCoverPhotoPath || null
+  const pathToShow = uploadedCoverPath ?? effectiveCoverPath
+  const coverPhotoUrl = pathToShow ? `/api/project-file?path=${encodeURIComponent(pathToShow)}` : null
+
   useEffect(() => {
-    if (!effectiveCoverPath) {
-      setCoverPhotoUrl(null)
-      return
-    }
-    let cancelled = false
-    supabaseRef.current.storage
-      .from('project-files')
-      .createSignedUrl(effectiveCoverPath, 60 * 60) // 1 hour
-      .then(({ data, error }) => {
-        if (!cancelled && !error && data?.signedUrl) {
-          setCoverPhotoUrl(data.signedUrl)
-        } else {
-          setCoverPhotoUrl(null)
-        }
-      })
-      .catch(() => setCoverPhotoUrl(null))
-    return () => { cancelled = true }
-  }, [effectiveCoverPath])
+    setUploadedCoverPath(null)
+  }, [output.id, effectiveCoverPath])
 
   const handleUploadCoverPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -139,10 +126,7 @@ export default function OutputDetailModal({
         console.error('Output cover_photo_path update failed:', updateError)
         throw new Error(updateError.message || 'Failed to save cover photo to output. Make sure the database has the cover_photo_path column (run the migration).')
       }
-      const { data: signedData } = await supabase.storage
-        .from('project-files')
-        .createSignedUrl(filePath, 60 * 60)
-      if (signedData?.signedUrl) setCoverPhotoUrl(signedData.signedUrl)
+      setUploadedCoverPath(filePath)
       onUpdate?.()
     } catch (err) {
       console.error('Cover photo upload failed:', err)
