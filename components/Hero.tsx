@@ -662,9 +662,6 @@ export default function Hero() {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center pt-20 sm:pt-24 md:pt-28 pb-12 md:pb-16">
-      {/* Animated Grid Background */}
-      <div className="absolute inset-0 grid-background opacity-30" />
-
       {/* Content */}
       <div className="relative z-10 container-padding w-full">
         {/* Header */}
@@ -680,7 +677,7 @@ export default function Hero() {
             <br className="hidden sm:block" />
             <span className="text-secondary-white"> in Minutes, Not Hours</span>
           </h1>
-          <p className="text-base sm:text-lg md:text-body-lg text-medium-gray max-w-2xl mx-auto md:whitespace-nowrap">
+          <p className="text-base sm:text-lg md:text-body-lg text-medium-gray max-w-2xl mx-auto whitespace-nowrap">
             AI-powered workflow that transforms audio into publication-ready journalism
           </p>
         </motion.div>

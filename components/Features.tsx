@@ -105,7 +105,7 @@ export default function Features() {
               Everything You Need to <span className="gradient-text">Automate Your Newsroom</span>
             </h2>
             <p className="text-base sm:text-lg md:text-body-md text-medium-gray max-w-2xl mx-auto">
-              Built for journalists, by people who understand the challenges of local news.
+              Record, generate, and publish in one smooth workflow—with integrations that make it faster and cheaper than piecing together ChatGPT and manual tools.
             </p>
           </motion.div>
 
@@ -136,9 +136,6 @@ export default function Features() {
           </motion.div>
         </motion.div>
       </div>
-
-      {/* Background Accent */}
-      <div className="absolute top-1/3 left-0 w-1/3 h-1/3 bg-cosmic-orange/5 rounded-full blur-[150px] -z-10" />
     </section>
   )
 }

@@ -23,7 +23,8 @@ export default function InputDetailModal({ input, onClose, onSave, onDelete, onU
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null)
   const [replacingCover, setReplacingCover] = useState(false)
   const coverReplaceInputRef = useRef<HTMLInputElement>(null)
-  const supabase = createClient()
+  const supabaseRef = useRef(createClient())
+  const supabase = supabaseRef.current
 
   const isFromRecording = input.metadata?.source === 'recording'
   const isFromUpload = input.metadata?.source === 'upload'
@@ -84,14 +85,14 @@ export default function InputDetailModal({ input, onClose, onSave, onDelete, onU
     setTitle(input.file_name || '')
   }, [input.file_name])
 
-  // Signed URL for cover_photo image preview
+  // Signed URL for cover_photo image preview (stable ref so effect does not re-run every render)
   useEffect(() => {
     if (!isCoverPhoto || !input.file_path) {
       setCoverImageUrl(null)
       return
     }
     let cancelled = false
-    supabase.storage
+    supabaseRef.current.storage
       .from('project-files')
       .createSignedUrl(input.file_path, 60 * 60)
       .then(({ data, error }) => {
@@ -100,7 +101,7 @@ export default function InputDetailModal({ input, onClose, onSave, onDelete, onU
       })
       .catch(() => setCoverImageUrl(null))
     return () => { cancelled = true }
-  }, [isCoverPhoto, input.file_path, supabase])
+  }, [isCoverPhoto, input.file_path])
 
   const handleReplaceCoverPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -139,6 +140,12 @@ export default function InputDetailModal({ input, onClose, onSave, onDelete, onU
         })
         .eq('id', input.id)
       if (updateError) throw updateError
+      // Attach cover to all existing outputs so image section shows it
+      await supabase
+        .from('diffuse_project_outputs')
+        .update({ cover_photo_path: filePath })
+        .eq('project_id', input.project_id)
+        .is('deleted_at', null)
       if (signedData?.signedUrl) setCoverImageUrl(signedData.signedUrl)
       onUpdate?.()
     } catch (err) {
@@ -297,10 +304,10 @@ export default function InputDetailModal({ input, onClose, onSave, onDelete, onU
                 onChange={handleReplaceCoverPhoto}
               />
               <label className="block text-caption text-medium-gray mb-2">Cover photo</label>
-              {coverImageUrl ? (
+              {(coverImageUrl ?? input.metadata?.storage_url) ? (
                 <div className="bg-white/5 border border-white/10 rounded-glass p-4">
                   <img
-                    src={coverImageUrl}
+                    src={coverImageUrl ?? input.metadata?.storage_url ?? ''}
                     alt={input.file_name || 'Cover photo'}
                     className="max-w-full max-h-[300px] rounded-lg mx-auto object-contain"
                   />

@@ -11,7 +11,7 @@ const footerLinks = {
     { name: 'FAQ', href: '#faq' },
   ],
   solutions: [
-    { name: 'For Individuals', href: '#use-cases' },
+    { name: 'For Individuals', href: '#features' },
     { name: 'For Teams', href: '#pricing' },
     { name: 'Spring-Ford Press', href: 'https://springford.press', external: true },
   ],
@@ -41,7 +41,7 @@ export default function Footer() {
                 diffuse<span className="text-cosmic-orange">.ai</span>
               </h2>
               <p className="text-sm text-medium-gray mb-6">
-                Turn meeting recordings into published articles in minutes.
+                Meeting recordings → published articles. In minutes, not hours.
               </p>
               <Link 
                 href="/login" 
@@ -145,9 +145,6 @@ export default function Footer() {
           </motion.div>
         </div>
       </div>
-
-      {/* Background Glow */}
-      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1/2 h-1/2 bg-cosmic-orange/5 rounded-full blur-[150px] -z-10" />
     </footer>
   )
 }

@@ -10,7 +10,11 @@ const faqs = [
   },
   {
     question: 'How does Diffuse.AI work?',
-    answer: 'Diffuse.AI follows a simple 4-step process: (1) Record - Capture audio in-app or upload existing files, (2) Transcribe - AI automatically transcribes with high accuracy, (3) Generate - Create articles from your transcription and other inputs, (4) Copy & Publish - Edit if needed, then copy to your publishing platform.',
+    answer: 'Diffuse.AI follows a simple 4-step process: (1) Record - Capture audio in-app or upload existing files, (2) Transcribe - AI automatically transcribes with high accuracy, (3) Generate - Create articles from your transcription and other inputs, (4) Publish - Connect to your frontend to auto-publish, or copy and paste. Either way, you\'re live in minutes.',
+  },
+  {
+    question: 'How is Diffuse different from using ChatGPT?',
+    answer: 'Diffuse is built for the full workflow: record, transcribe, generate, and publish. Connect to publishing frontends to auto-populate articles—no copy-paste. Designed for small teams at a fraction of the cost, with one smooth workflow instead of juggling multiple tools.',
   },
   {
     question: 'Can I use Diffuse as an individual?',
@@ -133,9 +137,6 @@ export default function FAQ() {
           </motion.div>
         </motion.div>
       </div>
-
-      {/* Background Accent */}
-      <div className="absolute bottom-1/3 right-0 w-1/4 h-1/4 bg-cosmic-orange/5 rounded-full blur-[150px] -z-10" />
     </section>
   )
 }

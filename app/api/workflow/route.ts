@@ -145,8 +145,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No inputs found for this project' }, { status: 400 })
     }
 
-    // Cover photo is not sent through the workflow; it is attached to every output when saving
+    // Cover photo lives in the DB (diffuse_project_inputs); we attach its storage path to every new output so the image comes from the same place
     const coverPhotoInput = inputs.find((i: any) => i.type === 'cover_photo')
+    const coverPhotoPathFromDb = coverPhotoInput?.file_path ?? null
     const inputsForWorkflow = inputs.filter((input: any) => input.type !== 'cover_photo')
 
     if (inputsForWorkflow.length === 0) {
@@ -205,8 +206,7 @@ export async function POST(request: NextRequest) {
       // Not valid JSON, use as-is
     }
 
-    // Save the output to Supabase - attach project cover photo to every output (article or ad)
-    const cover_photo_path = coverPhotoInput?.file_path ?? null
+    // Save the output to Supabase - cover image comes from the database (same place as input: project-files path from diffuse_project_inputs)
     const primaryInputId = inputsForWorkflow[0]?.id ?? inputs[0]?.id ?? null
     const { data: output, error: outputError } = await supabase
       .from('diffuse_project_outputs')
@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
         content: finalContent,
         output_type, // 'article' or 'ad'
         workflow_status: 'completed',
-        ...(cover_photo_path && { cover_photo_path }),
+        cover_photo_path: coverPhotoPathFromDb, // always set from DB: same storage path as project cover input
       })
       .select()
       .single()

@@ -313,7 +313,7 @@ export default function DashboardPage() {
           description="Create your first project to start processing inputs and generating articles with Diffuse."
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
           {/* Mobile button - full width at top of grid, hidden on desktop */}
           <CreateProjectButton className="md:hidden col-span-1" />
           {projects.map((project) => (

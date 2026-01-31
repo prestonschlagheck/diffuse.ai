@@ -173,7 +173,7 @@ export default function SharedWithMePage() {
           description="No projects have been shared with your organizations yet."
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
           {/* Mobile button - full width at top of grid, hidden on desktop */}
           <ViewOrgsButton className="md:hidden col-span-1" />
           {sharedProjects.map((project) => (

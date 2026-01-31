@@ -1089,7 +1089,7 @@ export default function RecordingsPage() {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
           {/* Mobile Buttons - full width at top of grid */}
           <div className="md:hidden col-span-1 flex gap-2">
             <button

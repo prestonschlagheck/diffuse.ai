@@ -547,11 +547,11 @@ export default function OrganizationDetailPage() {
           description="No projects have been shared with this organization yet."
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4 mb-12">
           {projects.map((project) => (
             <div
               key={project.id}
-              onClick={() => router.push(`/dashboard/projects/${project.id}`)}
+              onClick={() => router.push(`/dashboard/projects/${project.id}?returnTo=${encodeURIComponent(`/dashboard/organization/${orgId}`)}`)}
               className="glass-container p-6 hover:bg-white/10 transition-colors cursor-pointer"
             >
               {/* Project Name */}
@@ -576,7 +576,7 @@ export default function OrganizationDetailPage() {
                   <span 
                     onClick={(e) => {
                       e.stopPropagation()
-                      router.push(`/dashboard/projects/${project.id}?tab=outputs`)
+                      router.push(`/dashboard/projects/${project.id}?tab=outputs&returnTo=${encodeURIComponent(`/dashboard/organization/${orgId}`)}`)
                     }}
                     className="text-caption text-cosmic-orange uppercase tracking-wider hover:text-orange-300 cursor-pointer transition-colors"
                   >

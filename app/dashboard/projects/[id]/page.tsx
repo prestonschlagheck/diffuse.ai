@@ -31,6 +31,10 @@ export default function ProjectDetailPage() {
     ? tabParam 
     : 'inputs'
 
+  // Back destination: if we came from an organization, return there; otherwise dashboard
+  const returnTo = searchParams.get('returnTo')
+  const backHref = returnTo && returnTo.startsWith('/dashboard/') ? returnTo : '/dashboard'
+
   const [project, setProject] = useState<DiffuseProject | null>(null)
   const [inputs, setInputs] = useState<DiffuseProjectInput[]>([])
   const [trashedInputs, setTrashedInputs] = useState<DiffuseProjectInput[]>([])
@@ -971,6 +975,12 @@ export default function ProjectDetailPage() {
                 })
               if (inputError) throw inputError
             }
+            // Attach cover to all existing outputs so image section shows it
+            await supabase
+              .from('diffuse_project_outputs')
+              .update({ cover_photo_path: filePath })
+              .eq('project_id', projectId)
+              .is('deleted_at', null)
           } else {
             // Regular image input
             const { error: inputError } = await supabase
@@ -1023,8 +1033,8 @@ export default function ProjectDetailPage() {
         title="Project Not Found"
         description="The project you're looking for doesn't exist or you don't have access to it."
         action={{
-          label: 'Back to Dashboard',
-          onClick: () => router.push('/dashboard'),
+          label: backHref.startsWith('/dashboard/organization') ? 'Back to Organization' : 'Back to Dashboard',
+          onClick: () => router.push(backHref),
         }}
       />
     )
@@ -1043,7 +1053,7 @@ export default function ProjectDetailPage() {
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <button
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push(backHref)}
             className="text-medium-gray hover:text-secondary-white transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1332,7 +1342,7 @@ export default function ProjectDetailPage() {
               description="Add recordings, text, documents, or images as inputs to generate your article."
             />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
               {inputs.map((input) => {
                 const isFromRecording = input.metadata?.source === 'recording'
                 const isFromUpload = input.metadata?.source === 'upload'
@@ -1542,7 +1552,7 @@ export default function ProjectDetailPage() {
               }
             />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
               {outputs.map((output) => {
                 const info = getOutputInfo(output)
                 return (
@@ -1594,7 +1604,7 @@ export default function ProjectDetailPage() {
           <p className="text-caption text-medium-gray mb-4">
             Choose who can see this project.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4 mb-6">
             {/* Private Option - Left Side */}
               <button
                 onClick={() => {
@@ -1689,7 +1699,7 @@ export default function ProjectDetailPage() {
               <h3 className="text-body-md text-medium-gray uppercase tracking-wider mb-4">
                 Trashed Inputs ({trashedInputs.length})
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
                 {trashedInputs.map((input) => {
                   const isFromRecording = input.metadata?.source === 'recording'
                   
@@ -1763,7 +1773,7 @@ export default function ProjectDetailPage() {
               <h3 className="text-body-md text-medium-gray uppercase tracking-wider mb-4">
                 Trashed Outputs ({trashedOutputs.length})
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
                 {trashedOutputs.map((output) => {
                   const info = getOutputInfo(output)
                   return (

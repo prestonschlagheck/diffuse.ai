@@ -37,7 +37,7 @@ const steps = [
   {
     number: '04',
     title: 'Publish',
-    description: 'Copy your finished article, edit if needed, and publish to your platform of choice.',
+    description: 'Connect to your frontend to auto-publish, or copy and paste. Either way, you\'re live in minutes.',
     icon: (
       <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -127,9 +127,6 @@ export default function HowItWorks() {
           </motion.div>
         </motion.div>
       </div>
-
-      {/* Background Accent */}
-      <div className="absolute top-1/2 right-0 w-1/3 h-1/3 bg-cosmic-orange/5 rounded-full blur-[150px] -z-10" />
     </section>
   )
 }

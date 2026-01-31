@@ -190,7 +190,7 @@ export default function SettingsPage() {
         </div>
       )}
 
-      <div className="max-w-4xl">
+      <div className="w-full max-w-4xl">
         {/* Organizations */}
         {workspaces.length > 0 && (
         <div className="glass-container p-6 mb-6">

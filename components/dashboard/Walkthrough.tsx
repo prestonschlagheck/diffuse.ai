@@ -209,10 +209,32 @@ export default function Walkthrough() {
   const prevStepRef = useRef(currentStep)
   const transitionTimerRef = useRef<NodeJS.Timeout | null>(null)
 
-  const step = walkthroughSteps[currentStep]
-  const displayStep = walkthroughSteps[displayedStep]
+  const step = walkthroughSteps[currentStep] ?? walkthroughSteps[0]
+  const displayStep = walkthroughSteps[displayedStep] ?? walkthroughSteps[0]
   const isFirstStep = currentStep === 0
   const isLastStep = currentStep === walkthroughSteps.length - 1
+
+  // Find and measure target element - uses stepIndex to support displayedStep during transitions
+  const updateTargetRect = useCallback((stepIndex?: number) => {
+    const stepToUse = stepIndex !== undefined ? walkthroughSteps[stepIndex] : step
+    if (!stepToUse?.targetSelector) {
+      setTargetRect(null)
+      return
+    }
+
+    const element = document.querySelector(stepToUse.targetSelector)
+    if (element) {
+      const rect = element.getBoundingClientRect()
+      setTargetRect(rect)
+
+      // Get the computed border-radius of the element
+      const computedStyle = window.getComputedStyle(element)
+      const borderRadius = computedStyle.borderRadius || '8px'
+      setTargetBorderRadius(borderRadius)
+    } else {
+      setTargetRect(null)
+    }
+  }, [step?.targetSelector])
 
   // Reset state when walkthrough opens
   useEffect(() => {
@@ -225,7 +247,7 @@ export default function Walkthrough() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWalkthroughOpen])
 
-  // Handle step transitions with animation - only trigger on currentStep changes
+  // Handle step transitions with unified animation - everything fades together
   useEffect(() => {
     // Only run when currentStep actually changes
     if (prevStepRef.current === currentStep) return
@@ -238,13 +260,15 @@ export default function Walkthrough() {
       clearTimeout(transitionTimerRef.current)
     }
     
-    // Start transition - fade out
+    // Phase 1: Fade out everything together (200ms)
     setIsTransitioning(true)
     
-    // After fade out completes, update displayed step and fade in
+    // Phase 2: After fade-out, update content and target rect for new step, then fade in
     transitionTimerRef.current = setTimeout(() => {
       setDisplayedStep(currentStep)
-      // Small delay then fade in
+      // Update target rect for the new step before fading in
+      updateTargetRect(currentStep)
+      // Brief delay for layout, then fade in (200ms)
       transitionTimerRef.current = setTimeout(() => {
         setIsTransitioning(false)
         transitionTimerRef.current = null
@@ -257,28 +281,7 @@ export default function Walkthrough() {
         transitionTimerRef.current = null
       }
     }
-  }, [currentStep, isWalkthroughOpen])
-
-  // Find and measure target element
-  const updateTargetRect = useCallback(() => {
-    if (!step?.targetSelector) {
-      setTargetRect(null)
-      return
-    }
-
-    const element = document.querySelector(step.targetSelector)
-    if (element) {
-      const rect = element.getBoundingClientRect()
-      setTargetRect(rect)
-      
-      // Get the computed border-radius of the element
-      const computedStyle = window.getComputedStyle(element)
-      const borderRadius = computedStyle.borderRadius || '8px'
-      setTargetBorderRadius(borderRadius)
-    } else {
-      setTargetRect(null)
-    }
-  }, [step?.targetSelector])
+  }, [currentStep, isWalkthroughOpen, updateTargetRect])
 
   // Navigate to the correct page for current step
   useEffect(() => {
@@ -324,7 +327,7 @@ export default function Walkthrough() {
 
   const handleSkip = () => {
     router.push('/dashboard')
-    closeWalkthrough()
+    completeWalkthrough() // Persist so walkthrough won't show again
   }
 
   const handleNeverShowAgain = () => {
@@ -350,9 +353,10 @@ export default function Walkthrough() {
 
   const borderRadiusValue = parseBorderRadius(targetBorderRadius)
 
-  // Calculate tooltip position with viewport bounds checking
+  // Calculate tooltip position with viewport bounds checking (uses displayedStep for consistency)
   const getTooltipStyle = (): React.CSSProperties => {
-    if (step.position === 'center' || !targetRect) {
+    const stepForPosition = walkthroughSteps[displayedStep] ?? walkthroughSteps[0]
+    if (stepForPosition?.position === 'center' || !targetRect) {
       return {
         position: 'fixed',
         top: '50%',
@@ -373,7 +377,7 @@ export default function Walkthrough() {
     let right: number | undefined
     let transform: string | undefined
 
-    switch (step.position) {
+    switch (stepForPosition?.position) {
       case 'top':
         bottom = window.innerHeight - targetRect.top + tooltipMargin + padding
         left = Math.max(viewportPadding, Math.min(
@@ -444,7 +448,7 @@ export default function Walkthrough() {
       }
     }
 
-    if (left !== undefined && step.position === 'right') {
+    if (left !== undefined && stepForPosition?.position === 'right') {
       if (left + tooltipWidth > window.innerWidth - viewportPadding) {
         // Not enough room on right, switch to left side
         left = undefined
@@ -462,91 +466,92 @@ export default function Walkthrough() {
     }
   }
 
-  const mockView = displayStep.mockView || 'none'
+  const mockView = displayStep?.mockView || 'none'
+  const displayStepForSpotlight = walkthroughSteps[displayedStep]
+  const showSpotlight = targetRect && displayStepForSpotlight?.position !== 'center' && displayStepForSpotlight?.mockView !== 'recording-modal'
 
   return (
     <div className="fixed inset-0 z-[100]">
-      {/* Dark overlay with cutout for highlighted element */}
-      <svg 
-        className={`absolute inset-0 w-full h-full transition-opacity duration-200 ${
+      {/* When navigating, show only overlay + spinner - no partial content */}
+      {isNavigating ? (
+        <>
+          <div className="absolute inset-0 bg-black/75" />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[101]">
+            <div className="w-8 h-8 border-2 border-cosmic-orange border-t-transparent rounded-full animate-spin" />
+          </div>
+        </>
+      ) : (
+      /* Unified transition wrapper - overlay, highlight, mock view, tooltip fade together */
+      <div
+        className={`absolute inset-0 transition-opacity duration-200 ${
           isTransitioning ? 'opacity-0' : 'opacity-100'
-        }`} 
-        style={{ pointerEvents: 'none' }}
-      >
-        <defs>
-          <mask id="spotlight-mask">
-            <rect x="0" y="0" width="100%" height="100%" fill="white" />
-            {targetRect && step.position !== 'center' && !isTransitioning && step.mockView !== 'recording-modal' && (
-              <rect
-                x={targetRect.left - padding}
-                y={targetRect.top - padding}
-                width={targetRect.width + padding * 2}
-                height={targetRect.height + padding * 2}
-                rx={borderRadiusValue + padding / 2}
-                fill="black"
-              />
-            )}
-          </mask>
-        </defs>
-        <rect
-          x="0"
-          y="0"
-          width="100%"
-          height="100%"
-          fill="rgba(0, 0, 0, 0.75)"
-          mask="url(#spotlight-mask)"
-        />
-      </svg>
-
-      {/* Highlight border around target element - hide for recording modal mock */}
-      <div
-        className={`absolute border-2 border-cosmic-orange pointer-events-none transition-opacity duration-200 ${
-          targetRect && step.position !== 'center' && !isTransitioning && step.mockView !== 'recording-modal' ? 'opacity-100' : 'opacity-0'
-        }`}
-        style={{
-          left: targetRect ? targetRect.left - padding : 0,
-          top: targetRect ? targetRect.top - padding : 0,
-          width: targetRect ? targetRect.width + padding * 2 : 0,
-          height: targetRect ? targetRect.height + padding * 2 : 0,
-          borderRadius: `${borderRadiusValue + padding / 2}px`,
-          boxShadow: '0 0 0 4px rgba(255, 150, 40, 0.2), 0 0 20px rgba(255, 150, 40, 0.3)',
-        }}
-      />
-
-      {/* Mock View Display */}
-      <div
-        className={`transition-opacity duration-300 ${
-          mockView !== 'none' && !isTransitioning ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
       >
-        {mockView !== 'none' && <MockViewComponent view={mockView} />}
-      </div>
+        {/* Dark overlay with cutout for highlighted element */}
+        <svg 
+          className="absolute inset-0 w-full h-full"
+          style={{ pointerEvents: 'none' }}
+        >
+          <defs>
+            <mask id="spotlight-mask">
+              <rect x="0" y="0" width="100%" height="100%" fill="white" />
+              {showSpotlight && targetRect && (
+                <rect
+                  x={targetRect.left - padding}
+                  y={targetRect.top - padding}
+                  width={targetRect.width + padding * 2}
+                  height={targetRect.height + padding * 2}
+                  rx={borderRadiusValue + padding / 2}
+                  fill="black"
+                />
+              )}
+            </mask>
+          </defs>
+          <rect
+            x="0"
+            y="0"
+            width="100%"
+            height="100%"
+            fill="rgba(0, 0, 0, 0.75)"
+            mask="url(#spotlight-mask)"
+          />
+        </svg>
 
-      {/* Clickable overlay to prevent interactions */}
-      <div 
-        className="absolute inset-0" 
-        onClick={(e) => e.stopPropagation()}
-        style={{ pointerEvents: 'auto' }}
-      />
-
-      {/* Tooltip */}
-      {!isNavigating && (
+        {/* Highlight border around target element - hide for recording modal mock */}
         <div
-          className={`glass-container p-5 w-80 border border-cosmic-orange/30 bg-dark-gray/95 backdrop-blur-xl transition-opacity duration-200 ${
-            isTransitioning ? 'opacity-0' : 'opacity-100'
+          className={`absolute border-2 border-cosmic-orange pointer-events-none ${
+            showSpotlight ? 'opacity-100' : 'opacity-0'
           }`}
           style={{
-            ...getTooltipStyle(),
-            pointerEvents: 'auto',
-            zIndex: 101,
+            left: targetRect ? targetRect.left - padding : 0,
+            top: targetRect ? targetRect.top - padding : 0,
+            width: targetRect ? targetRect.width + padding * 2 : 0,
+            height: targetRect ? targetRect.height + padding * 2 : 0,
+            borderRadius: `${borderRadiusValue + padding / 2}px`,
+            boxShadow: '0 0 0 4px rgba(255, 150, 40, 0.2), 0 0 20px rgba(255, 150, 40, 0.3)',
           }}
-        >
+        />
 
-          {/* Content with fade transition */}
-          <div
-            className={`transition-opacity duration-200 ${
-              isTransitioning ? 'opacity-0' : 'opacity-100'
-            }`}
+        {/* Mock View Display */}
+        <div className={mockView !== 'none' ? '' : 'pointer-events-none'}>
+          {mockView !== 'none' && <MockViewComponent view={mockView} />}
+        </div>
+
+        {/* Clickable overlay to prevent interactions */}
+        <div 
+          className="absolute inset-0" 
+          onClick={(e) => e.stopPropagation()}
+          style={{ pointerEvents: 'auto' }}
+        />
+
+        {/* Tooltip */}
+        <div
+            className="glass-container p-5 w-80 border border-cosmic-orange/30 bg-dark-gray/95 backdrop-blur-xl"
+            style={{
+              ...getTooltipStyle(),
+              pointerEvents: 'auto',
+              zIndex: 101,
+            }}
           >
             {/* Step indicator */}
             <div className="text-caption text-cosmic-orange mb-2">
@@ -560,7 +565,6 @@ export default function Walkthrough() {
             <p className="text-body-sm text-medium-gray mb-4">
               {displayStep.description}
             </p>
-          </div>
 
           {/* Navigation - always visible */}
           <div className="flex items-center justify-between">
@@ -626,13 +630,7 @@ export default function Walkthrough() {
             </svg>
           </button>
         </div>
-      )}
-
-      {/* Loading indicator when navigating */}
-      {isNavigating && (
-        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-          <div className="w-8 h-8 border-2 border-cosmic-orange border-t-transparent rounded-full animate-spin" />
-        </div>
+      </div>
       )}
     </div>
   )

@@ -13,8 +13,7 @@ const individualPlans = [
     features: [
       'Up to 3 projects',
       'AI article generation',
-      'Audio transcription',
-      'File uploads (audio, docs, images)',
+      'In-app recording',
     ],
     cta: 'Start Free',
     highlight: false,
@@ -28,8 +27,7 @@ const individualPlans = [
     features: [
       'Up to 15 projects',
       'Everything in Free',
-      'In-app recording',
-      'Email support',
+      'File uploads',
     ],
     cta: 'Get Pro',
     highlight: true,
@@ -44,7 +42,7 @@ const individualPlans = [
     features: [
       'Up to 40 projects',
       'Everything in Pro',
-      'Priority email support',
+      'Extended capacity',
     ],
     cta: 'Get Pro Max',
     highlight: false,
@@ -62,7 +60,6 @@ const enterprisePlans = [
       'Up to 50 projects',
       'Create an organization',
       'Invite team members',
-      'Role-based access control',
     ],
     cta: 'Get Started',
   },
@@ -76,7 +73,6 @@ const enterprisePlans = [
       'Unlimited projects',
       'Everything in Team',
       'Unlimited team members',
-      'Priority support',
     ],
     cta: 'Contact Sales',
   },
@@ -124,12 +120,9 @@ export default function Pricing() {
             <span className={`text-xs sm:text-sm md:text-caption uppercase tracking-wider font-semibold mb-3 block ${showEnterprise ? 'text-accent-purple' : 'text-cosmic-orange'}`}>
               Simple Pricing
             </span>
-            <h2 className="text-2xl sm:text-3xl md:text-heading-xl lg:text-display-sm font-bold mb-4">
+            <h2 className="text-2xl sm:text-3xl md:text-heading-xl lg:text-display-sm font-bold mb-8">
               Start Free, <span className={showEnterprise ? 'text-accent-purple' : 'gradient-text'}>Scale As You Grow</span>
             </h2>
-            <p className="text-base sm:text-lg md:text-body-md text-medium-gray max-w-2xl mx-auto mb-8">
-              No hidden fees. No credit card required to start.
-            </p>
 
             {/* Toggle */}
             <div className="inline-flex items-center gap-1 glass-container px-1.5 py-1.5">
@@ -269,9 +262,6 @@ export default function Pricing() {
           )}
         </motion.div>
       </div>
-
-      {/* Background Accents */}
-      <div className={`absolute top-1/3 left-0 w-1/3 h-1/3 rounded-full blur-[150px] -z-10 ${showEnterprise ? 'bg-accent-purple/5' : 'bg-cosmic-orange/5'}`} />
     </section>
   )
 }

@@ -273,7 +273,7 @@ export default function SubscriptionPage() {
       {/* Individual Plans */}
       <div className="mb-12">
         <h2 className="text-heading-lg text-secondary-white mb-6">Individual Plans</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {(Object.keys(subscriptionDetails) as SubscriptionTier[]).map((tier) => {
             const sub = subscriptionDetails[tier]
             const isCurrentPlan = tier === currentTier
@@ -328,7 +328,7 @@ export default function SubscriptionPage() {
             </p>
           </div>
         ) : null}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Object.entries(enterprisePlans).map(([key, plan]) => {
             const isCurrentPlan = currentWorkspace?.plan === key
             

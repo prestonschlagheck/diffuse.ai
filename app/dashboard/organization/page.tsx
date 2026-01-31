@@ -301,7 +301,7 @@ export default function OrganizationPage() {
           description="Join an existing organization with an invite code or create your own to collaborate with your team."
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
           {/* Mobile buttons - row of two at top of grid, hidden on desktop */}
           <div className="md:hidden col-span-1 flex gap-2">
             <JoinButton className="flex-1" />

@@ -79,11 +79,12 @@ export default function OutputDetailModal({
   const [coverPhotoUrl, setCoverPhotoUrl] = useState<string | null>(null)
   const [uploadingCover, setUploadingCover] = useState(false)
   const coverPhotoInputRef = useRef<HTMLInputElement>(null)
-  const supabase = createClient()
+  const supabaseRef = useRef(createClient())
+  const supabase = supabaseRef.current
 
   const showDeleteButton = canDelete && onDelete
 
-  // Resolve signed URL for cover photo: use output's path or project fallback (from cover photo input)
+  // Resolve signed URL for cover photo: use output's path or project fallback (from cover photo input) — stable ref so effect does not re-run every render
   const effectiveCoverPath = output.cover_photo_path || fallbackCoverPhotoPath || null
   useEffect(() => {
     if (!effectiveCoverPath) {
@@ -91,7 +92,7 @@ export default function OutputDetailModal({
       return
     }
     let cancelled = false
-    supabase.storage
+    supabaseRef.current.storage
       .from('project-files')
       .createSignedUrl(effectiveCoverPath, 60 * 60) // 1 hour
       .then(({ data, error }) => {
@@ -103,7 +104,7 @@ export default function OutputDetailModal({
       })
       .catch(() => setCoverPhotoUrl(null))
     return () => { cancelled = true }
-  }, [effectiveCoverPath, supabase])
+  }, [effectiveCoverPath])
 
   const handleUploadCoverPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -410,11 +411,11 @@ export default function OutputDetailModal({
           )}
           {/* Cover Photo - at top when present (Replace in header), or upload when missing and editable */}
           {coverPhotoUrl ? (
-            <div className="w-full rounded-glass overflow-hidden bg-white/5 mb-5">
+            <div className="w-full rounded-glass overflow-hidden bg-white/5 mb-5 flex justify-center">
               <img
                 src={coverPhotoUrl}
                 alt="Cover"
-                className="w-full max-h-[320px] object-cover object-center"
+                className="max-w-full max-h-[40vh] w-auto h-auto object-contain"
               />
             </div>
           ) : canEdit ? (

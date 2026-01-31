@@ -137,7 +137,7 @@ export default function WalkthroughProjectPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
             {DEMO_INPUTS.map((input) => (
               <div key={input.id} className="glass-container p-6 hover:bg-white/10 transition-colors cursor-default">
                 <div className="flex items-start gap-3">
@@ -202,7 +202,7 @@ export default function WalkthroughProjectPage() {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
             {DEMO_OUTPUTS.map((output) => {
               const info = (() => {
                 try {
@@ -250,7 +250,7 @@ export default function WalkthroughProjectPage() {
           <p className="text-caption text-medium-gray mb-4">
             Choose who can see this project.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             <button className="glass-container p-6 flex flex-col items-center justify-center text-center transition-colors min-h-[200px] bg-cosmic-orange/20 border-cosmic-orange/30">
               <h3 className="text-heading-lg font-medium mb-2 text-cosmic-orange">Private</h3>
               <p className="text-caption text-medium-gray uppercase tracking-wider">

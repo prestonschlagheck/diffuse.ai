@@ -16,7 +16,15 @@ export const faqSchema = {
       name: 'How does Diffuse.AI work?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Diffuse.AI follows a 4-step process: (1) Capture - Record meetings using any audio/video device, (2) Process - Our AI transcribes and analyzes the content, (3) Generate - Create factually accurate articles, (4) Publish - Human editors refine and publish quickly.',
+        text: 'Diffuse.AI follows a 4-step process: (1) Capture - Record meetings using any audio/video device, (2) Process - Our AI transcribes and analyzes the content, (3) Generate - Create factually accurate articles, (4) Publish - Connect to your frontend to auto-publish, or copy and paste. Either way, you\'re live in minutes.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'How is Diffuse different from using ChatGPT?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Diffuse is built for the full workflow: record, transcribe, generate, and publish. Connect to publishing frontends to auto-populate articles—no copy-paste. Designed for small teams at a fraction of the cost, with one smooth workflow instead of juggling multiple tools.',
       },
     },
     {

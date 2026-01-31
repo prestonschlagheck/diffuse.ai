@@ -4,13 +4,13 @@ import { faqSchema, productSchema, serviceSchema, howToSchema } from './schema'
 
 const siteUrl = 'https://diffuse.ai'
 const siteName = 'diffuse.ai'
-const siteDescription = 'Turn meeting recordings into published articles in minutes. AI-powered journalism automation that saves 90% on content costs. Free to start, scales to enterprise.'
+const siteDescription = 'Meeting recordings → published articles. In minutes, not hours. Integrations with publishing frontends. AI-powered journalism automation. Free to start, scales to enterprise.'
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'diffuse.ai',
-    template: '%s | diffuse.ai',
+    default: 'Diffuse.AI',
+    template: '%s | Diffuse.AI',
   },
   description: siteDescription,
   keywords: [

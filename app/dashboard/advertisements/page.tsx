@@ -312,7 +312,7 @@ export default function AdvertisementsPage() {
           description="Create your first advertisement to generate sponsored content that looks like a news article."
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
           {/* Mobile button - full width at top of grid, hidden on desktop */}
           <CreateAdButton className="md:hidden col-span-1" />
           {advertisements.map((ad) => (
