@@ -223,7 +223,15 @@ export async function POST(request: NextRequest) {
 
     if (outputError) {
       console.error('Error saving output:', outputError)
-      return NextResponse.json({ error: 'Failed to save output' }, { status: 500 })
+      // RLS or permission denial (e.g. shared user before policy allows insert)
+      const isPermissionError =
+        outputError.code === '42501' ||
+        (outputError.message && /policy|permission|row-level security/i.test(outputError.message))
+      const status = isPermissionError ? 403 : 500
+      const message = isPermissionError
+        ? "You don't have permission to add outputs to this project. Only the project owner can generate outputs until the database policy is updated."
+        : 'Failed to save output'
+      return NextResponse.json({ error: message }, { status })
     }
 
     const response = NextResponse.json({ 
