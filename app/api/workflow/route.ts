@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No inputs found for this project' }, { status: 400 })
     }
 
-    // Cover photo lives in the DB (diffuse_project_inputs); we attach its storage path to every new output so the image comes from the same place
+    // Cover photo: only the explicit cover_photo input (not passed to workflow; attached to output when saving)
     const coverPhotoInput = inputs.find((i: any) => i.type === 'cover_photo')
     const coverPhotoPathFromDb = coverPhotoInput?.file_path ?? null
     const inputsForWorkflow = inputs.filter((input: any) => input.type !== 'cover_photo')

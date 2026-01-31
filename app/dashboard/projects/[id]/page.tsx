@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { formatDuration } from '@/lib/utils/format'
+import { formatDuration, sanitizeStorageFilename } from '@/lib/utils/format'
 import { useAuth } from '@/contexts/AuthContext'
 import LoadingSpinner from '@/components/dashboard/LoadingSpinner'
 import EmptyState from '@/components/dashboard/EmptyState'
@@ -723,7 +723,7 @@ export default function ProjectDetailPage() {
           
           // Upload audio to storage first
           setUploadProgress(`Uploading ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)...`)
-          const filePath = `${currentUser.id}/${projectId}/${Date.now()}-${file.name}`
+          const filePath = `${currentUser.id}/${projectId}/${Date.now()}-${sanitizeStorageFilename(file.name)}`
           
           // For files over 6MB, use resumable uploads (TUS protocol)
           const useResumable = file.size > 6 * 1024 * 1024 // 6MB threshold
@@ -918,8 +918,8 @@ export default function ProjectDetailPage() {
             throw new Error(`Image is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 20MB.`)
           }
           
-          // Upload image to storage
-          const filePath = `${currentUser.id}/${projectId}/${Date.now()}-${file.name}`
+          // Upload image to storage (sanitize filename so signed URLs don't 400 on : ? # etc.)
+          const filePath = `${currentUser.id}/${projectId}/${Date.now()}-${sanitizeStorageFilename(file.name)}`
           const { error: uploadError } = await supabase.storage
             .from('project-files')
             .upload(filePath, file)
@@ -982,7 +982,7 @@ export default function ProjectDetailPage() {
               .eq('project_id', projectId)
               .is('deleted_at', null)
           } else {
-            // Regular image input
+            // Regular image input (passed to workflow; not used as output cover)
             const { error: inputError } = await supabase
               .from('diffuse_project_inputs')
               .insert({

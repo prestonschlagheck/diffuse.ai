@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { formatDateTime, formatDuration } from '@/lib/utils/format'
+import { formatDateTime, formatDuration, sanitizeStorageFilename } from '@/lib/utils/format'
 import type { DiffuseProjectInput } from '@/types/database'
 
 interface InputDetailModalProps {
@@ -122,7 +122,7 @@ export default function InputDetailModal({ input, onClose, onSave, onDelete, onU
     try {
       const { data: { user: currentUser } } = await supabase.auth.getUser()
       if (!currentUser) throw new Error('Not authenticated')
-      const filePath = `${currentUser.id}/${input.project_id}/${Date.now()}-${file.name}`
+      const filePath = `${currentUser.id}/${input.project_id}/${Date.now()}-${sanitizeStorageFilename(file.name)}`
       const { error: uploadError } = await supabase.storage
         .from('project-files')
         .upload(filePath, file, { contentType: file.type, upsert: false })

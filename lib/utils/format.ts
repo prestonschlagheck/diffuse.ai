@@ -68,3 +68,17 @@ export function formatDuration(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
+/**
+ * Sanitize a filename for use in storage paths and signed URLs.
+ * Replaces characters that break URLs (e.g. : ? # %) so images load reliably.
+ */
+export function sanitizeStorageFilename(filename: string): string {
+  return filename
+    .replace(/[:?#%[\]\\]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\s/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || 'file'
+}
+
