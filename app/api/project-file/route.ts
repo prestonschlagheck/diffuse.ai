@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth, unauthorizedResponse, forbiddenResponse, verifyProjectOwnership } from '@/lib/security/authorization'
+import { createAdminClient } from '@/lib/supabase/server'
 
 /**
  * GET /api/project-file?path=<encoded-storage-path>
  *
  * Serves a file from the project-files bucket. Anyone with access to the project
- * (owner or org viewer/editor) can load it. Used for cover photos and other
- * project inputs/outputs so the browser gets a single URL that works for all
- * users and avoids signed-URL encoding issues (e.g. paths with colons).
+ * (owner or org viewer/editor) can load it. Access is checked with verifyProjectOwnership;
+ * when SUPABASE_SERVICE_ROLE_KEY is set, the download uses the admin client so storage RLS
+ * does not block editors/viewers (recommended for cover photos to display for all users).
  *
  * Cover photo: one per project, stored in diffuse_project_inputs (type cover_photo).
  * It is NOT sent to the workflow; the workflow pulls every input except the cover photo.
@@ -40,12 +41,14 @@ export async function GET(request: NextRequest) {
     const hasAccess = await verifyProjectOwnership(projectId, user.id, supabase)
     if (!hasAccess) return forbiddenResponse('You do not have access to this project')
 
-    const { data, error } = await supabase.storage
+    // Use admin client when available so download bypasses storage RLS (access already verified above)
+    const storageClient = createAdminClient() ?? supabase
+    const { data, error } = await storageClient.storage
       .from('project-files')
       .download(path)
 
     if (error || !data) {
-      console.error('Project file download error:', error)
+      console.error('Project file download error:', error, 'path:', path)
       return NextResponse.json({ error: 'File not found' }, { status: 404 })
     }
 

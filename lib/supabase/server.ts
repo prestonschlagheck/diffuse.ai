@@ -1,5 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 // Cookie configuration for long-term session persistence (30 days)
 const COOKIE_OPTIONS: Partial<CookieOptions> = {
@@ -44,5 +46,17 @@ export async function createClient() {
       },
     }
   )
+}
+
+/**
+ * Server-side admin client using the service role key. Bypasses RLS.
+ * Use only after verifying access (e.g. in API routes). Requires SUPABASE_SERVICE_ROLE_KEY.
+ */
+export function createAdminClient(): SupabaseClient | null {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!key) return null
+  return createSupabaseClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
 }
 
