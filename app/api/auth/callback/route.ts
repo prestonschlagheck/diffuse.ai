@@ -10,7 +10,7 @@ function validateRedirectUrl(url: string): boolean {
   try {
     const parsed = new URL(url)
     // Only allow redirects to same origin or configured site URL
-    const allowedOrigin = process.env.NEXT_PUBLIC_SITE_URL || 'https://diffuse.ai'
+    const allowedOrigin = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.diffuse.press'
     const allowedHost = new URL(allowedOrigin).hostname
     
     return parsed.hostname === allowedHost || parsed.hostname.endsWith('.vercel.app')
@@ -23,7 +23,7 @@ function validateRedirectUrl(url: string): boolean {
  * Get safe redirect URL
  */
 function getSafeRedirectUrl(path: string): string {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://diffuse.ai'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.diffuse.press'
   return `${siteUrl}${path}`
 }
 

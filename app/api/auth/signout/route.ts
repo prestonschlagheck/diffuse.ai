@@ -7,7 +7,7 @@ import { NextRequest } from 'next/server'
  * Get safe redirect URL
  */
 function getSafeRedirectUrl(path: string): string {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://diffuse.ai'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.diffuse.press'
   return `${siteUrl}${path}`
 }
 

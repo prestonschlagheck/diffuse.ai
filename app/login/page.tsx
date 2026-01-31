@@ -5,8 +5,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-// Production site URL for email redirects
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://diffuse-ai-blush.vercel.app'
+// Production site URL for email redirects (used in Supabase signUp emailRedirectTo)
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.diffuse.press'
 
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login')

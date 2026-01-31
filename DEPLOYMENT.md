@@ -67,12 +67,26 @@ Connect your repository to Vercel for automatic deployments:
 
 ## 🔧 Configuration
 
-### Environment Variables (if needed)
+### Environment Variables (Required for Auth)
 
-If you need to add environment variables later:
+For email verification and auth redirects to work correctly:
 
 1. In Vercel Dashboard: Settings → Environment Variables
-2. Add variables for all environments (Production, Preview, Development)
+2. Add `NEXT_PUBLIC_SITE_URL` = `https://www.diffuse.press` (or your production domain)
+3. Ensure Supabase vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+### Supabase Auth URL Configuration (Required for Email Verification)
+
+Email verification links will not work until Supabase is configured:
+
+1. Go to [Supabase Dashboard](https://supabase.com/dashboard) → Your Project → **Authentication** → **URL Configuration**
+2. Set **Site URL** to: `https://www.diffuse.press`
+3. Add to **Redirect URLs** (one per line):
+   - `https://www.diffuse.press/api/auth/callback`
+   - `https://www.diffuse.press/**` (optional wildcard for preview deploys)
+4. Save changes
+
+Without this, verification emails will redirect to the wrong URL or fail.
 
 ### Custom Domain
 
